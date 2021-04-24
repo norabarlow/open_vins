@@ -4,17 +4,17 @@
     <arg name="max_cameras" default="2" />
     <arg name="use_stereo"  default="true" />
     <arg name="bag_start"   default="0" /> <!-- v1-2: 0, mh1: 40, mh2: 35, mh3: 17.5, mh4-5: 15 -->
-    <arg name="bag"         default="/home/patrick/datasets/eth/V1_01_easy.bag" />
+    <arg name="bag"         default="/home/xero/Documents/xr/illixr/ijrr_euroc_mav_dataset/vicon_room1/V1_02_medium/V1_02_medium.bag" />
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="0.75" />
     <arg name="init_imu_thresh"   default="1.5" />
 
     <!-- saving trajectory path and timing information -->
-    <arg name="dosave"      default="false" />
-    <arg name="dotime"      default="false" />
-    <arg name="path_est"    default="/tmp/traj_estimate.txt" />
-    <arg name="path_time"   default="/tmp/traj_timing.txt" />
+    <arg name="dosave"      default="true" />
+    <arg name="dotime"      default="true" />
+    <arg name="path_est"    default="/home/xero/Documents/xr/open_vins/workspace/catkin_ws_ov/traj_estimate.txt" />
+    <arg name="path_time"   default="/home/xero/Documents/xr/open_vins/workspace/catkin_ws_ov/traj_timing.txt" />
 
 
     <!-- MASTER NODE! -->

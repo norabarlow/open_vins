@@ -4,11 +4,11 @@
     <arg name="max_cameras" default="2" />
     <arg name="use_stereo"  default="true" />
     <arg name="bag_start"   default="0" />
-    <arg name="bag"         default="/home/xero/Documents/xr/datasets/TUM_VI/calibrated/512_16/dataset-room2_512_16.bag" />
+    <arg name="bag"         default="/home/xero/Documents/xr/datasets/TUM_VI/512/dataset-NNN_512_16_rateRRR.bag" />
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="1.0" />
-    <arg name="init_imu_thresh"   default="0.75" /> <!-- room1:0.70, room2:0.75, room3:0.70 -->
+    <arg name="init_imu_thresh"   default="THRESH" /> <!-- room1:0.70, room2:0.75, room3:0.70 -->
 
     <!-- saving trajectory path and timing information -->
     <arg name="dosave"      default="true" />
