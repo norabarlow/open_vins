@@ -371,7 +371,10 @@ void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, 
 
     // Extract our features (use fast with griding)
     std::vector<cv::KeyPoint> pts0_ext;
-    Grider_FAST::perform_griding(img0pyr.at(0), pts0_ext, use_multi_threading, num_featsneeded, grid_x, grid_y, threshold, true);
+    //Grider_FAST::perform_griding(img0pyr.at(0), pts0_ext, use_multi_threading, num_featsneeded, grid_x, grid_y, threshold, true);
+    std::vector<cv::Point2f> pts0_ext_p2f;
+    cv::goodFeaturesToTrack(img0pyr.at(0), pts0_ext_p2f, num_featsneeded, 0.01, min_px_dist, cv::Mat(), grid_x, grid_y, false, 0.04);
+    cv::KeyPoint::convert(pts0_ext_p2f, pts0_ext, 1, 1, 0, -1);
 
     // Now, reject features that are close a current feature
     std::vector<cv::KeyPoint> kpts0_new;
@@ -454,7 +457,10 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
 
         // Extract our features (use fast with griding)
         std::vector<cv::KeyPoint> pts0_ext;
-        Grider_FAST::perform_griding(img0pyr.at(0), pts0_ext, use_multi_threading, num_featsneeded_0, grid_x, grid_y, threshold, true);
+        //Grider_FAST::perform_griding(img0pyr.at(0), pts0_ext, use_multi_threading, num_featsneeded_0, grid_x, grid_y, threshold, true);
+        std::vector<cv::Point2f> pts0_ext_p2f;
+        cv::goodFeaturesToTrack(img0pyr.at(0), pts0_ext_p2f, num_featsneeded_0, 0.01, min_px_dist, cv::Mat(), grid_x, grid_y, false, 0.04);
+        cv::KeyPoint::convert(pts0_ext_p2f, pts0_ext, 1, 1, 0, -1);
 
         // Now, reject features that are close a current feature
         std::vector<cv::KeyPoint> kpts0_new;
@@ -529,7 +535,10 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
 
         // Extract our features (use fast with griding)
         std::vector<cv::KeyPoint> pts1_ext;
-        Grider_FAST::perform_griding(img1pyr.at(0), pts1_ext, num_features, num_featsneeded_1, grid_x, grid_y, threshold, true);
+        //Grider_FAST::perform_griding(img1pyr.at(0), pts1_ext, num_features, num_featsneeded_1, grid_x, grid_y, threshold, true);
+        std::vector<cv::Point2f> pts1_ext_p2f;
+        cv::goodFeaturesToTrack(img1pyr.at(0), pts1_ext_p2f, num_featsneeded_1, 0.01, min_px_dist, cv::Mat(), grid_x, grid_y, false, 0.04);
+        cv::KeyPoint::convert(pts1_ext_p2f, pts1_ext, 1, 1, 0, -1);
 
         // Now, reject features that are close a current feature
         for(auto& kpt : pts1_ext) {
