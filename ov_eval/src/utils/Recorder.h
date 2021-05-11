@@ -185,7 +185,7 @@ namespace ov_eval {
 
         // Temp storage objects for our pose and its certainty
         bool has_covariance = false;
-        float timestamp;
+        double timestamp;
         Eigen::Vector4f q_ItoG;
         Eigen::Vector3f p_IinG;
         Eigen::Matrix<float,3,3> cov_rot;

@@ -65,8 +65,8 @@ int main(int argc, char **argv) {
 
         // Load it!!
         std::vector<std::string> names_temp;
-        std::vector<float> times;
-        std::vector<Eigen::VectorXf> timing_values;
+        std::vector<double> times;
+        std::vector<Eigen::VectorXd> timing_values;
         ov_eval::Loader::load_timing_flamegraph(argv[z], names_temp, times, timing_values);
         printf("[TIME]: loaded %d timestamps from file (%d categories)!!\n",(int)times.size(),(int)names_temp.size());
 
@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1200, 400);
 
     // Zero our time arrays
-    float starttime = (total_times.at(0).timestamps.empty())? 0 : total_times.at(0).timestamps.at(0);
-    float endtime = (total_times.at(0).timestamps.empty())? 0 : total_times.at(0).timestamps.at(total_times.at(0).timestamps.size()-1);
+    double starttime = (total_times.at(0).timestamps.empty())? 0 : total_times.at(0).timestamps.at(0);
+    double endtime = (total_times.at(0).timestamps.empty())? 0 : total_times.at(0).timestamps.at(total_times.at(0).timestamps.size()-1);
     for(size_t i=0; i<total_times.size(); i++) {
         for(size_t j=0; j<total_times.at(i).timestamps.size(); j++) {
             total_times.at(i).timestamps.at(j) -= starttime;
@@ -129,13 +129,13 @@ int main(int argc, char **argv) {
 
         // Sub-sample the time and values
         int keep_every = 10;
-        std::vector<float> times_skipped;
+        std::vector<double> times_skipped;
         for(size_t t=0; t<total_times.at(n).timestamps.size(); t++) {
             if(t % keep_every == 0) {
                 times_skipped.push_back(total_times.at(n).timestamps.at(t));
             }
         }
-        std::vector<float> values_skipped;
+        std::vector<double> values_skipped;
         for(size_t t=0; t<total_times.at(n).values.size(); t++) {
             if(t % keep_every == 0) {
                 values_skipped.push_back(total_times.at(n).values.at(t));
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 
     // Finally add labels and show it
     matplotlibcpp::ylabel("execution time (s)");
-    matplotlibcpp::xlim(0.0f,endtime-starttime);
+    matplotlibcpp::xlim(0.0,endtime-starttime);
     matplotlibcpp::xlabel("dataset time (s)");
     matplotlibcpp::legend();
     matplotlibcpp::tight_layout();

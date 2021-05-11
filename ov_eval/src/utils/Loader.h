@@ -51,7 +51,7 @@ namespace ov_eval {
          * @param cov_pos Vector of position covariances at each timestep (empty if we can't load)
          */
         static void load_data(std::string path_traj,
-                              std::vector<float> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
+                              std::vector<double> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
                               std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos);
 
         /**
@@ -69,7 +69,7 @@ namespace ov_eval {
          * @param timing_values Component timing values for the given timestamp
          */
         static void load_timing_flamegraph(std::string path, std::vector<std::string> &names,
-                                           std::vector<float> &times, std::vector<Eigen::VectorXf> &timing_values);
+                                           std::vector<double> &times, std::vector<Eigen::VectorXd> &timing_values);
 
         /**
          * @brief Load space separated timing file from pid_ros.py file
@@ -78,8 +78,8 @@ namespace ov_eval {
          * @param summed_values Summed node values [%cpu,%mem,num_threads]
          * @param node_values Values for each separate node [%cpu,%mem,num_threads]
          */
-        static void load_timing_percent(std::string path, std::vector<float> &times,
-                                        std::vector<Eigen::Vector3f> &summed_values, std::vector<Eigen::VectorXf> &node_values);
+        static void load_timing_percent(std::string path, std::vector<double> &times,
+                                        std::vector<Eigen::Vector3d> &summed_values, std::vector<Eigen::VectorXd> &node_values);
 
         /**
          * @brief Will calculate the total trajectory distance

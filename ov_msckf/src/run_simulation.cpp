@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Buffer our camera image
-    float buffer_timecam = -1;
+    double buffer_timecam = -1;
     std::vector<int> buffer_camids;
     std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> buffer_feats;
 
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        float time_cam;
+        double time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim->get_next_cam(time_cam, camids, feats);

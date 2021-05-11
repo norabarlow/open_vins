@@ -158,14 +158,14 @@ void RosVisualizer::visualize() {
 
     // Print how much time it took to publish / displaying things
     rT0_2 =  boost::posix_time::microsec_clock::local_time();
-    float time_total = (rT0_2-rT0_1).total_microseconds() * 1e-6;
+    double time_total = (rT0_2-rT0_1).total_microseconds() * 1e-6;
     printf(BLUE "[TIME]: %.4f seconds for visualization\n" RESET, time_total);
 
 }
 
 
 
-void RosVisualizer::visualize_odometry(float timestamp) {
+void RosVisualizer::visualize_odometry(double timestamp) {
 
     // Check if we have subscribers
     if(pub_odomimu.getNumSubscribers()==0)
@@ -299,8 +299,8 @@ void RosVisualizer::publish_state() {
 
     // We want to publish in the IMU clock frame
     // The timestamp in the state will be the last camera time
-    float t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
-    float timestamp_inI = state->_timestamp + t_ItoC;
+    double t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
+    double timestamp_inI = state->_timestamp + t_ItoC;
 
     // Create pose of IMU (note we use the bag time)
     geometry_msgs::PoseWithCovarianceStamped poseIinM;
@@ -574,8 +574,8 @@ void RosVisualizer::publish_groundtruth() {
 
     // We want to publish in the IMU clock frame
     // The timestamp in the state will be the last camera time
-    float t_ItoC = _app->get_state()->_calib_dt_CAMtoIMU->value()(0);
-    float timestamp_inI = _app->get_state()->_timestamp + t_ItoC;
+    double t_ItoC = _app->get_state()->_calib_dt_CAMtoIMU->value()(0);
+    double timestamp_inI = _app->get_state()->_timestamp + t_ItoC;
 
     // Check that we have the timestamp in our GT file [time(sec),q_GtoI,p_IinG,v_IinG,b_gyro,b_accel]
     if(_sim == nullptr && (gt_states.empty() || !DatasetReader::get_gt_state(timestamp_inI, state_gt, gt_states))) {
@@ -696,8 +696,8 @@ void RosVisualizer::publish_groundtruth() {
 void RosVisualizer::publish_loopclosure_information() {
 
     // Get the current tracks in this frame
-    float active_tracks_time1 = -1;
-    float active_tracks_time2 = -1;
+    double active_tracks_time1 = -1;
+    double active_tracks_time2 = -1;
     std::unordered_map<size_t, Eigen::Vector3f> active_tracks_posinG;
     std::unordered_map<size_t, Eigen::Vector3f> active_tracks_uvd;
     cv::Mat active_cam0_image;
@@ -866,8 +866,8 @@ void RosVisualizer::sim_save_total_state_to_file() {
 
     // We want to publish in the IMU clock frame
     // The timestamp in the state will be the last camera time
-    float t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
-    float timestamp_inI = state->_timestamp + t_ItoC;
+    double t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
+    double timestamp_inI = state->_timestamp + t_ItoC;
 
     // If we have our simulator, then save it to our groundtruth file
     if(_sim != nullptr) {

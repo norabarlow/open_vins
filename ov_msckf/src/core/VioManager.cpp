@@ -174,7 +174,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 
     // Loop through our queue and see if we are able to process any of our camera measurements
     // We are able to process if we have at least one IMU measurement greater then the camera time
-    float timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
+    double timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
     while (!camera_queue.empty() && camera_queue.at(0).timestamp < timestamp_inC) {
         track_image_and_update(camera_queue.at(0));
         camera_queue.pop_front();
@@ -183,7 +183,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 }
 
 
-void VioManager::feed_measurement_simulation(float timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -679,13 +679,13 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
 
     // Get timing statitics information
-    float time_track = (rT2-rT1).total_microseconds() * 1e-6;
-    float time_prop = (rT3-rT2).total_microseconds() * 1e-6;
-    float time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
-    float time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
-    float time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
-    float time_marg = (rT7-rT6).total_microseconds() * 1e-6;
-    float time_total = (rT7-rT1).total_microseconds() * 1e-6;
+    double time_track = (rT2-rT1).total_microseconds() * 1e-6;
+    double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
+    double time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
+    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
+    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
+    double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
+    double time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
     // Timing information
     printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
@@ -706,8 +706,8 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     if(params.record_timing_information && of_statistics.is_open()) {
         // We want to publish in the IMU clock frame
         // The timestamp in the state will be the last camera time
-        float t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
-        float timestamp_inI = state->_timestamp + t_ItoC;
+        double t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
+        double timestamp_inI = state->_timestamp + t_ItoC;
         // Append to the file
         of_statistics << std::fixed << std::setprecision(15)
                       << timestamp_inI << ","
@@ -768,7 +768,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 bool VioManager::try_to_initialize() {
 
     // Returns from our initializer
-    float time0;
+    double time0;
     Eigen::Matrix<float, 4, 1> q_GtoI0;
     Eigen::Matrix<float, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
 
@@ -836,7 +836,7 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
     std::vector<std::shared_ptr<Feature>> active_features = trackDATABASE->features_containing_older(state->_timestamp);
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<float> clonetimes;
+    std::vector<double> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -876,11 +876,11 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         return;
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<float, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<float, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose

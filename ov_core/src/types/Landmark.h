@@ -54,7 +54,7 @@ namespace ov_type {
         int _anchor_cam_id = -1;
 
         /// Timestamp of anchor clone
-        float _anchor_clone_timestamp = -1;
+        double _anchor_clone_timestamp = -1;
 
         /// Boolean if this landmark has had at least one anchor change
         bool has_had_anchor_change = false;

@@ -24,7 +24,7 @@
 using namespace ov_core;
 
 
-void TrackKLT::feed_monocular(float timestamp, cv::Mat &img, size_t cam_id) {
+void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -132,7 +132,7 @@ void TrackKLT::feed_monocular(float timestamp, cv::Mat &img, size_t cam_id) {
 }
 
 
-void TrackKLT::feed_stereo(float timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
+void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();

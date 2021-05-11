@@ -96,7 +96,7 @@ namespace ov_eval {
          * @param max_difference Biggest allowed difference between matched timesteps
          */
         static void perform_association(float offset, float max_difference,
-                                        std::vector<float> &est_times, std::vector<float> &gt_times,
+                                        std::vector<double> &est_times, std::vector<double> &gt_times,
                                         std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses);
 
         /**
@@ -105,7 +105,7 @@ namespace ov_eval {
          * @param max_difference Biggest allowed difference between matched timesteps
          */
         static void perform_association(float offset, float max_difference,
-                                        std::vector<float> &est_times, std::vector<float> &gt_times,
+                                        std::vector<double> &est_times, std::vector<double> &gt_times,
                                         std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
                                         std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
                                         std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos);

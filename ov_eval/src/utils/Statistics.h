@@ -63,7 +63,7 @@ namespace ov_eval {
         float ninetynine = 0.0;
 
         /// Timestamp when these values occured at
-        std::vector<float> timestamps;
+        std::vector<double> timestamps;
 
         /// Values (e.g. error or nees at a given time)
         std::vector<float> values;

@@ -58,10 +58,10 @@ namespace ov_msckf {
         StateOptions state_options;
 
         /// Delay, in seconds, that we should wait from init before we start estimating SLAM features
-        float dt_slam_delay = 2.0;
+        double dt_slam_delay = 2.0;
 
         /// Amount of time we will initialize over (seconds)
-        float init_window_time = 1.0;
+        double init_window_time = 1.0;
 
         ///  Variance threshold on our acceleration to be classified as moving
         float init_imu_thresh = 1.0;
@@ -138,7 +138,7 @@ namespace ov_msckf {
         Eigen::Vector3f gravity = {0.0, 0.0, 9.81};
 
         /// Time offset between camera and IMU.
-        float calib_camimu_dt = 0.0;
+        double calib_camimu_dt = 0.0;
 
         /// Map between camid and camera model (true=fisheye, false=radtan)
         std::map<size_t,bool> camera_fisheye;

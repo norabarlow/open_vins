@@ -66,8 +66,8 @@ namespace ov_msckf {
          * But if you wanted to do a keyframe system, you could selectively marginalize clones.
          * @return timestep of clone we will marginalize
          */
-        float margtimestep() {
-            float time = INFINITY;
+        double margtimestep() {
+            double time = INFINITY;
             for (const auto &clone_imu : _clones_IMU) {
                 if (clone_imu.first < time) {
                     time = clone_imu.first;
@@ -86,7 +86,7 @@ namespace ov_msckf {
 
 
         /// Current timestamp (should be the last update time!)
-        float _timestamp;
+        double _timestamp;
 
         /// Struct containing filter options
         StateOptions _options;
@@ -95,7 +95,7 @@ namespace ov_msckf {
         std::shared_ptr<IMU> _imu;
 
         /// Map between imaging times and clone poses (q_GtoIi, p_IiinG)
-        std::map<float, std::shared_ptr<PoseJPL>> _clones_IMU;
+        std::map<double, std::shared_ptr<PoseJPL>> _clones_IMU;
 
         /// Our current set of SLAM features (3f positions)
         std::unordered_map<size_t, std::shared_ptr<Landmark>> _features_SLAM;

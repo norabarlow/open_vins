@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     ROS_INFO("ros bag path is: %s", path_to_bag.c_str());
 
     // Load groundtruth if we have it
-    std::map<float, Eigen::Matrix<float, 17, 1>> gt_states;
+    std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
     if (nh.hasParam("path_gt")) {
         std::string path_to_gt;
         nh.param<std::string>("path_gt", path_to_gt, "");
@@ -108,9 +108,9 @@ int main(int argc, char** argv)
 
     // Get our start location and how much of the bag we want to play
     // Make the bag duration < 0 to just process to the end of the bag
-    float bag_start, bag_durr;
-    nh.param<float>("bag_start", bag_start, 0);
-    nh.param<float>("bag_durr", bag_durr, -1);
+    double bag_start, bag_durr;
+    nh.param<double>("bag_start", bag_start, 0);
+    nh.param<double>("bag_durr", bag_durr, -1);
     ROS_INFO("bag start: %.1f",bag_start);
     ROS_INFO("bag duration: %.1f",bag_durr);
 

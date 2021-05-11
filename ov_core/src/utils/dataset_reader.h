@@ -63,7 +63,7 @@ namespace ov_core {
          * If we can't open the file, or it is in the wrong format we will error and exit the program.
          * See get_gt_state() for a way to get the groundtruth state at a given timestep
          */
-        static void load_gt_file(std::string path, std::map<float, Eigen::Matrix<float,17,1>>& gt_states) {
+        static void load_gt_file(std::string path, std::map<double, Eigen::Matrix<double,17,1>>& gt_states) {
 
             // Clear any old data
             gt_states.clear();
@@ -89,7 +89,7 @@ namespace ov_core {
                 int i = 0;
                 std::istringstream s(line);
                 std::string field;
-                Eigen::Matrix<float, 17, 1> temp = Eigen::Matrix<float, 17, 1>::Zero();
+                Eigen::Matrix<double, 17, 1> temp = Eigen::Matrix<double, 17, 1>::Zero();
                 // Loop through this line
                 while (getline(s, field, ',')) {
                     // Ensure we are in the range
@@ -116,7 +116,7 @@ namespace ov_core {
          * @param gt_states Should be loaded with groundtruth states, see load_gt_file() for details
          * @return true if we found the state, false otherwise
          */
-        static bool get_gt_state(float timestep, Eigen::Matrix<float,17,1> &imustate, std::map<float, Eigen::Matrix<float,17,1>>& gt_states) {
+        static bool get_gt_state(double timestep, Eigen::Matrix<float,17,1> &imustate, std::map<double, Eigen::Matrix<double,17,1>>& gt_states) {
 
             // Check that we even have groundtruth loaded
             if (gt_states.empty()) {
@@ -125,7 +125,7 @@ namespace ov_core {
             }
 
             // Loop through gt states and find the closest time stamp
-            float closest_time = INFINITY;
+            double closest_time = INFINITY;
             auto it0 = gt_states.begin();
             while(it0 != gt_states.end()) {
                 if(std::abs(it0->first-timestep) < std::abs(closest_time-timestep)) {
@@ -148,7 +148,7 @@ namespace ov_core {
             }
 
             // Get the GT state vector
-            Eigen::Matrix<float, 17, 1> state = gt_states[timestep];
+            Eigen::Matrix<double, 17, 1> state = gt_states[timestep];
 
             // Our "fixed" state vector from the ETH GT format [q,p,v,bg,ba]
             imustate(0, 0) = timestep; //time

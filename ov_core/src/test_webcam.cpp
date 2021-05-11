@@ -123,8 +123,8 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Loop forever until we break out
-    float current_time = 0.0;
-    std::deque<float> clonetimes;
+    double current_time = 0.0;
+    std::deque<double> clonetimes;
     while(true) {
 
         // Get the next frame (and fake advance time forward)
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
         // Marginalized features if we have reached 5 frame tracks
         if((int)clonetimes.size() >= clone_states) {
             // Remove features that have reached their max track length
-            float margtime = clonetimes.at(0);
+            double margtime = clonetimes.at(0);
             clonetimes.pop_front();
             std::vector<std::shared_ptr<Feature>> feats_marg = database->features_containing(margtime);
             // Delete theses feature pointers

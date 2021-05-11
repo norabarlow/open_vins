@@ -25,7 +25,7 @@ using namespace ov_core;
 
 
 
-bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM) {
+bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM) {
 
 
     // Total number of measurements
@@ -107,7 +107,7 @@ bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<
 }
 
 
-bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM) {
+bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM) {
 
 
     // Total number of measurements
@@ -195,7 +195,7 @@ bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_m
 
 
 
-bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM) {
+bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM) {
 
     //Get into inverse depth
     float rho = 1/feat->p_FinA(2);
@@ -374,7 +374,7 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
 }
 
 
-float FeatureInitializer::compute_error(std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM,
+float FeatureInitializer::compute_error(std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM,
                                          Feature* feat, float alpha, float beta, float rho) {
 
     // Total error

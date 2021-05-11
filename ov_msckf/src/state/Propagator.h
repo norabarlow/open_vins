@@ -134,7 +134,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param timestamp Time to propagate to and clone at
          */
-        void propagate_and_clone(std::shared_ptr<State> state, float timestamp);
+        void propagate_and_clone(std::shared_ptr<State> state, double timestamp);
 
 
         /**
@@ -148,7 +148,7 @@ namespace ov_msckf {
          * @param timestamp Time to propagate to
          * @param state_plus The propagated state (q_GtoI, p_IinG, v_IinG, w_IinI)
          */
-        void fast_state_propagate(std::shared_ptr<State> state, float timestamp, Eigen::Matrix<float,13,1> &state_plus);
+        void fast_state_propagate(std::shared_ptr<State> state, double timestamp, Eigen::Matrix<float,13,1> &state_plus);
 
 
         /**
@@ -163,7 +163,7 @@ namespace ov_msckf {
          * @param time1 End timestamp
          * @return Vector of measurements (if we could compute them)
          */
-        static std::vector<ov_core::ImuData> select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, float time0, float time1);
+        static std::vector<ov_core::ImuData> select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, double time0, double time1);
 
         /**
          * @brief Nice helper function that will linearly interpolate between two imu messages.
@@ -175,9 +175,9 @@ namespace ov_msckf {
          * @param imu_2 imu at end of interpolation interval
          * @param timestamp Timestamp being interpolated to
          */
-        static ov_core::ImuData interpolate_data(const ov_core::ImuData &imu_1, const ov_core::ImuData &imu_2, float timestamp) {
+        static ov_core::ImuData interpolate_data(const ov_core::ImuData &imu_1, const ov_core::ImuData &imu_2, double timestamp) {
             // time-distance lambda
-            float lambda = (timestamp - imu_1.timestamp) / (imu_2.timestamp - imu_1.timestamp);
+            double lambda = (timestamp - imu_1.timestamp) / (imu_2.timestamp - imu_1.timestamp);
             //cout << "lambda - " << lambda << endl;
             // interpolate between the two times
             ov_core::ImuData data;
@@ -192,7 +192,7 @@ namespace ov_msckf {
 
 
         /// Estimate for time offset at last propagation time
-        float last_prop_time_offset = 0.0;
+        double last_prop_time_offset = 0.0;
         bool have_last_prop_time_offset = false;
 
         /**
@@ -239,7 +239,7 @@ namespace ov_msckf {
          * @param new_v The resulting new velocity after integration
          * @param new_p The resulting new position after integration
          */
-        void predict_mean_discrete(std::shared_ptr<State> state, float dt,
+        void predict_mean_discrete(std::shared_ptr<State> state, double dt,
                                    const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                                    const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                                    Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p);
@@ -269,7 +269,7 @@ namespace ov_msckf {
          * @param new_v The resulting new velocity after integration
          * @param new_p The resulting new position after integration
          */
-        void predict_mean_rk4(std::shared_ptr<State> state, float dt,
+        void predict_mean_rk4(std::shared_ptr<State> state, double dt,
                               const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                               const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                               Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p);

@@ -24,7 +24,7 @@ using namespace ov_msckf;
 
 
 
-bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, float timestamp) {
+bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timestamp) {
 
     // Return if we don't have any imu data yet
     if(imu_data.empty())
@@ -44,12 +44,12 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, float timesta
     //assert(timestamp > state->_timestamp);
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    float t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    //float time0 = state->_timestamp+t_off_new;
-    float time0 = state->_timestamp+last_prop_time_offset;
-    float time1 = timestamp+t_off_new;
+    //double time0 = state->_timestamp+t_off_new;
+    double time0 = state->_timestamp+last_prop_time_offset;
+    double time1 = timestamp+t_off_new;
 
     // Select bounding inertial measurements
     std::vector<ov_core::ImuData> imu_recent = Propagator::select_imu_readings(imu_data, time0, time1);
@@ -88,11 +88,11 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, float timesta
     // w_true = w_m - bw - nw
     // a_true = a_m - ba - R*g - na
     // v_true = v_k - g*dt + R^T*(a_m - ba - na)*dt
-    float dt_summed = 0;
+    double dt_summed = 0;
     for(size_t i=0; i<imu_recent.size()-1; i++) {
 
         // Precomputed values
-        float dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
+        double dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
         Eigen::Vector3f a_hat = imu_recent.at(i).am - state->_imu->bias_a();
 
         // Measurement residual (true value is zero)

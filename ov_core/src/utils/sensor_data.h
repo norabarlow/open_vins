@@ -35,7 +35,7 @@ namespace ov_core {
     struct ImuData {
 
         /// Timestamp of the reading
-        float timestamp;
+        double timestamp;
 
         /// Gyroscope reading, angular velocity (rad/s)
         Eigen::Matrix<float, 3, 1> wm;
@@ -59,7 +59,7 @@ namespace ov_core {
     struct CameraData {
 
         /// Timestamp of the reading
-        float timestamp;
+        double timestamp;
 
         /// Camera ids for each of the images collected
         std::vector<int> sensor_ids;

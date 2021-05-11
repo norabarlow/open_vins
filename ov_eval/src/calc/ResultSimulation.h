@@ -74,28 +74,28 @@ namespace ov_eval {
          * @param doplotting True if you want to display the plots
          * @param max_time Max number of second we want to plot
          */
-        void plot_state(bool doplotting, float max_time=INFINITY);
+        void plot_state(bool doplotting, double max_time=INFINITY);
 
         /**
          * @brief Will plot the state imu camera offset and its sigma bound
          * @param doplotting True if you want to display the plots
          * @param max_time Max number of second we want to plot
          */
-        void plot_timeoff(bool doplotting, float max_time=INFINITY);
+        void plot_timeoff(bool doplotting, double max_time=INFINITY);
 
         /**
          * @brief Will plot the camera calibration intrinsics
          * @param doplotting True if you want to display the plots
          * @param max_time Max number of second we want to plot
          */
-        void plot_cam_instrinsics(bool doplotting, float max_time=INFINITY);
+        void plot_cam_instrinsics(bool doplotting, double max_time=INFINITY);
 
         /**
          * @brief Will plot the camera calibration extrinsic transform
          * @param doplotting True if you want to display the plots
          * @param max_time Max number of second we want to plot
          */
-        void plot_cam_extrinsics(bool doplotting, float max_time=INFINITY);
+        void plot_cam_extrinsics(bool doplotting, double max_time=INFINITY);
 
 
     protected:
@@ -118,18 +118,18 @@ namespace ov_eval {
     void plot_3errors(ov_eval::Statistics sx, ov_eval::Statistics sy, ov_eval::Statistics sz, std::string color_err, std::string color_std) {
 
         // Zero our time arrays
-        float starttime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(0);
-        float endtime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(sx.timestamps.size()-1);
+        double starttime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(0);
+        double endtime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(sx.timestamps.size()-1);
         for(size_t i=0; i<sx.timestamps.size(); i++) {
             sx.timestamps.at(i) -= starttime1;
         }
-        float starttime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(0);
-        float endtime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(sy.timestamps.size()-1);
+        double starttime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(0);
+        double endtime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(sy.timestamps.size()-1);
         for(size_t i=0; i<sy.timestamps.size(); i++) {
             sy.timestamps.at(i) -= starttime2;
         }
-        float starttime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(0);
-        float endtime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(sz.timestamps.size()-1);
+        double starttime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(0);
+        double endtime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(sz.timestamps.size()-1);
         for(size_t i=0; i<sz.timestamps.size(); i++) {
             sz.timestamps.at(i) -= starttime3;
         }
@@ -145,39 +145,48 @@ namespace ov_eval {
 
         // Plot our error value
         matplotlibcpp::subplot(3,1,1);
-        matplotlibcpp::plot(sx.timestamps, sx.values, params_value);
+        std::vector<double> dxvalues(sx.values.begin(), sx.values.end());
+        matplotlibcpp::plot(sx.timestamps, dxvalues, params_value);
         if(!sx.values_bound.empty()) {
-            matplotlibcpp::plot(sx.timestamps, sx.values_bound, params_bound);
+            std::vector<double> dxvaluesbound(sx.values_bound.begin(), sx.values_bound.end());
+            matplotlibcpp::plot(sx.timestamps, dxvaluesbound, params_bound);
             for(size_t i=0; i<sx.timestamps.size(); i++) {
                 sx.values_bound.at(i) *= -1;
             }
-            matplotlibcpp::plot(sx.timestamps, sx.values_bound, params_bound);
+            std::vector<double> dxvaluesbound2(sx.values_bound.begin(), sx.values_bound.end());
+            matplotlibcpp::plot(sx.timestamps, dxvaluesbound2, params_bound);
         }
-        matplotlibcpp::xlim(0.0f,endtime1-starttime1);
+        matplotlibcpp::xlim(0.0,endtime1-starttime1);
 
         // Plot our error value
         matplotlibcpp::subplot(3,1,2);
-        matplotlibcpp::plot(sy.timestamps, sy.values, params_value);
+        std::vector<double> dyvalues(sy.values.begin(), sy.values.end());
+        matplotlibcpp::plot(sy.timestamps, dyvalues, params_value);
         if(!sy.values_bound.empty()) {
-            matplotlibcpp::plot(sy.timestamps, sy.values_bound, params_bound);
+            std::vector<double> dyvaluesbound(sy.values_bound.begin(), sy.values_bound.end());
+            matplotlibcpp::plot(sy.timestamps, dyvaluesbound, params_bound);
             for(size_t i=0; i<sy.timestamps.size(); i++) {
                 sy.values_bound.at(i) *= -1;
             }
-            matplotlibcpp::plot(sy.timestamps, sy.values_bound, params_bound);
+            std::vector<double> dyvaluesbound2(sy.values_bound.begin(), sy.values_bound.end());
+            matplotlibcpp::plot(sy.timestamps, dyvaluesbound2, params_bound);
         }
-        matplotlibcpp::xlim(0.0f,endtime2-starttime2);
+        matplotlibcpp::xlim(0.0,endtime2-starttime2);
 
         // Plot our error value
         matplotlibcpp::subplot(3,1,3);
-        matplotlibcpp::plot(sz.timestamps, sz.values, params_value);
+        std::vector<double> dzvalues(sz.values.begin(), sz.values.end());
+        matplotlibcpp::plot(sz.timestamps, dzvalues, params_value);
         if(!sz.values_bound.empty()) {
-            matplotlibcpp::plot(sz.timestamps, sz.values_bound, params_bound);
+            std::vector<double> dzvaluesbound(sz.values_bound.begin(), sz.values_bound.end());
+            matplotlibcpp::plot(sz.timestamps, dzvaluesbound, params_bound);
             for(size_t i=0; i<sz.timestamps.size(); i++) {
                 sz.values_bound.at(i) *= -1;
             }
-            matplotlibcpp::plot(sz.timestamps, sz.values_bound, params_bound);
+            std::vector<double> dzvaluesbound2(sz.values_bound.begin(), sz.values_bound.end());
+            matplotlibcpp::plot(sz.timestamps, dzvaluesbound2, params_bound);
         }
-        matplotlibcpp::xlim(0.0f,endtime3-starttime3);
+        matplotlibcpp::xlim(0.0,endtime3-starttime3);
 
     }
 
@@ -193,23 +202,23 @@ namespace ov_eval {
         void plot_4errors(ov_eval::Statistics sx, ov_eval::Statistics sy, ov_eval::Statistics sz, ov_eval::Statistics sk, std::string color_err, std::string color_std) {
 
             // Zero our time arrays
-            float starttime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(0);
-            float endtime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(sx.timestamps.size()-1);
+            double starttime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(0);
+            double endtime1 = (sx.timestamps.empty())? 0 : sx.timestamps.at(sx.timestamps.size()-1);
             for(size_t i=0; i<sx.timestamps.size(); i++) {
                 sx.timestamps.at(i) -= starttime1;
             }
-            float starttime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(0);
-            float endtime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(sy.timestamps.size()-1);
+            double starttime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(0);
+            double endtime2 = (sy.timestamps.empty())? 0 : sy.timestamps.at(sy.timestamps.size()-1);
             for(size_t i=0; i<sy.timestamps.size(); i++) {
                 sy.timestamps.at(i) -= starttime2;
             }
-            float starttime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(0);
-            float endtime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(sz.timestamps.size()-1);
+            double starttime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(0);
+            double endtime3 = (sz.timestamps.empty())? 0 : sz.timestamps.at(sz.timestamps.size()-1);
             for(size_t i=0; i<sz.timestamps.size(); i++) {
                 sz.timestamps.at(i) -= starttime3;
             }
-            float starttime4 = (sk.timestamps.empty())? 0 : sk.timestamps.at(0);
-            float endtime4 = (sk.timestamps.empty())? 0 : sk.timestamps.at(sk.timestamps.size()-1);
+            double starttime4 = (sk.timestamps.empty())? 0 : sk.timestamps.at(0);
+            double endtime4 = (sk.timestamps.empty())? 0 : sk.timestamps.at(sk.timestamps.size()-1);
             for(size_t i=0; i<sk.timestamps.size(); i++) {
                 sk.timestamps.at(i) -= starttime4;
             }
@@ -225,51 +234,63 @@ namespace ov_eval {
 
             // Plot our error value
             matplotlibcpp::subplot(4,1,1);
-            matplotlibcpp::plot(sx.timestamps, sx.values, params_value);
+            std::vector<double> dxvalues(sx.values.begin(), sx.values.end());
+            matplotlibcpp::plot(sx.timestamps, dxvalues, params_value);
             if(!sx.values_bound.empty()) {
-                matplotlibcpp::plot(sx.timestamps, sx.values_bound, params_bound);
+                std::vector<double> dxvaluesbound(sx.values_bound.begin(), sx.values_bound.end());
+                matplotlibcpp::plot(sx.timestamps, dxvaluesbound, params_bound);
                 for(size_t i=0; i<sx.timestamps.size(); i++) {
                     sx.values_bound.at(i) *= -1;
                 }
-                matplotlibcpp::plot(sx.timestamps, sx.values_bound, params_bound);
+                std::vector<double> dxvaluesbound2(sx.values_bound.begin(), sx.values_bound.end());
+                matplotlibcpp::plot(sx.timestamps, dxvaluesbound2, params_bound);
             }
-            matplotlibcpp::xlim(0.0f,endtime1-starttime1);
+            matplotlibcpp::xlim(0.0,endtime1-starttime1);
 
             // Plot our error value
             matplotlibcpp::subplot(4,1,2);
-            matplotlibcpp::plot(sy.timestamps, sy.values, params_value);
+            std::vector<double> dyvalues(sy.values.begin(), sy.values.end());
+            matplotlibcpp::plot(sy.timestamps, dyvalues, params_value);
             if(!sy.values_bound.empty()) {
-                matplotlibcpp::plot(sy.timestamps, sy.values_bound, params_bound);
+                std::vector<double> dyvaluesbound(sy.values_bound.begin(), sy.values_bound.end());
+                matplotlibcpp::plot(sy.timestamps, dyvaluesbound, params_bound);
                 for(size_t i=0; i<sy.timestamps.size(); i++) {
                     sy.values_bound.at(i) *= -1;
                 }
-                matplotlibcpp::plot(sy.timestamps, sy.values_bound, params_bound);
+                std::vector<double> dyvaluesbound2(sy.values_bound.begin(), sy.values_bound.end());
+                matplotlibcpp::plot(sy.timestamps, dyvaluesbound2, params_bound);
             }
-            matplotlibcpp::xlim(0.0f,endtime2-starttime2);
+            matplotlibcpp::xlim(0.0,endtime2-starttime2);
 
             // Plot our error value
             matplotlibcpp::subplot(4,1,3);
-            matplotlibcpp::plot(sz.timestamps, sz.values, params_value);
+            std::vector<double> dzvalues(sz.values.begin(), sz.values.end());
+            matplotlibcpp::plot(sz.timestamps, dzvalues, params_value);
             if(!sz.values_bound.empty()) {
-                matplotlibcpp::plot(sz.timestamps, sz.values_bound, params_bound);
+                std::vector<double> dzvaluesbound(sz.values_bound.begin(), sz.values_bound.end());
+                matplotlibcpp::plot(sz.timestamps, dzvaluesbound, params_bound);
                 for(size_t i=0; i<sz.timestamps.size(); i++) {
                     sz.values_bound.at(i) *= -1;
                 }
-                matplotlibcpp::plot(sz.timestamps, sz.values_bound, params_bound);
+                std::vector<double> dzvaluesbound2(sz.values_bound.begin(), sz.values_bound.end());
+                matplotlibcpp::plot(sz.timestamps, dzvaluesbound2, params_bound);
             }
-            matplotlibcpp::xlim(0.0f,endtime3-starttime3);
+            matplotlibcpp::xlim(0.0,endtime3-starttime3);
 
             // Plot our error value
             matplotlibcpp::subplot(4,1,4);
-            matplotlibcpp::plot(sk.timestamps, sk.values, params_value);
+            std::vector<double> dkvalues(sk.values.begin(), sk.values.end());
+            matplotlibcpp::plot(sk.timestamps, dkvalues, params_value);
             if(!sk.values_bound.empty()) {
-                matplotlibcpp::plot(sk.timestamps, sk.values_bound, params_bound);
+                std::vector<double> dkvaluesbound(sk.values_bound.begin(), sk.values_bound.end());
+                matplotlibcpp::plot(sk.timestamps, dkvaluesbound, params_bound);
                 for(size_t i=0; i<sk.timestamps.size(); i++) {
                     sk.values_bound.at(i) *= -1;
                 }
-                matplotlibcpp::plot(sk.timestamps, sk.values_bound, params_bound);
+                std::vector<double> dkvaluesbound2(sk.values_bound.begin(), sk.values_bound.end());
+                matplotlibcpp::plot(sk.timestamps, dkvaluesbound2, params_bound);
             }
-            matplotlibcpp::xlim(0.0f,endtime4-starttime4);
+            matplotlibcpp::xlim(0.0,endtime4-starttime4);
 
         }
 

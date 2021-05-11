@@ -48,14 +48,14 @@ ResultSimulation::ResultSimulation(std::string path_est, std::string path_std, s
 
 
 
-void ResultSimulation::plot_state(bool doplotting, float max_time) {
+void ResultSimulation::plot_state(bool doplotting, double max_time) {
 
 
     // Errors for each xyz direction
     Statistics error_ori[3], error_pos[3], error_vel[3], error_bg[3], error_ba[3];
 
     // Calculate the position and orientation error at every timestep
-    float start_time = est_state.at(0)(0);
+    double start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -214,11 +214,11 @@ void ResultSimulation::plot_state(bool doplotting, float max_time) {
 
 
 
-void ResultSimulation::plot_timeoff(bool doplotting, float max_time) {
+void ResultSimulation::plot_timeoff(bool doplotting, double max_time) {
 
     // Calculate the time offset error at every timestep
     Statistics error_time;
-    float start_time = est_state.at(0)(0);
+    double start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -257,8 +257,8 @@ void ResultSimulation::plot_timeoff(bool doplotting, float max_time) {
     matplotlibcpp::figure_size(800, 250);
 
     // Zero our time array
-    float starttime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(0);
-    float endtime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(error_time.timestamps.size()-1);
+    double starttime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(0);
+    double endtime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(error_time.timestamps.size()-1);
     for(size_t i=0; i<error_time.timestamps.size(); i++) {
         error_time.timestamps.at(i) -= starttime;
     }
@@ -273,15 +273,18 @@ void ResultSimulation::plot_timeoff(bool doplotting, float max_time) {
     params_bound.insert({"color","red"});
 
     // Plot our error value
-    matplotlibcpp::plot(error_time.timestamps, error_time.values, params_value);
+    std::vector<double> derror(error_time.values.begin(), error_time.values.end());
+    matplotlibcpp::plot(error_time.timestamps, derror, params_value);
     if(!error_time.values_bound.empty()) {
-        matplotlibcpp::plot(error_time.timestamps, error_time.values_bound, params_bound);
+        std::vector<double> derrorbound(error_time.values_bound.begin(), error_time.values_bound.end());
+        matplotlibcpp::plot(error_time.timestamps, derrorbound, params_bound);
         for(size_t i=0; i<error_time.timestamps.size(); i++) {
             error_time.values_bound.at(i) *= -1;
         }
-        matplotlibcpp::plot(error_time.timestamps, error_time.values_bound, "r--");
+        std::vector<double> derrorbound2(error_time.values_bound.begin(), error_time.values_bound.end());
+        matplotlibcpp::plot(error_time.timestamps, derrorbound2, "r--");
     }
-    matplotlibcpp::xlim(0.0f,endtime-starttime);
+    matplotlibcpp::xlim(0.0,endtime-starttime);
 
     // Update the title and axis labels
     matplotlibcpp::title("Camera IMU Time Offset Error");
@@ -297,7 +300,7 @@ void ResultSimulation::plot_timeoff(bool doplotting, float max_time) {
 
 
 
-void ResultSimulation::plot_cam_instrinsics(bool doplotting, float max_time) {
+void ResultSimulation::plot_cam_instrinsics(bool doplotting, double max_time) {
 
 
     // Check that we have cameras
@@ -320,7 +323,7 @@ void ResultSimulation::plot_cam_instrinsics(bool doplotting, float max_time) {
 
 
     // Loop through and calculate error
-    float start_time = est_state.at(0)(0);
+    double start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -419,7 +422,7 @@ void ResultSimulation::plot_cam_instrinsics(bool doplotting, float max_time) {
 
 
 
-void ResultSimulation::plot_cam_extrinsics(bool doplotting, float max_time) {
+void ResultSimulation::plot_cam_extrinsics(bool doplotting, double max_time) {
 
 
     // Check that we have cameras
@@ -441,7 +444,7 @@ void ResultSimulation::plot_cam_extrinsics(bool doplotting, float max_time) {
     }
 
     // Loop through and calculate error
-    float start_time = est_state.at(0)(0);
+    double start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time

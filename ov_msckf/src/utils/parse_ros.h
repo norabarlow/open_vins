@@ -57,7 +57,7 @@ namespace ov_msckf {
         nh.param<int>("max_msckf_in_update", params.state_options.max_msckf_in_update, params.state_options.max_msckf_in_update);
         nh.param<int>("max_aruco", params.state_options.max_aruco_features, params.state_options.max_aruco_features);
         nh.param<int>("max_cameras", params.state_options.num_cameras, params.state_options.num_cameras);
-        nh.param<float>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
+        nh.param<double>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
 
         // Enforce that we have enough cameras to run
         if(params.state_options.num_cameras < 1) {
@@ -134,7 +134,7 @@ namespace ov_msckf {
         }
 
         // Filter initialization
-        nh.param<float>("init_window_time", params.init_window_time, params.init_window_time);
+        nh.param<double>("init_window_time", params.init_window_time, params.init_window_time);
         nh.param<float>("init_imu_thresh", params.init_imu_thresh, params.init_imu_thresh);
 
         // Zero velocity update
@@ -168,7 +168,7 @@ namespace ov_msckf {
         // STATE ======================================================================
 
         // Timeoffset from camera to IMU
-        nh.param<float>("calib_camimu_dt", params.calib_camimu_dt, params.calib_camimu_dt);
+        nh.param<double>("calib_camimu_dt", params.calib_camimu_dt, params.calib_camimu_dt);
 
         // Global gravity
         std::vector<float> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};

@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     // Try to load our paths
     for(size_t i=0; i<path_groundtruths.size(); i++) {
         // Load it!
-        std::vector<float> times;
+        std::vector<double> times;
         std::vector<Eigen::Matrix<float,7,1>> poses;
         std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
         ov_eval::Loader::load_data(path_groundtruths.at(i).string(), times, poses, cov_ori, cov_pos);

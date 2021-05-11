@@ -80,13 +80,13 @@ namespace ov_core {
          * We will first analytically integrate our meansurements and Jacobians.
          * Then we perform numerical integration for our measurement covariance.
          */
-        void feed_IMU(float t_0, float t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
+        void feed_IMU(double t_0, double t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
                       Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
                       Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) {
 
 
             // Get time difference
-            float delta_t = t_1 - t_0;
+            double delta_t = t_1 - t_0;
             DT += delta_t;
 
             //If no time has passed do nothing
@@ -122,7 +122,7 @@ namespace ov_core {
             bool small_w = (mag_w < 0.008726646);
 
             // Get some of the variables used in the preintegration equations
-            float dt_2 = pow(delta_t, 2);
+            double dt_2 = pow(delta_t, 2);
             float cos_wt = cos(w_dt);
             float sin_wt = sin(w_dt);
 

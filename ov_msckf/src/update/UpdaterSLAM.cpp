@@ -38,7 +38,7 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
     rT0 =  boost::posix_time::microsec_clock::local_time();
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<float> clonetimes;
+    std::vector<double> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -68,11 +68,11 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
     rT1 =  boost::posix_time::microsec_clock::local_time();
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<float, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<float, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose
@@ -236,7 +236,7 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
     rT0 =  boost::posix_time::microsec_clock::local_time();
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<float> clonetimes;
+    std::vector<double> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -464,7 +464,7 @@ void UpdaterSLAM::change_anchors(std::shared_ptr<State> state) {
     // Get the marginalization timestep, and change the anchor for any feature seen from it
     // NOTE: for now we have anchor the feature in the same camera as it is before
     // NOTE: this also does not change the representation of the feature at all right now
-    float marg_timestep = state->margtimestep();
+    double marg_timestep = state->margtimestep();
     for (auto &f : state->_features_SLAM) {
         // Skip any features that are in the global frame
         if(f.second->_feat_representation == LandmarkRepresentation::Representation::GLOBAL_3D
@@ -482,7 +482,7 @@ void UpdaterSLAM::change_anchors(std::shared_ptr<State> state) {
 
 
 
-void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, float new_anchor_timestamp, size_t new_cam_id) {
+void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, double new_anchor_timestamp, size_t new_cam_id) {
 
     // Assert that this is an anchored representation
     assert(LandmarkRepresentation::is_relative_representation(landmark->_feat_representation));

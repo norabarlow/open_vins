@@ -102,12 +102,12 @@ namespace ov_core {
          * We can numerically or analytically integrate our bias jacobians.
          * Then we perform numerical integration for our measurement covariance.
          */
-        void feed_IMU(float t_0, float t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
+        void feed_IMU(double t_0, double  t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
                       Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
                       Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) {
 
             //Get time difference
-            float delta_t = t_1 - t_0;
+            double delta_t = t_1 - t_0;
             DT += delta_t;
 
             // If no time has passed do nothing
@@ -142,7 +142,7 @@ namespace ov_core {
             bool small_w = (mag_w < 0.008726646);
 
             //Get some of the variables used in the preintegration equations
-            float dt_2 = pow(delta_t, 2);
+            double dt_2 = pow(delta_t, 2);
             float cos_wt = cos(w_dt);
             float sin_wt = sin(w_dt);
 
@@ -333,7 +333,7 @@ namespace ov_core {
 
             // Going to need orientation at intermediate time i.e. at .5*dt;
             Eigen::Matrix<float, 3, 3> R_G_to_k = quat_2_Rot(q_k_lin);
-            float dt_mid = delta_t / 2.0;
+            double dt_mid = delta_t / 2.0;
             float w_dt_mid = mag_w * dt_mid;
             Eigen::Matrix<float, 3, 3> R_mid;
 

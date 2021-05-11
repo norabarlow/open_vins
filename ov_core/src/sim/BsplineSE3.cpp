@@ -31,7 +31,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
 
 
     // Find the average frequency to use as our uniform timesteps
-    float sumdt = 0;
+    double sumdt = 0;
     for(size_t i=0; i<traj_points.size()-1; i++) {
         sumdt += traj_points.at(i+1)(0)-traj_points.at(i)(0);
     }
@@ -50,8 +50,8 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
     }
 
     // Get the oldest timestamp
-    float timestamp_min = INFINITY;
-    float timestamp_max = -INFINITY;
+    double timestamp_min = INFINITY;
+    double timestamp_max = -INFINITY;
     for(const auto &pose : trajectory_points) {
         if(pose.first <= timestamp_min) {
             timestamp_min = pose.first;
@@ -65,11 +65,11 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
 
 
     // then create spline control points
-    float timestamp_curr = timestamp_min;
+    double timestamp_curr = timestamp_min;
     while(true) {
 
         // Get bounding posed for the current time
-        float t0, t1;
+        double t0, t1;
         Eigen::Matrix4f pose0, pose1;
         bool success = find_bounding_poses(timestamp_curr, trajectory_points, t0, pose0, t1, pose1);
         //printf("[SIM]: time curr = %.6f | lambda = %.3f | dt = %.3f | dtmeas = %.3f\n",timestamp_curr,(timestamp_curr-t0)/(t1-t0),dt,(t1-t0));
@@ -80,7 +80,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
             break;
 
         // Linear interpolation and append to our control points
-        float lambda = (timestamp_curr-t0)/(t1-t0);
+        double lambda = (timestamp_curr-t0)/(t1-t0);
         Eigen::Matrix4f pose_interp = exp_se3(lambda*log_se3(pose1*Inv_se3(pose0)))*pose0;
         control_points.insert({timestamp_curr, pose_interp});
         timestamp_curr += dt;
@@ -98,10 +98,10 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
 
 
 
-bool BsplineSE3::get_pose(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG) {
+bool BsplineSE3::get_pose(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    float t0, t1, t2, t3;
+    double t0, t1, t2, t3;
     Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
     //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
@@ -114,8 +114,8 @@ bool BsplineSE3::get_pose(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vecto
     }
 
     // Our De Boor-Cox matrix scalars
-    float DT = (t2-t1);
-    float u = (timestamp-t1)/DT;
+    double DT = (t2-t1);
+    double u = (timestamp-t1)/DT;
     float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
     float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
     float b2 = 1.0/6.0*(u*u*u);
@@ -136,10 +136,10 @@ bool BsplineSE3::get_pose(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vecto
 
 
 
-bool BsplineSE3::get_velocity(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG) {
+bool BsplineSE3::get_velocity(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    float t0, t1, t2, t3;
+    double t0, t1, t2, t3;
     Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
     //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
@@ -152,8 +152,8 @@ bool BsplineSE3::get_velocity(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::V
     }
 
     // Our De Boor-Cox matrix scalars
-    float DT = (t2-t1);
-    float u = (timestamp-t1)/DT;
+    double DT = (t2-t1);
+    double u = (timestamp-t1)/DT;
     float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
     float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
     float b2 = 1.0/6.0*(u*u*u);
@@ -191,12 +191,12 @@ bool BsplineSE3::get_velocity(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::V
 
 
 
-bool BsplineSE3::get_acceleration(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
+bool BsplineSE3::get_acceleration(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
                                   Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG,
                                   Eigen::Vector3f &alpha_IinI, Eigen::Vector3f &a_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    float t0, t1, t2, t3;
+    double t0, t1, t2, t3;
     Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
 
@@ -208,17 +208,17 @@ bool BsplineSE3::get_acceleration(float timestamp, Eigen::Matrix3f &R_GtoI, Eige
     }
 
     // Our De Boor-Cox matrix scalars
-    float DT = (t2-t1);
-    float u = (timestamp-t1)/DT;
-    float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
-    float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
-    float b2 = 1.0/6.0*(u*u*u);
-    float b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
-    float b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
-    float b2fot = 1.0/(6.0*DT)*(3*u*u);
-    float b0dotdot = 1.0/(6.0*DT*DT)*(-6+6*u);
-    float b1dotdot = 1.0/(6.0*DT*DT)*(6-12*u);
-    float b2fotdot = 1.0/(6.0*DT*DT)*(6*u);
+    double DT = (t2-t1);
+    double u = (timestamp-t1)/DT;
+    double b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
+    double b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
+    double b2 = 1.0/6.0*(u*u*u);
+    double b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
+    double b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
+    double b2fot = 1.0/(6.0*DT)*(3*u*u);
+    double b0dotdot = 1.0/(6.0*DT*DT)*(-6+6*u);
+    double b1dotdot = 1.0/(6.0*DT*DT)*(6-12*u);
+    double b2fotdot = 1.0/(6.0*DT*DT)*(6*u);
 
     // Cache some values we use alot
     Eigen::Matrix<float,6,1> omega_10 = log_se3(Inv_se3(pose0)*pose1);
@@ -263,8 +263,8 @@ bool BsplineSE3::get_acceleration(float timestamp, Eigen::Matrix3f &R_GtoI, Eige
 }
 
 
-bool BsplineSE3::find_bounding_poses(const float timestamp, const AlignedEigenMat4f &poses,
-                                     float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1) {
+bool BsplineSE3::find_bounding_poses(const double timestamp, const AlignedEigenMat4f &poses,
+                                     double &t0, Eigen::Matrix4f &pose0, double &t1, Eigen::Matrix4f &pose1) {
 
     // Set the default values
     t0 = -1;
@@ -318,9 +318,9 @@ bool BsplineSE3::find_bounding_poses(const float timestamp, const AlignedEigenMa
 
 
 
-bool BsplineSE3::find_bounding_control_points(const float timestamp, const AlignedEigenMat4f &poses,
-                                              float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1,
-                                              float &t2, Eigen::Matrix4f &pose2, float &t3, Eigen::Matrix4f &pose3) {
+bool BsplineSE3::find_bounding_control_points(const double timestamp, const AlignedEigenMat4f &poses,
+                                              double &t0, Eigen::Matrix4f &pose0, double &t1, Eigen::Matrix4f &pose1,
+                                              double &t2, Eigen::Matrix4f &pose2, double &t3, Eigen::Matrix4f &pose3) {
 
     // Set the default values
     t0 = -1;

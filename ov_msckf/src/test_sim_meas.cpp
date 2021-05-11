@@ -69,7 +69,7 @@ int main(int argc, char** argv)
     while(sim.ok()) {
 
         // IMU: get the next simulated IMU measurement if we have it
-        float time_imu;
+        double time_imu;
         Eigen::Vector3f wm, am;
         bool hasimu = sim.get_next_imu(time_imu, wm, am);
         if(hasimu) {
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        float time_cam;
+        double time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim.get_next_cam(time_cam, camids, feats);

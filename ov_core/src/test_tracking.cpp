@@ -54,11 +54,11 @@ int num_lostfeats = 0;
 int num_margfeats = 0;
 int featslengths = 0;
 int clone_states = 10;
-std::deque<float> clonetimes;
+std::deque<double> clonetimes;
 ros::Time time_start;
 
 // Our master function for tracking
-void handle_stereo(float time0, float time1, cv::Mat img0, cv::Mat img1, bool use_stereo);
+void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool use_stereo);
 
 
 // Main function
@@ -81,9 +81,9 @@ int main(int argc, char** argv)
 
     // Get our start location and how much of the bag we want to play
     // Make the bag duration < 0 to just process to the end of the bag
-    float bag_start, bag_durr;
-    nh.param<float>("bag_start", bag_start, 0);
-    nh.param<float>("bag_durr", bag_durr, -1);
+    double bag_start, bag_durr;
+    nh.param<double>("bag_start", bag_start, 0);
+    nh.param<double>("bag_durr", bag_durr, -1);
 
 
     //===================================================================================
@@ -172,8 +172,8 @@ int main(int argc, char** argv)
     bool has_left = false;
     bool has_right = false;
     cv::Mat img0, img1;
-    float time0 = time_init.toSec();
-    float time1 = time_init.toSec();
+    double time0 = time_init.toSec();
+    double time1 = time_init.toSec();
 
     // Step through the rosbag
     for (const rosbag::MessageInstance& m : view) {
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
 /**
  * This function will process the new stereo pair with the extractor!
  */
-void handle_stereo(float time0, float time1, cv::Mat img0, cv::Mat img1, bool use_stereo) {
+void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool use_stereo) {
 
     // Process this new image
     if(use_stereo) {
@@ -284,7 +284,7 @@ void handle_stereo(float time0, float time1, cv::Mat img0, cv::Mat img1, bool us
     // Marginalized features if we have reached 5 frame tracks
     if((int)clonetimes.size() >= clone_states) {
         // Remove features that have reached their max track length
-        float margtime = clonetimes.at(0);
+        double margtime = clonetimes.at(0);
         clonetimes.pop_front();
         std::vector<std::shared_ptr<Feature>> feats_marg = database->features_containing(margtime);
         num_margfeats += feats_marg.size();
@@ -303,7 +303,7 @@ void handle_stereo(float time0, float time1, cv::Mat img0, cv::Mat img1, bool us
     //if (time_curr.toSec()-time_start.toSec() > 2) {
     if (frames > 60) {
         // Calculate the FPS
-        float fps = (float) frames / (time_curr.toSec()-time_start.toSec());
+        double fps = (double) frames / (time_curr.toSec()-time_start.toSec());
         float lpf = (float) num_lostfeats / frames;
         float fpf = (float) featslengths / num_lostfeats;
         float mpf = (float) num_margfeats / frames;

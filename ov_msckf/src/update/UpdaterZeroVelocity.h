@@ -116,7 +116,7 @@ namespace ov_msckf {
          * @param timestamp Next camera timestamp we want to see if we should propagate to.
          * @return True if the system is currently at zero velocity
          */
-        bool try_update(std::shared_ptr<State> state, float timestamp);
+        bool try_update(std::shared_ptr<State> state, double timestamp);
 
 
 
@@ -145,7 +145,7 @@ namespace ov_msckf {
         std::vector<ov_core::ImuData> imu_data;
 
         /// Estimate for time offset at last propagation time
-        float last_prop_time_offset = 0.0;
+        double last_prop_time_offset = 0.0;
         bool have_last_prop_time_offset = false;
 
 

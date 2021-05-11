@@ -128,7 +128,7 @@ namespace ov_core {
          * @param p_IinG Position of the pose in the global
          * @return False if we can't find it
          */
-        bool get_pose(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG);
+        bool get_pose(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG);
 
 
         /**
@@ -140,7 +140,7 @@ namespace ov_core {
          * @param v_IinG Linear velocity in the global frame
          * @return False if we can't find it
          */
-        bool get_velocity(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG);
+        bool get_velocity(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG);
 
 
         /**
@@ -154,13 +154,13 @@ namespace ov_core {
          * @param a_IinG Linear acceleration in the global frame
          * @return False if we can't find it
          */
-        bool get_acceleration(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
+        bool get_acceleration(double timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
                                 Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG,
                                 Eigen::Vector3f &alpha_IinI, Eigen::Vector3f &a_IinG);
 
 
         /// Returns the simulation start time that we should start simulating from
-        float get_start_time() {
+        double get_start_time() {
             return timestamp_start;
         }
 
@@ -168,14 +168,14 @@ namespace ov_core {
     protected:
 
         /// Uniform sampling time for our control points
-        float dt;
+        double dt;
 
         /// Start time of the system
-        float timestamp_start;
+        double timestamp_start;
 
         /// Type defintion of our aligned eigen4f matrix: https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
-        typedef std::map<float, Eigen::Matrix4f, std::less<float>,
-                Eigen::aligned_allocator<std::pair<const float, Eigen::Matrix4f>>> AlignedEigenMat4f;
+        typedef std::map<double, Eigen::Matrix4f, std::less<double>,
+                Eigen::aligned_allocator<std::pair<const double, Eigen::Matrix4f>>> AlignedEigenMat4f;
 
         /// Our control SE3 control poses (R_ItoG, p_IinG)
         AlignedEigenMat4f control_points;
@@ -195,8 +195,8 @@ namespace ov_core {
          * @param pose1 SE(3) pose of the second pose
          * @return False if we are unable to find bounding poses
          */
-        static bool find_bounding_poses(const float timestamp, const AlignedEigenMat4f &poses,
-                                        float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1);
+        static bool find_bounding_poses(const double timestamp, const AlignedEigenMat4f &poses,
+                                        double &t0, Eigen::Matrix4f &pose0, double &t1, Eigen::Matrix4f &pose1);
 
 
         /**
@@ -214,9 +214,9 @@ namespace ov_core {
          * @param pose3 SE(3) pose of the fourth pose
          * @return False if we are unable to find bounding poses
          */
-        static bool find_bounding_control_points(const float timestamp, const AlignedEigenMat4f &poses,
-                                                 float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1,
-                                                 float &t2, Eigen::Matrix4f &pose2, float &t3, Eigen::Matrix4f &pose3);
+        static bool find_bounding_control_points(const double timestamp, const AlignedEigenMat4f &poses,
+                                                 double &t0, Eigen::Matrix4f &pose0, double &t1, Eigen::Matrix4f &pose1,
+                                                 double &t2, Eigen::Matrix4f &pose2, double &t3, Eigen::Matrix4f &pose3);
 
     };
 

@@ -65,7 +65,7 @@ namespace ov_msckf {
             std::unordered_map<size_t, std::vector<Eigen::VectorXf>> uvs_norm;
 
             /// Timestamps of each UV measurement (mapped by camera ID)
-            std::unordered_map<size_t, std::vector<float>> timestamps;
+            std::unordered_map<size_t, std::vector<double>> timestamps;
 
             /// What representation our feature is in
             LandmarkRepresentation::Representation feat_representation;
@@ -74,7 +74,7 @@ namespace ov_msckf {
             int anchor_cam_id = -1;
 
             /// Timestamp of anchor clone
-            float anchor_clone_timestamp = -1;
+            double anchor_clone_timestamp = -1;
 
             /// Triangulated position of this feature, in the anchor frame
             Eigen::Vector3f p_FinA;

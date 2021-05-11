@@ -28,7 +28,7 @@ using namespace ov_msckf;
 
 
 
-void Propagator::propagate_and_clone(std::shared_ptr<State> state, float timestamp) {
+void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timestamp) {
 
     // If the difference between the current update time and state is zero
     // We should crash, as this means we would have two clones at the same time!!!!
@@ -55,11 +55,11 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, float timesta
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    float t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    float time0 = state->_timestamp+last_prop_time_offset;
-    float time1 = timestamp+t_off_new;
+    double time0 = state->_timestamp+last_prop_time_offset;
+    double time1 = timestamp+t_off_new;
     std::vector<ov_core::ImuData> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // We are going to sum up all the state transition matrices, so we can do a single large multiplication at the end
@@ -69,7 +69,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, float timesta
     // We will then add the noise to the IMU portion of the state
     Eigen::Matrix<float,15,15> Phi_summed = Eigen::Matrix<float,15,15>::Identity();
     Eigen::Matrix<float,15,15> Qd_summed = Eigen::Matrix<float,15,15>::Zero();
-    float dt_summed = 0;
+    double dt_summed = 0;
 
     // Loop through all IMU messages, and use them to move the state forward in time
     // This uses the zero'th order quat, and then constant acceleration discrete
@@ -116,7 +116,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, float timesta
 
 
 
-void Propagator::fast_state_propagate(std::shared_ptr<State> state, float timestamp, Eigen::Matrix<float,13,1> &state_plus) {
+void Propagator::fast_state_propagate(std::shared_ptr<State> state, double timestamp, Eigen::Matrix<float,13,1> &state_plus) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
@@ -125,11 +125,11 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, float timest
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    float t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    float time0 = state->_timestamp+last_prop_time_offset;
-    float time1 = timestamp+t_off_new;
+    double time0 = state->_timestamp+last_prop_time_offset;
+    double time1 = timestamp+t_off_new;
     std::vector<ov_core::ImuData> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // Save the original IMU state
@@ -142,7 +142,7 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, float timest
         for(size_t i=0; i<prop_data.size()-1; i++) {
 
             // Time elapsed over interval
-            float dt = prop_data.at(i+1).timestamp-prop_data.at(i).timestamp;
+            double dt = prop_data.at(i+1).timestamp-prop_data.at(i).timestamp;
             //assert(data_plus.timestamp>data_minus.timestamp);
 
             // Corrected imu measurements
@@ -185,7 +185,7 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, float timest
 
 
 
-std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, float time0, float time1) {
+std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, double time0, double time1) {
 
     // Our vector imu readings
     std::vector<ov_core::ImuData> prop_data;
@@ -297,7 +297,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
     Qd.setZero();
 
     // Time elapsed over interval
-    float dt = data_plus.timestamp-data_minus.timestamp;
+    double dt = data_plus.timestamp-data_minus.timestamp;
     //assert(data_plus.timestamp>data_minus.timestamp);
 
     // Corrected imu measurements
@@ -402,7 +402,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
 }
 
 
-void Propagator::predict_mean_discrete(std::shared_ptr<State> state, float dt,
+void Propagator::predict_mean_discrete(std::shared_ptr<State> state, double dt,
                                         const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                                         const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                                         Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {
@@ -440,7 +440,7 @@ void Propagator::predict_mean_discrete(std::shared_ptr<State> state, float dt,
 
 
 
-void Propagator::predict_mean_rk4(std::shared_ptr<State> state, float dt,
+void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
                                   const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                                   const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                                   Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {

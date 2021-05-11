@@ -95,7 +95,7 @@ void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &da
 
 
 void AlignUtils::perform_association(float offset, float max_difference,
-                                     std::vector<float> &est_times, std::vector<float> &gt_times,
+                                     std::vector<double> &est_times, std::vector<double> &gt_times,
                                      std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses) {
     std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
     AlignUtils::perform_association(offset, max_difference, est_times, gt_times, est_poses, gt_poses, est_covori, est_covpos, gt_covori, gt_covpos);
@@ -103,13 +103,13 @@ void AlignUtils::perform_association(float offset, float max_difference,
 
 
 void AlignUtils::perform_association(float offset, float max_difference,
-                                    std::vector<float> &est_times, std::vector<float> &gt_times,
+                                    std::vector<double> &est_times, std::vector<double> &gt_times,
                                     std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
                                     std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
                                     std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos) {
 
     // Temp results which keeps only the matches
-    std::vector<float> est_times_temp, gt_times_temp;
+    std::vector<double> est_times_temp, gt_times_temp;
     std::vector<Eigen::Matrix<float,7,1>> est_poses_temp, gt_poses_temp;
     std::vector<Eigen::Matrix3f> est_covori_temp, est_covpos_temp, gt_covori_temp, gt_covpos_temp;
 

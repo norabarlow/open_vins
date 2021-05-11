@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 
         // our total summed values
         std::vector<float> total_times;
-        std::vector<Eigen::Vector3f> total_summed_values;
+        std::vector<Eigen::Vector3d> total_summed_values;
 
         // Loop through each sub-directory in this folder
         for(auto& entry : boost::filesystem::recursive_directory_iterator(path_algorithms.at(i))) {
@@ -97,9 +97,9 @@ int main(int argc, char **argv) {
                 continue;
 
             // Load the data from file
-            std::vector<float> times;
-            std::vector<Eigen::Vector3f> summed_values;
-            std::vector<Eigen::VectorXf> node_values;
+            std::vector<double> times;
+            std::vector<Eigen::Vector3d> summed_values;
+            std::vector<Eigen::VectorXd> node_values;
             ov_eval::Loader::load_timing_percent(entry.path().string(), times, summed_values, node_values);
 
             // Append to our summed values

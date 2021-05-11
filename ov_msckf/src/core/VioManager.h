@@ -90,7 +90,7 @@ namespace ov_msckf {
          * @param camids Camera ids that we have simulated measurements for
          * @param feats Raw uv simulated measurements
          */
-        void feed_measurement_simulation(float timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t, Eigen::VectorXf>>> &feats);
+        void feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t, Eigen::VectorXf>>> &feats);
 
         /**
          * @brief Given a state, this will initialize our IMU state.
@@ -131,7 +131,7 @@ namespace ov_msckf {
         }
 
         /// Timestamp that the system was initialized at
-        float initialized_time() {
+        double initialized_time() {
             return startup_time;
         }
 
@@ -231,13 +231,13 @@ namespace ov_msckf {
         }
 
         /// Return the image used when projecting the active tracks
-        void get_active_image(float &timestamp, cv::Mat &image) {
+        void get_active_image(double &timestamp, cv::Mat &image) {
             timestamp = active_tracks_time;
             image = active_image;
         }
 
         /// Returns active tracked features in the current frame
-        void get_active_tracks(float &timestamp,
+        void get_active_tracks(double &timestamp,
                                std::unordered_map<size_t, Eigen::Vector3f> &feat_posinG,
                                std::unordered_map<size_t, Eigen::Vector3f> &feat_tracks_uvd) {
             timestamp = active_tracks_time;
@@ -331,11 +331,11 @@ namespace ov_msckf {
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
 
         // Track how much distance we have traveled
-        float timelastupdate = -1;
+        double timelastupdate = -1;
         float distance = 0;
 
         // Startup time of the filter
-        float startup_time = -1;
+        double startup_time = -1;
 
         // If we did a zero velocity update
         bool did_zupt_update = false;
@@ -349,7 +349,7 @@ namespace ov_msckf {
         std::shared_ptr<FeatureInitializer> active_tracks_initializer;
 
         // Re-triangulated features 3f positions seen from the current frame (used in visualization)
-        float active_tracks_time = -1;
+        double active_tracks_time = -1;
         std::unordered_map<size_t, Eigen::Vector3f> active_tracks_posinG;
         std::unordered_map<size_t, Eigen::Vector3f> active_tracks_uvd;
         cv::Mat active_image;
