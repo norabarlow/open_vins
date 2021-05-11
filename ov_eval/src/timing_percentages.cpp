@@ -82,8 +82,8 @@ int main(int argc, char **argv) {
         printf("[COMP]: processing %s algorithm\n", path_algorithms.at(i).stem().c_str());
 
         // our total summed values
-        std::vector<double> total_times;
-        std::vector<Eigen::Vector3d> total_summed_values;
+        std::vector<float> total_times;
+        std::vector<Eigen::Vector3f> total_summed_values;
 
         // Loop through each sub-directory in this folder
         for(auto& entry : boost::filesystem::recursive_directory_iterator(path_algorithms.at(i))) {
@@ -97,9 +97,9 @@ int main(int argc, char **argv) {
                 continue;
 
             // Load the data from file
-            std::vector<double> times;
-            std::vector<Eigen::Vector3d> summed_values;
-            std::vector<Eigen::VectorXd> node_values;
+            std::vector<float> times;
+            std::vector<Eigen::Vector3f> summed_values;
+            std::vector<Eigen::VectorXf> node_values;
             ov_eval::Loader::load_timing_percent(entry.path().string(), times, summed_values, node_values);
 
             // Append to our summed values
@@ -155,11 +155,11 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1500, 400);
 
     // Plot each RPE next to each other
-    double width = 0.1/(algo_timings.size()+1);
-    std::vector<double> yticks;
+    float width = 0.1/(algo_timings.size()+1);
+    std::vector<float> yticks;
     std::vector<std::string> labels;
     int ct_algo = 0;
-    double ct_pos = 0;
+    float ct_pos = 0;
     for(auto &algo : algo_timings) {
         // Start based on what algorithm we are doing
         ct_pos = 1+1.5*ct_algo*width;
@@ -178,13 +178,13 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<double> vec_empty;
+        std::vector<float> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }
 
     // Display to the user
-    matplotlibcpp::ylim(1.0-1*width, ct_pos+1*width);
+    matplotlibcpp::ylim(1.0f-1*width, ct_pos+1*width);
     matplotlibcpp::yticks(yticks,labels);
     matplotlibcpp::xlabel("CPU Percent Usage");
     matplotlibcpp::tight_layout();
@@ -219,13 +219,13 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<double> vec_empty;
+        std::vector<float> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }
 
     // Display to the user
-    matplotlibcpp::ylim(1.0-1*width, ct_pos+1*width);
+    matplotlibcpp::ylim(1.0f-1*width, ct_pos+1*width);
     matplotlibcpp::yticks(yticks,labels);
     matplotlibcpp::xlabel("Memory Percent Usage");
     matplotlibcpp::tight_layout();

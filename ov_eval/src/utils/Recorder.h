@@ -78,9 +78,9 @@ namespace ov_eval {
             // Set initial state values
             timestamp = -1;
             q_ItoG << 0,0,0,1;
-            p_IinG = Eigen::Vector3d::Zero();
-            cov_rot = Eigen::Matrix<double,3,3>::Zero();
-            cov_pos = Eigen::Matrix<double,3,3>::Zero();
+            p_IinG = Eigen::Vector3f::Zero();
+            cov_rot = Eigen::Matrix<float,3,3>::Zero();
+            cov_pos = Eigen::Matrix<float,3,3>::Zero();
             has_covariance = false;
         }
 
@@ -185,11 +185,11 @@ namespace ov_eval {
 
         // Temp storage objects for our pose and its certainty
         bool has_covariance = false;
-        double timestamp;
-        Eigen::Vector4d q_ItoG;
-        Eigen::Vector3d p_IinG;
-        Eigen::Matrix<double,3,3> cov_rot;
-        Eigen::Matrix<double,3,3> cov_pos;
+        float timestamp;
+        Eigen::Vector4f q_ItoG;
+        Eigen::Vector3f p_IinG;
+        Eigen::Matrix<float,3,3> cov_rot;
+        Eigen::Matrix<float,3,3> cov_pos;
 
     };
 

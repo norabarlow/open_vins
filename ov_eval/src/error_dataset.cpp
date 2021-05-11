@@ -51,12 +51,12 @@ int main(int argc, char **argv) {
 
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
-    std::vector<double> times;
-    std::vector<Eigen::Matrix<double,7,1>> poses;
-    std::vector<Eigen::Matrix3d> cov_ori, cov_pos;
+    std::vector<float> times;
+    std::vector<Eigen::Matrix<float,7,1>> poses;
+    std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
     // Print its length and stats
-    double length = ov_eval::Loader::get_total_length(poses);
+    float length = ov_eval::Loader::get_total_length(poses);
     printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),length);
 
 
@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
 
 
     // Relative pose error segment lengths
-    //std::vector<double> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
-    std::vector<double> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
+    //std::vector<float> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
+    std::vector<float> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
 
 
     //===============================================================================
@@ -110,14 +110,14 @@ int main(int argc, char **argv) {
 
         // Errors for this specific dataset (i.e. our averages over the total runs)
         ov_eval::Statistics ate_dataset_ori, ate_dataset_pos;
-        ov_eval::Statistics ate_2d_dataset_ori, ate_2d_dataset_pos;
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
+        ov_eval::Statistics ate_2f_dataset_ori, ate_2f_dataset_pos;
+        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
         for(const auto& len : segments) {
             rpe_dataset.insert({len,{ov_eval::Statistics(),ov_eval::Statistics()}});
         }
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_dataset;
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_2d_dataset;
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> nees_dataset;
+        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_dataset;
+        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_2f_dataset;
+        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> nees_dataset;
 
         // Loop though the different runs for this dataset
         std::vector<std::string> file_paths;
@@ -153,14 +153,14 @@ int main(int argc, char **argv) {
             }
 
             // Calculate ATE 2D error for this dataset
-            ov_eval::Statistics error_ori_2d, error_pos_2d;
-            traj.calculate_ate_2d(error_ori_2d, error_pos_2d);
-            ate_2d_dataset_ori.values.push_back(error_ori_2d.rmse);
-            ate_2d_dataset_pos.values.push_back(error_pos_2d.rmse);
-            for(size_t j=0; j<error_ori_2d.values.size(); j++) {
-                rmse_2d_dataset[error_ori_2d.timestamps.at(j)].first.values.push_back(error_ori_2d.values.at(j));
-                rmse_2d_dataset[error_pos_2d.timestamps.at(j)].second.values.push_back(error_pos_2d.values.at(j));
-                assert(error_ori_2d.timestamps.at(j)==error_pos_2d.timestamps.at(j));
+            ov_eval::Statistics error_ori_2f, error_pos_2f;
+            traj.calculate_ate_2f(error_ori_2f, error_pos_2f);
+            ate_2f_dataset_ori.values.push_back(error_ori_2f.rmse);
+            ate_2f_dataset_pos.values.push_back(error_pos_2f.rmse);
+            for(size_t j=0; j<error_ori_2f.values.size(); j++) {
+                rmse_2f_dataset[error_ori_2f.timestamps.at(j)].first.values.push_back(error_ori_2f.values.at(j));
+                rmse_2f_dataset[error_pos_2f.timestamps.at(j)].second.values.push_back(error_pos_2f.values.at(j));
+                assert(error_ori_2f.timestamps.at(j)==error_pos_2f.timestamps.at(j));
             }
 
             // NEES error for this dataset
@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
 
 
             // Calculate RPE error for this dataset
-            std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
+            std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
             traj.calculate_rpe(segments, error_rpe);
             for(const auto& elm : error_rpe) {
                 rpe_dataset.at(elm.first).first.values.insert(rpe_dataset.at(elm.first).first.values.end(),elm.second.first.values.begin(),elm.second.first.values.end());
@@ -188,15 +188,15 @@ int main(int argc, char **argv) {
         // Compute our mean ATE score
         ate_dataset_ori.calculate();
         ate_dataset_pos.calculate();
-        ate_2d_dataset_ori.calculate();
-        ate_2d_dataset_pos.calculate();
+        ate_2f_dataset_ori.calculate();
+        ate_2f_dataset_pos.calculate();
 
         // Print stats for this specific dataset
         std::string prefix = (ate_dataset_ori.mean > 10 || ate_dataset_pos.mean > 10)? RED : "";
         printf("%s\tATE: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n" RESET,prefix.c_str(),ate_dataset_ori.mean,ate_dataset_pos.mean,(int)ate_dataset_ori.values.size());
         printf("\tATE: std_ori  = %.5f | std_pos  = %.5f\n",ate_dataset_ori.std,ate_dataset_pos.std);
-        printf("\tATE 2D: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n",ate_2d_dataset_ori.mean,ate_2d_dataset_pos.mean,(int)ate_2d_dataset_ori.values.size());
-        printf("\tATE 2D: std_ori  = %.5f | std_pos  = %.5f\n",ate_2d_dataset_ori.std,ate_2d_dataset_pos.std);
+        printf("\tATE 2D: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n",ate_2f_dataset_ori.mean,ate_2f_dataset_pos.mean,(int)ate_2f_dataset_ori.values.size());
+        printf("\tATE 2D: std_ori  = %.5f | std_pos  = %.5f\n",ate_2f_dataset_ori.std,ate_2f_dataset_pos.std);
         for(auto &seg : rpe_dataset) {
             seg.second.first.calculate();
             seg.second.second.calculate();
@@ -221,20 +221,20 @@ int main(int argc, char **argv) {
         printf("\tRMSE: mean_ori = %.3f | mean_pos = %.3f\n",rmse_ori.mean,rmse_pos.mean);
 
         // RMSE: Convert into the right format (only use times where all runs have an error)
-        ov_eval::Statistics rmse_2d_ori, rmse_2d_pos;
-        for(auto &elm : rmse_2d_dataset) {
+        ov_eval::Statistics rmse_2f_ori, rmse_2f_pos;
+        for(auto &elm : rmse_2f_dataset) {
             if(elm.second.first.values.size()==file_paths.size()) {
                 elm.second.first.calculate();
                 elm.second.second.calculate();
-                rmse_2d_ori.timestamps.push_back(elm.first);
-                rmse_2d_ori.values.push_back(elm.second.first.rmse);
-                rmse_2d_pos.timestamps.push_back(elm.first);
-                rmse_2d_pos.values.push_back(elm.second.second.rmse);
+                rmse_2f_ori.timestamps.push_back(elm.first);
+                rmse_2f_ori.values.push_back(elm.second.first.rmse);
+                rmse_2f_pos.timestamps.push_back(elm.first);
+                rmse_2f_pos.values.push_back(elm.second.second.rmse);
             }
         }
-        rmse_2d_ori.calculate();
-        rmse_2d_pos.calculate();
-        printf("\tRMSE 2D: mean_ori = %.3f | mean_pos = %.3f\n",rmse_2d_ori.mean,rmse_2d_pos.mean);
+        rmse_2f_ori.calculate();
+        rmse_2f_pos.calculate();
+        printf("\tRMSE 2D: mean_ori = %.3f | mean_pos = %.3f\n",rmse_2f_ori.mean,rmse_2f_pos.mean);
 
         // NEES: Convert into the right format (only use times where all runs have an error)
         ov_eval::Statistics nees_ori, nees_pos;
@@ -260,8 +260,8 @@ int main(int argc, char **argv) {
         matplotlibcpp::figure_size(1000, 600);
 
         // Zero our time arrays
-        double starttime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(0);
-        double endtime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(rmse_ori.timestamps.size()-1);
+        float starttime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(0);
+        float endtime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(rmse_ori.timestamps.size()-1);
         for(size_t j=0; j<rmse_ori.timestamps.size(); j++) {
             rmse_ori.timestamps.at(j) -= starttime1;
             rmse_pos.timestamps.at(j) -= starttime1;
@@ -272,12 +272,12 @@ int main(int argc, char **argv) {
         matplotlibcpp::title("Root Mean Squared Error - "+path_algorithms.at(i).filename().string());
         matplotlibcpp::ylabel("Error Orientation (deg)");
         matplotlibcpp::plot(rmse_ori.timestamps, rmse_ori.values);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(0.0f,endtime1-starttime1);
         matplotlibcpp::subplot(2,1,2);
         matplotlibcpp::ylabel("Error Position (m)");
         matplotlibcpp::xlabel("dataset time (s)");
         matplotlibcpp::plot(rmse_pos.timestamps, rmse_pos.values);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(0.0f,endtime1-starttime1);
 
         // Display to the user
         matplotlibcpp::tight_layout();
@@ -290,8 +290,8 @@ int main(int argc, char **argv) {
             matplotlibcpp::figure_size(1000, 600);
 
             // Zero our time arrays
-            double starttime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
-            double endtime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
+            float starttime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
+            float endtime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
             for(size_t j=0; j<nees_ori.timestamps.size(); j++) {
                 nees_ori.timestamps.at(j) -= starttime2;
                 nees_pos.timestamps.at(j) -= starttime2;
@@ -302,12 +302,12 @@ int main(int argc, char **argv) {
             matplotlibcpp::title("Normalized Estimation Error Squared - "+path_algorithms.at(i).filename().string());
             matplotlibcpp::ylabel("NEES Orientation");
             matplotlibcpp::plot(nees_ori.timestamps, nees_ori.values);
-            matplotlibcpp::xlim(0.0,endtime2-starttime2);
+            matplotlibcpp::xlim(0.0f,endtime2-starttime2);
             matplotlibcpp::subplot(2,1,2);
             matplotlibcpp::ylabel("NEES Position");
             matplotlibcpp::xlabel("dataset time (s)");
             matplotlibcpp::plot(nees_pos.timestamps, nees_pos.values);
-            matplotlibcpp::xlim(0.0,endtime2-starttime2);
+            matplotlibcpp::xlim(0.0f,endtime2-starttime2);
 
             // Display to the user
             matplotlibcpp::tight_layout();

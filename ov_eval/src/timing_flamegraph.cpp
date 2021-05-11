@@ -54,8 +54,8 @@ int main(int argc, char **argv) {
 
     // Load it!!
     std::vector<std::string> names;
-    std::vector<double> times;
-    std::vector<Eigen::VectorXd> timing_values;
+    std::vector<float> times;
+    std::vector<Eigen::VectorXf> timing_values;
     ov_eval::Loader::load_timing_flamegraph(argv[1], names, times, timing_values);
     printf("[TIME]: loaded %d timestamps from file (%d categories)!!\n",(int)times.size(),(int)names.size());
 
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 
     // Sub-sample the time
     int keep_every = 10;
-    std::vector<double> times_skipped;
+    std::vector<float> times_skipped;
     for(size_t t=0; t<times.size(); t++) {
         if(t % keep_every == 0) {
             times_skipped.push_back(times.at(t));
@@ -92,8 +92,8 @@ int main(int argc, char **argv) {
 
 
     // Zero our time arrays
-    double starttime1 = (times_skipped.empty())? 0 : times_skipped.at(0);
-    double endtime1 = (times_skipped.empty())? 0 : times_skipped.at(times_skipped.size()-1);
+    float starttime1 = (times_skipped.empty())? 0 : times_skipped.at(0);
+    float endtime1 = (times_skipped.empty())? 0 : times_skipped.at(times_skipped.size()-1);
     for(size_t j=0; j<times_skipped.size(); j++) {
         times_skipped.at(j) -= starttime1;
     }
@@ -107,11 +107,11 @@ int main(int argc, char **argv) {
     // NOTE we skip the last category since it is the "total" time by convention
     std::vector<std::string> labels;
     std::vector<std::string> colors;
-    std::vector<std::vector<double>> timings;
+    std::vector<std::vector<float>> timings;
     for(size_t i=0; i<names.size()-1; i++) {
         labels.push_back(names.at(i));
         colors.push_back(colors_valid.at(i%colors_valid.size()));
-        std::vector<double> values_skipped;
+        std::vector<float> values_skipped;
         for(size_t t=0; t<stats.at(i).values.size(); t++) {
             if(t % keep_every == 0) {
                 values_skipped.push_back(stats.at(i).values.at(t));
@@ -124,9 +124,9 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1200, 400);
     matplotlibcpp::stackplot(times_skipped,timings,labels,colors,"zero");
     matplotlibcpp::ylabel("execution time (s)");
-    matplotlibcpp::xlim(0.0,endtime1-starttime1);
-    //matplotlibcpp::ylim(0.0,stats.at(stats.size()-1).ninetynine);
-    matplotlibcpp::ylim(0.0,stats.at(stats.size()-1).max);
+    matplotlibcpp::xlim(0.0f,endtime1-starttime1);
+    //matplotlibcpp::ylim(0.0f,stats.at(stats.size()-1).ninetynine);
+    matplotlibcpp::ylim(0.0f,stats.at(stats.size()-1).max);
     matplotlibcpp::xlabel("dataset time (s)");
     matplotlibcpp::legend();
     matplotlibcpp::tight_layout();

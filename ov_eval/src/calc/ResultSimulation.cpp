@@ -48,14 +48,14 @@ ResultSimulation::ResultSimulation(std::string path_est, std::string path_std, s
 
 
 
-void ResultSimulation::plot_state(bool doplotting, double max_time) {
+void ResultSimulation::plot_state(bool doplotting, float max_time) {
 
 
     // Errors for each xyz direction
     Statistics error_ori[3], error_pos[3], error_vel[3], error_bg[3], error_ba[3];
 
     // Calculate the position and orientation error at every timestep
-    double start_time = est_state.at(0)(0);
+    float start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -67,8 +67,8 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
 
         // Calculate orientation error
         // NOTE: we define our error as e_R = -Log(R*Rhat^T)
-        Eigen::Matrix3d e_R = Math::quat_2_Rot(gt_state.at(i).block(1,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(1,0,4,1)).transpose();
-        Eigen::Vector3d ori_err = -180.0/M_PI*Math::log_so3(e_R);
+        Eigen::Matrix3f e_R = Math::quat_2_Rot(gt_state.at(i).block(1,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(1,0,4,1)).transpose();
+        Eigen::Vector3f ori_err = -180.0/M_PI*Math::log_so3(e_R);
         for(int j=0; j<3; j++) {
             error_ori[j].timestamps.push_back(est_state.at(i)(0));
             error_ori[j].values.push_back(ori_err(j));
@@ -77,7 +77,7 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
         }
 
         // Calculate position error
-        Eigen::Vector3d pos_err = gt_state.at(i).block(5,0,3,1)-est_state.at(i).block(5,0,3,1);
+        Eigen::Vector3f pos_err = gt_state.at(i).block(5,0,3,1)-est_state.at(i).block(5,0,3,1);
         for(int j=0; j<3; j++) {
             error_pos[j].timestamps.push_back(est_state.at(i)(0));
             error_pos[j].values.push_back(pos_err(j));
@@ -86,7 +86,7 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
         }
 
         // Calculate velocity error
-        Eigen::Vector3d vel_err = gt_state.at(i).block(8,0,3,1)-est_state.at(i).block(8,0,3,1);
+        Eigen::Vector3f vel_err = gt_state.at(i).block(8,0,3,1)-est_state.at(i).block(8,0,3,1);
         for(int j=0; j<3; j++) {
             error_vel[j].timestamps.push_back(est_state.at(i)(0));
             error_vel[j].values.push_back(vel_err(j));
@@ -95,7 +95,7 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
         }
 
         // Calculate gyro bias error
-        Eigen::Vector3d bg_err = gt_state.at(i).block(11,0,3,1)-est_state.at(i).block(11,0,3,1);
+        Eigen::Vector3f bg_err = gt_state.at(i).block(11,0,3,1)-est_state.at(i).block(11,0,3,1);
         for(int j=0; j<3; j++) {
             error_bg[j].timestamps.push_back(est_state.at(i)(0));
             error_bg[j].values.push_back(bg_err(j));
@@ -104,7 +104,7 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
         }
 
         // Calculate accel bias error
-        Eigen::Vector3d ba_err = gt_state.at(i).block(14,0,3,1)-est_state.at(i).block(14,0,3,1);
+        Eigen::Vector3f ba_err = gt_state.at(i).block(14,0,3,1)-est_state.at(i).block(14,0,3,1);
         for(int j=0; j<3; j++) {
             error_ba[j].timestamps.push_back(est_state.at(i)(0));
             error_ba[j].values.push_back(ba_err(j));
@@ -214,11 +214,11 @@ void ResultSimulation::plot_state(bool doplotting, double max_time) {
 
 
 
-void ResultSimulation::plot_timeoff(bool doplotting, double max_time) {
+void ResultSimulation::plot_timeoff(bool doplotting, float max_time) {
 
     // Calculate the time offset error at every timestep
     Statistics error_time;
-    double start_time = est_state.at(0)(0);
+    float start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -257,8 +257,8 @@ void ResultSimulation::plot_timeoff(bool doplotting, double max_time) {
     matplotlibcpp::figure_size(800, 250);
 
     // Zero our time array
-    double starttime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(0);
-    double endtime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(error_time.timestamps.size()-1);
+    float starttime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(0);
+    float endtime = (error_time.timestamps.empty())? 0 : error_time.timestamps.at(error_time.timestamps.size()-1);
     for(size_t i=0; i<error_time.timestamps.size(); i++) {
         error_time.timestamps.at(i) -= starttime;
     }
@@ -281,7 +281,7 @@ void ResultSimulation::plot_timeoff(bool doplotting, double max_time) {
         }
         matplotlibcpp::plot(error_time.timestamps, error_time.values_bound, "r--");
     }
-    matplotlibcpp::xlim(0.0,endtime-starttime);
+    matplotlibcpp::xlim(0.0f,endtime-starttime);
 
     // Update the title and axis labels
     matplotlibcpp::title("Camera IMU Time Offset Error");
@@ -297,7 +297,7 @@ void ResultSimulation::plot_timeoff(bool doplotting, double max_time) {
 
 
 
-void ResultSimulation::plot_cam_instrinsics(bool doplotting, double max_time) {
+void ResultSimulation::plot_cam_instrinsics(bool doplotting, float max_time) {
 
 
     // Check that we have cameras
@@ -320,7 +320,7 @@ void ResultSimulation::plot_cam_instrinsics(bool doplotting, double max_time) {
 
 
     // Loop through and calculate error
-    double start_time = est_state.at(0)(0);
+    float start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -419,7 +419,7 @@ void ResultSimulation::plot_cam_instrinsics(bool doplotting, double max_time) {
 
 
 
-void ResultSimulation::plot_cam_extrinsics(bool doplotting, double max_time) {
+void ResultSimulation::plot_cam_extrinsics(bool doplotting, float max_time) {
 
 
     // Check that we have cameras
@@ -441,7 +441,7 @@ void ResultSimulation::plot_cam_extrinsics(bool doplotting, double max_time) {
     }
 
     // Loop through and calculate error
-    double start_time = est_state.at(0)(0);
+    float start_time = est_state.at(0)(0);
     for(size_t i=0; i<est_state.size(); i++) {
 
         // Exit if we have reached our max time
@@ -460,10 +460,10 @@ void ResultSimulation::plot_cam_extrinsics(bool doplotting, double max_time) {
         // Loop through each camera and calculate error
         for(int n=0; n<(int)est_state.at(0)(18); n++) {
             // NOTE: we define our error as e_R = -Log(R*Rhat^T)
-            Eigen::Matrix3d e_R = Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose();
-            Eigen::Vector3d ori_err = -180.0/M_PI*Math::log_so3(e_R);
-            //Eigen::Matrix3d e_R = Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose() * Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1));
-            //Eigen::Vector3d ori_err = 180.0/M_PI*Math::log_so3(e_R);
+            Eigen::Matrix3f e_R = Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose();
+            Eigen::Vector3f ori_err = -180.0/M_PI*Math::log_so3(e_R);
+            //Eigen::Matrix3f e_R = Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose() * Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1));
+            //Eigen::Vector3f ori_err = 180.0/M_PI*Math::log_so3(e_R);
             for(int j=0; j<3; j++) {
                 error_cam_ori.at(n).at(j).timestamps.push_back(est_state.at(i)(0));
                 error_cam_ori.at(n).at(j).values.push_back(ori_err(j));

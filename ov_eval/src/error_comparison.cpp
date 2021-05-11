@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
     // Try to load our paths
     for(size_t i=0; i<path_groundtruths.size(); i++) {
         // Load it!
-        std::vector<double> times;
-        std::vector<Eigen::Matrix<double,7,1>> poses;
-        std::vector<Eigen::Matrix3d> cov_ori, cov_pos;
+        std::vector<float> times;
+        std::vector<Eigen::Matrix<float,7,1>> poses;
+        std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
         ov_eval::Loader::load_data(path_groundtruths.at(i).string(), times, poses, cov_ori, cov_pos);
         // Print its length and stats
-        double length = ov_eval::Loader::get_total_length(poses);
+        float length = ov_eval::Loader::get_total_length(poses);
         printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_groundtruths.at(i).filename().c_str(),length);
     }
 
@@ -97,16 +97,16 @@ int main(int argc, char **argv) {
     }
 
     // Relative pose error segment lengths
-    std::vector<double> segments = {8.0, 16.0, 24.0, 32.0, 40.0, 48.0};
-    //std::vector<double> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
-    //std::vector<double> segments = {10.0, 25.0, 50.0, 75.0, 120.0};
-    //std::vector<double> segments = {5.0, 15.0, 30.0, 45.0, 60.0};
-    //std::vector<double> segments = {40.0, 60.0, 80.0, 100.0, 120.0};
+    std::vector<float> segments = {8.0, 16.0, 24.0, 32.0, 40.0, 48.0};
+    //std::vector<float> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
+    //std::vector<float> segments = {10.0, 25.0, 50.0, 75.0, 120.0};
+    //std::vector<float> segments = {5.0, 15.0, 30.0, 45.0, 60.0};
+    //std::vector<float> segments = {40.0, 60.0, 80.0, 100.0, 120.0};
 
     // The overall RPE error calculation for each algorithm type
-    std::map<std::string,std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>>> algo_rpe;
+    std::map<std::string,std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>>> algo_rpe;
     for(const auto& p : path_algorithms) {
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> temp;
+        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> temp;
         for(const auto& len : segments) {
             temp.insert({len,{ov_eval::Statistics(),ov_eval::Statistics()}});
         }
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
             // Errors for this specific dataset (i.e. our averages over the total runs)
             ov_eval::Statistics ate_dataset_ori;
             ov_eval::Statistics ate_dataset_pos;
-            std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
+            std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
             for(const auto& len : segments) {
                 rpe_dataset.insert({len,{ov_eval::Statistics(),ov_eval::Statistics()}});
             }
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
                 ate_dataset_pos.values.push_back(error_pos.rmse);
 
                 // Calculate RPE error for this dataset
-                std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
+                std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
                 traj.calculate_rpe(segments, error_rpe);
                 for(const auto& elm : error_rpe) {
                     rpe_dataset.at(elm.first).first.values.insert(rpe_dataset.at(elm.first).first.values.end(),elm.second.first.values.begin(),elm.second.first.values.end());
@@ -243,8 +243,8 @@ int main(int argc, char **argv) {
         std::string algoname = algo.first;
         boost::replace_all(algoname,"_","\\_");
         cout << algoname;
-        double sum_ori = 0.0;
-        double sum_pos = 0.0;
+        float sum_ori = 0.0;
+        float sum_pos = 0.0;
         int sum_ct = 0;
         for(auto &seg : algo.second) {
             if(seg.first.values.empty() || seg.second.values.empty()) {
@@ -301,12 +301,12 @@ int main(int argc, char **argv) {
     matplotlibcpp::title("Relative Orientation Error");
 
     // Plot each RPE next to each other
-    double width = 1.0/(algo_rpe.size()+1);
-    double spacing = width/(algo_rpe.size()+1);
-    std::vector<double> xticks;
+    float width = 1.0/(algo_rpe.size()+1);
+    float spacing = width/(algo_rpe.size()+1);
+    std::vector<float> xticks;
     std::vector<std::string> labels;
     int ct_algo = 0;
-    double ct_pos = 0;
+    float ct_pos = 0;
     for(auto &algo : algo_rpe) {
         // Start based on what algorithm we are doing
         xticks.clear();
@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<double> vec_empty;
+        std::vector<float> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }
@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<double> vec_empty;
+        std::vector<float> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }

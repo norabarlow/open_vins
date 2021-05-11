@@ -90,13 +90,13 @@ namespace ov_msckf {
          * @param camids Camera ids that we have simulated measurements for
          * @param feats Raw uv simulated measurements
          */
-        void feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t, Eigen::VectorXf>>> &feats);
+        void feed_measurement_simulation(float timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t, Eigen::VectorXf>>> &feats);
 
         /**
          * @brief Given a state, this will initialize our IMU state.
          * @param imustate State in the MSCKF ordering: [time(sec),q_GtoI,p_IinG,v_IinG,b_gyro,b_accel]
          */
-        void initialize_with_gt(Eigen::Matrix<double, 17, 1> imustate) {
+        void initialize_with_gt(Eigen::Matrix<float, 17, 1> imustate) {
 
             // Initialize the system
             state->_imu->set_value(imustate.block(1, 0, 16, 1));
@@ -106,7 +106,7 @@ namespace ov_msckf {
             is_initialized_vio = true;
 
             // Fix the global yaw and position gauge freedoms
-            StateHelper::fix_4dof_gauge_freedoms(state, imustate.block(1, 0, 4, 1));
+            StateHelper::fix_4fof_gauge_freedoms(state, imustate.block(1, 0, 4, 1));
 
             // Cleanup any features older then the initialization time
             trackFEATS->get_feature_database()->cleanup_measurements(state->_timestamp);
@@ -131,7 +131,7 @@ namespace ov_msckf {
         }
 
         /// Timestamp that the system was initialized at
-        double initialized_time() {
+        float initialized_time() {
             return startup_time;
         }
 
@@ -179,25 +179,25 @@ namespace ov_msckf {
 
         }
 
-        /// Returns 3d features used in the last update in global frame
-        std::vector<Eigen::Vector3d> get_good_features_MSCKF() {
+        /// Returns 3f features used in the last update in global frame
+        std::vector<Eigen::Vector3f> get_good_features_MSCKF() {
             return good_features_MSCKF;
         }
 
-        /// Returns 3d SLAM features in the global frame
-        std::vector<Eigen::Vector3d> get_features_SLAM() {
-            std::vector<Eigen::Vector3d> slam_feats;
+        /// Returns 3f SLAM features in the global frame
+        std::vector<Eigen::Vector3f> get_features_SLAM() {
+            std::vector<Eigen::Vector3f> slam_feats;
             for (auto &f : state->_features_SLAM) {
                 if ((int) f.first <= state->_options.max_aruco_features) continue;
                 if (LandmarkRepresentation::is_relative_representation(f.second->_feat_representation)) {
                     // Assert that we have an anchor pose for this feature
                     assert(f.second->_anchor_cam_id != -1);
                     // Get calibration for our anchor camera
-                    Eigen::Matrix<double, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
+                    Eigen::Matrix<float, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
+                    Eigen::Matrix<float, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
                     // Anchor pose orientation and position
-                    Eigen::Matrix<double, 3, 3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
+                    Eigen::Matrix<float, 3, 3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
+                    Eigen::Matrix<float, 3, 1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
                     // Feature in the global frame
                     slam_feats.push_back(R_GtoI.transpose() * R_ItoC.transpose() * (f.second->get_xyz(false) - p_IinC) + p_IinG);
                 } else {
@@ -207,20 +207,20 @@ namespace ov_msckf {
             return slam_feats;
         }
 
-        /// Returns 3d ARUCO features in the global frame
-        std::vector<Eigen::Vector3d> get_features_ARUCO() {
-            std::vector<Eigen::Vector3d> aruco_feats;
+        /// Returns 3f ARUCO features in the global frame
+        std::vector<Eigen::Vector3f> get_features_ARUCO() {
+            std::vector<Eigen::Vector3f> aruco_feats;
             for (auto &f : state->_features_SLAM) {
                 if ((int) f.first > state->_options.max_aruco_features) continue;
                 if (LandmarkRepresentation::is_relative_representation(f.second->_feat_representation)) {
                     // Assert that we have an anchor pose for this feature
                     assert(f.second->_anchor_cam_id != -1);
                     // Get calibration for our anchor camera
-                    Eigen::Matrix<double, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
+                    Eigen::Matrix<float, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
+                    Eigen::Matrix<float, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
                     // Anchor pose orientation and position
-                    Eigen::Matrix<double, 3, 3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
+                    Eigen::Matrix<float, 3, 3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
+                    Eigen::Matrix<float, 3, 1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
                     // Feature in the global frame
                     aruco_feats.push_back(R_GtoI.transpose() * R_ItoC.transpose() * (f.second->get_xyz(false) - p_IinC) + p_IinG);
                 } else {
@@ -231,15 +231,15 @@ namespace ov_msckf {
         }
 
         /// Return the image used when projecting the active tracks
-        void get_active_image(double &timestamp, cv::Mat &image) {
+        void get_active_image(float &timestamp, cv::Mat &image) {
             timestamp = active_tracks_time;
             image = active_image;
         }
 
         /// Returns active tracked features in the current frame
-        void get_active_tracks(double &timestamp,
-                               std::unordered_map<size_t, Eigen::Vector3d> &feat_posinG,
-                               std::unordered_map<size_t, Eigen::Vector3d> &feat_tracks_uvd) {
+        void get_active_tracks(float &timestamp,
+                               std::unordered_map<size_t, Eigen::Vector3f> &feat_posinG,
+                               std::unordered_map<size_t, Eigen::Vector3f> &feat_tracks_uvd) {
             timestamp = active_tracks_time;
             feat_posinG = active_tracks_posinG;
             feat_tracks_uvd = active_tracks_uvd;
@@ -331,11 +331,11 @@ namespace ov_msckf {
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
 
         // Track how much distance we have traveled
-        double timelastupdate = -1;
-        double distance = 0;
+        float timelastupdate = -1;
+        float distance = 0;
 
         // Startup time of the filter
-        double startup_time = -1;
+        float startup_time = -1;
 
         // If we did a zero velocity update
         bool did_zupt_update = false;
@@ -343,15 +343,15 @@ namespace ov_msckf {
         std::map<size_t, cv::Mat> zupt_img_last;
 
         // Good features that where used in the last update (used in visualization)
-        std::vector<Eigen::Vector3d> good_features_MSCKF;
+        std::vector<Eigen::Vector3f> good_features_MSCKF;
 
         /// Feature initializer used to triangulate all active tracks
         std::shared_ptr<FeatureInitializer> active_tracks_initializer;
 
-        // Re-triangulated features 3d positions seen from the current frame (used in visualization)
-        double active_tracks_time = -1;
-        std::unordered_map<size_t, Eigen::Vector3d> active_tracks_posinG;
-        std::unordered_map<size_t, Eigen::Vector3d> active_tracks_uvd;
+        // Re-triangulated features 3f positions seen from the current frame (used in visualization)
+        float active_tracks_time = -1;
+        std::unordered_map<size_t, Eigen::Vector3f> active_tracks_posinG;
+        std::unordered_map<size_t, Eigen::Vector3f> active_tracks_uvd;
         cv::Mat active_image;
 
 

@@ -52,7 +52,7 @@ VioManager::VioManager(VioManagerOptions& params_) {
     state = std::make_shared<State>(params.state_options);
 
     // Timeoffset from camera to IMU
-    Eigen::VectorXd temp_camimu_dt;
+    Eigen::VectorXf temp_camimu_dt;
     temp_camimu_dt.resize(1);
     temp_camimu_dt(0) = params.calib_camimu_dt;
     state->_calib_dt_CAMtoIMU->set_value(temp_camimu_dt);
@@ -174,7 +174,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 
     // Loop through our queue and see if we are able to process any of our camera measurements
     // We are able to process if we have at least one IMU measurement greater then the camera time
-    double timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
+    float timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
     while (!camera_queue.empty() && camera_queue.at(0).timestamp < timestamp_inC) {
         track_image_and_update(camera_queue.at(0));
         camera_queue.pop_front();
@@ -183,7 +183,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 }
 
 
-void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+void VioManager::feed_measurement_simulation(float timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -599,7 +599,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     // TODO: this is the best we can do right now since triangulation & ransac need normalized coordinates
     if(state->_options.do_calib_camera_intrinsics) {
         // Get vectors arrays
-        std::map<size_t, Eigen::VectorXd> cameranew_calib;
+        std::map<size_t, Eigen::VectorXf> cameranew_calib;
         std::map<size_t, bool> cameranew_fisheye;
         for(int i=0; i<state->_options.num_cameras; i++) {
             std::shared_ptr<Vec> calib = state->_cam_intrinsics.at(i);
@@ -679,13 +679,13 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
 
     // Get timing statitics information
-    double time_track = (rT2-rT1).total_microseconds() * 1e-6;
-    double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
-    double time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
-    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
-    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
-    double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
-    double time_total = (rT7-rT1).total_microseconds() * 1e-6;
+    float time_track = (rT2-rT1).total_microseconds() * 1e-6;
+    float time_prop = (rT3-rT2).total_microseconds() * 1e-6;
+    float time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
+    float time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
+    float time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
+    float time_marg = (rT7-rT6).total_microseconds() * 1e-6;
+    float time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
     // Timing information
     printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
@@ -706,8 +706,8 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     if(params.record_timing_information && of_statistics.is_open()) {
         // We want to publish in the IMU clock frame
         // The timestamp in the state will be the last camera time
-        double t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
-        double timestamp_inI = state->_timestamp + t_ItoC;
+        float t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
+        float timestamp_inI = state->_timestamp + t_ItoC;
         // Append to the file
         of_statistics << std::fixed << std::setprecision(15)
                       << timestamp_inI << ","
@@ -722,7 +722,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
     // Update our distance traveled
     if(timelastupdate != -1 && state->_clones_IMU.find(timelastupdate) != state->_clones_IMU.end()) {
-        Eigen::Matrix<double,3,1> dx = state->_imu->pos() - state->_clones_IMU.at(timelastupdate)->pos();
+        Eigen::Matrix<float,3,1> dx = state->_imu->pos() - state->_clones_IMU.at(timelastupdate)->pos();
         distance += dx.norm();
     }
     timelastupdate = message.timestamp;
@@ -768,9 +768,9 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 bool VioManager::try_to_initialize() {
 
     // Returns from our initializer
-    double time0;
-    Eigen::Matrix<double, 4, 1> q_GtoI0;
-    Eigen::Matrix<double, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
+    float time0;
+    Eigen::Matrix<float, 4, 1> q_GtoI0;
+    Eigen::Matrix<float, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
 
     // Try to initialize the system
     // We will wait for a jerk if we do not have the zero velocity update enabled
@@ -785,7 +785,7 @@ bool VioManager::try_to_initialize() {
 
     // Make big vector (q,p,v,bg,ba), and update our state
     // Note: start from zero position, as this is what our covariance is based off of
-    Eigen::Matrix<double,16,1> imu_val;
+    Eigen::Matrix<float,16,1> imu_val;
     imu_val.block(0,0,4,1) = q_GtoI0;
     imu_val.block(4,0,3,1) << 0,0,0;
     imu_val.block(7,0,3,1) = v_I0inG;
@@ -799,7 +799,7 @@ bool VioManager::try_to_initialize() {
     startup_time = time0;
 
     // Fix the global yaw and position gauge freedoms
-    StateHelper::fix_4dof_gauge_freedoms(state, q_GtoI0);
+    StateHelper::fix_4fof_gauge_freedoms(state, q_GtoI0);
 
     // Cleanup any features older then the initialization time
     trackFEATS->get_feature_database()->cleanup_measurements(state->_timestamp);
@@ -836,7 +836,7 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
     std::vector<std::shared_ptr<Feature>> active_features = trackDATABASE->features_containing_older(state->_timestamp);
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<double> clonetimes;
+    std::vector<float> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -876,16 +876,16 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         return;
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<float, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<float, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose
-            Eigen::Matrix<double,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
-            Eigen::Matrix<double,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
+            Eigen::Matrix<float,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
+            Eigen::Matrix<float,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
 
             // Append to our map
             clones_cami.insert({clone_imu.first,FeatureInitializer::ClonePose(R_GtoCi,p_CioinG)});
@@ -929,16 +929,16 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         active_tracks_posinG[feat->featid] = feat->p_FinG;
     }
     for(const auto &feat : state->_features_SLAM) {
-        Eigen::Vector3d p_FinG = feat.second->get_xyz(false);
+        Eigen::Vector3f p_FinG = feat.second->get_xyz(false);
         if(LandmarkRepresentation::is_relative_representation(feat.second->_feat_representation)) {
             // Assert that we have an anchor pose for this feature
             assert(feat.second->_anchor_cam_id!=-1);
             // Get calibration for our anchor camera
-            Eigen::Matrix<double, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(feat.second->_anchor_cam_id)->Rot();
-            Eigen::Matrix<double, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(feat.second->_anchor_cam_id)->pos();
+            Eigen::Matrix<float, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(feat.second->_anchor_cam_id)->Rot();
+            Eigen::Matrix<float, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(feat.second->_anchor_cam_id)->pos();
             // Anchor pose orientation and position
-            Eigen::Matrix<double,3,3> R_GtoI = state->_clones_IMU.at(feat.second->_anchor_clone_timestamp)->Rot();
-            Eigen::Matrix<double,3,1> p_IinG = state->_clones_IMU.at(feat.second->_anchor_clone_timestamp)->pos();
+            Eigen::Matrix<float,3,3> R_GtoI = state->_clones_IMU.at(feat.second->_anchor_clone_timestamp)->Rot();
+            Eigen::Matrix<float,3,1> p_IinG = state->_clones_IMU.at(feat.second->_anchor_clone_timestamp)->pos();
             // Feature in the global frame
             p_FinG = R_GtoI.transpose() * R_ItoC.transpose()*(feat.second->get_xyz(false) - p_IinC) + p_IinG;
         }
@@ -948,24 +948,24 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
     // Calibration of the first camera (cam0)
     std::shared_ptr<Vec> distortion = state->_cam_intrinsics.at(0);
     std::shared_ptr<PoseJPL> calibration = state->_calib_IMUtoCAM.at(0);
-    Eigen::Matrix<double,3,3> R_ItoC = calibration->Rot();
-    Eigen::Matrix<double,3,1> p_IinC = calibration->pos();
-    Eigen::Matrix<double,8,1> cam_d = distortion->value();
+    Eigen::Matrix<float,3,3> R_ItoC = calibration->Rot();
+    Eigen::Matrix<float,3,1> p_IinC = calibration->pos();
+    Eigen::Matrix<float,8,1> cam_d = distortion->value();
 
     // Get current IMU clone state
     std::shared_ptr<PoseJPL> clone_Ii = state->_clones_IMU.at(active_tracks_time);
-    Eigen::Matrix3d R_GtoIi = clone_Ii->Rot();
-    Eigen::Vector3d p_IiinG = clone_Ii->pos();
+    Eigen::Matrix3f R_GtoIi = clone_Ii->Rot();
+    Eigen::Vector3f p_IiinG = clone_Ii->pos();
 
     // 4. Next we can update our variable with the global position
     //    We also will project the features into the current frame
     for(const auto &feat : active_tracks_posinG){
 
         // Project the current feature into the current frame of reference
-        Eigen::Vector3d p_FinIi = R_GtoIi*(feat.second-p_IiinG);
-        Eigen::Vector3d p_FinCi = R_ItoC*p_FinIi+p_IinC;
-        double depth = p_FinCi(2);
-        Eigen::Vector2d uv_norm, uv_dist;
+        Eigen::Vector3f p_FinIi = R_GtoIi*(feat.second-p_IiinG);
+        Eigen::Vector3f p_FinCi = R_ItoC*p_FinIi+p_IinC;
+        float depth = p_FinCi(2);
+        Eigen::Vector2f uv_norm, uv_dist;
         uv_norm << p_FinCi(0)/depth, p_FinCi(1)/depth;
 
         // Skip if not valid (i.e. negative depth, or outside of image)
@@ -977,23 +977,23 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         //  1. Calculate distorted coordinates for fisheye
         //  2. Calculate distorted coordinates for radial
         if(state->_cam_intrinsics_model.at(0)) {
-            double r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-            double theta = std::atan(r);
-            double theta_d = theta+cam_d(4)*std::pow(theta,3)+cam_d(5)*std::pow(theta,5)+cam_d(6)*std::pow(theta,7)+cam_d(7)*std::pow(theta,9);
+            float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+            float theta = std::atan(r);
+            float theta_d = theta+cam_d(4)*std::pow(theta,3)+cam_d(5)*std::pow(theta,5)+cam_d(6)*std::pow(theta,7)+cam_d(7)*std::pow(theta,9);
             // Handle when r is small (meaning our xy is near the camera center)
-            double inv_r = (r > 1e-8)? 1.0/r : 1.0;
-            double cdist = (r > 1e-8)? theta_d * inv_r : 1.0;
+            float inv_r = (r > 1e-8)? 1.0/r : 1.0;
+            float cdist = (r > 1e-8)? theta_d * inv_r : 1.0;
             // Calculate distorted coordinates for fisheye
-            double x1 = uv_norm(0)*cdist;
-            double y1 = uv_norm(1)*cdist;
+            float x1 = uv_norm(0)*cdist;
+            float y1 = uv_norm(1)*cdist;
             uv_dist(0) = cam_d(0)*x1 + cam_d(2);
             uv_dist(1) = cam_d(1)*y1 + cam_d(3);
         } else {
-            double r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-            double r_2 = r*r;
-            double r_4 = r_2*r_2;
-            double x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
-            double y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
+            float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+            float r_2 = r*r;
+            float r_4 = r_2*r_2;
+            float x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
+            float y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
             uv_dist(0) = cam_d(0)*x1 + cam_d(2);
             uv_dist(1) = cam_d(1)*y1 + cam_d(3);
         }
@@ -1006,7 +1006,7 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         }
 
         // Finally construct the uv and depth
-        Eigen::Vector3d uvd;
+        Eigen::Vector3f uvd;
         uvd << uv_dist, depth;
         active_tracks_uvd.insert({feat.first, uvd});
 

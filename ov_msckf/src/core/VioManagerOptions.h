@@ -58,22 +58,22 @@ namespace ov_msckf {
         StateOptions state_options;
 
         /// Delay, in seconds, that we should wait from init before we start estimating SLAM features
-        double dt_slam_delay = 2.0;
+        float dt_slam_delay = 2.0;
 
         /// Amount of time we will initialize over (seconds)
-        double init_window_time = 1.0;
+        float init_window_time = 1.0;
 
         ///  Variance threshold on our acceleration to be classified as moving
-        double init_imu_thresh = 1.0;
+        float init_imu_thresh = 1.0;
 
         /// If we should try to use zero velocity update
         bool try_zupt = false;
 
         /// Max velocity we will consider to try to do a zupt (i.e. if above this, don't do zupt)
-        double zupt_max_velocity = 1.0;
+        float zupt_max_velocity = 1.0;
 
         /// Multiplier of our zupt measurement IMU noise matrix (default should be 1.0)
-        double zupt_noise_multiplier = 1.0;
+        float zupt_noise_multiplier = 1.0;
 
         /// If we should record the timing performance to file
         bool record_timing_information = false;
@@ -135,19 +135,19 @@ namespace ov_msckf {
         // STATE DEFAULTS ==========================
 
         /// Gravity in the global frame (i.e. should be [0, 0, 9.81] typically)
-        Eigen::Vector3d gravity = {0.0, 0.0, 9.81};
+        Eigen::Vector3f gravity = {0.0, 0.0, 9.81};
 
         /// Time offset between camera and IMU.
-        double calib_camimu_dt = 0.0;
+        float calib_camimu_dt = 0.0;
 
         /// Map between camid and camera model (true=fisheye, false=radtan)
         std::map<size_t,bool> camera_fisheye;
 
         /// Map between camid and intrinsics. Values depends on the model but each should be a 4x1 vector normally.
-        std::map<size_t,Eigen::VectorXd> camera_intrinsics;
+        std::map<size_t,Eigen::VectorXf> camera_intrinsics;
 
         /// Map between camid and camera extrinsics (q_ItoC, p_IinC).
-        std::map<size_t,Eigen::VectorXd> camera_extrinsics;
+        std::map<size_t,Eigen::VectorXf> camera_extrinsics;
 
         /// Map between camid and the dimensions of incoming images (width/cols, height/rows). This is normally only used during simulation.
         std::map<size_t,std::pair<int,int>> camera_wh;
@@ -168,7 +168,7 @@ namespace ov_msckf {
                 std::cout << "cam_" << n << "_intrinsic(4:7):" << endl << camera_intrinsics.at(n).block(4,0,4,1).transpose() << std::endl;
                 std::cout << "cam_" << n << "_extrinsic(0:3):" << endl << camera_extrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
                 std::cout << "cam_" << n << "_extrinsic(4:6):" << endl << camera_extrinsics.at(n).block(4,0,3,1).transpose() << std::endl;
-                Eigen::Matrix4d T_CtoI = Eigen::Matrix4d::Identity();
+                Eigen::Matrix4f T_CtoI = Eigen::Matrix4f::Identity();
                 T_CtoI.block(0,0,3,3) = quat_2_Rot(camera_extrinsics.at(n).block(0,0,4,1)).transpose();
                 T_CtoI.block(0,3,3,1) = -T_CtoI.block(0,0,3,3)*camera_extrinsics.at(n).block(4,0,3,1);
                 std::cout << "T_C" << n << "toI:" << endl << T_CtoI << std::endl << std::endl;
@@ -214,7 +214,7 @@ namespace ov_msckf {
         int min_px_dist = 10;
 
         /// KNN ration between top two descriptor matcher which is required to be a good match
-        double knn_ratio = 0.85;
+        float knn_ratio = 0.85;
 
         /// Parameters used by our feature initialize / triangulator
         FeatureInitializerOptions featinit_options;
@@ -243,15 +243,15 @@ namespace ov_msckf {
         string sim_traj_path = "../ov_data/sim/udel_gore.txt";
 
         /// We will start simulating after we have moved this much along the b-spline. This prevents static starts as we init from groundtruth in simulation.
-        double sim_distance_threshold = 1.0;
+        float sim_distance_threshold = 1.0;
 
         /// Frequency (Hz) that we will simulate our cameras
-        double sim_freq_cam = 10.0;
+        float sim_freq_cam = 10.0;
 
         /// Frequency (Hz) that we will simulate our inertial measurement unit
-        double sim_freq_imu = 400.0;
+        float sim_freq_imu = 400.0;
 
-        /// Seed for initial states (i.e. random feature 3d positions in the generated map)
+        /// Seed for initial states (i.e. random feature 3f positions in the generated map)
         int sim_seed_state_init = 0;
 
         /// Seed for calibration perturbations. Change this to perturb by different random values if perturbations are enabled.

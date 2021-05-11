@@ -24,7 +24,7 @@
 using namespace ov_core;
 
 
-void TrackAruco::feed_monocular(double timestamp, cv::Mat &imgin, size_t cam_id) {
+void TrackAruco::feed_monocular(float timestamp, cv::Mat &imgin, size_t cam_id) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -117,7 +117,7 @@ void TrackAruco::feed_monocular(double timestamp, cv::Mat &imgin, size_t cam_id)
 }
 
 
-void TrackAruco::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
+void TrackAruco::feed_stereo(float timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
 
     // There is not such thing as stereo tracking for aruco
     // Thus here we should just call the monocular version two times

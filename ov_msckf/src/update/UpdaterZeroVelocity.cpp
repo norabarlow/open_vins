@@ -24,7 +24,7 @@ using namespace ov_msckf;
 
 
 
-bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timestamp) {
+bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, float timestamp) {
 
     // Return if we don't have any imu data yet
     if(imu_data.empty())
@@ -44,12 +44,12 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     //assert(timestamp > state->_timestamp);
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    float t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    //double time0 = state->_timestamp+t_off_new;
-    double time0 = state->_timestamp+last_prop_time_offset;
-    double time1 = timestamp+t_off_new;
+    //float time0 = state->_timestamp+t_off_new;
+    float time0 = state->_timestamp+last_prop_time_offset;
+    float time1 = timestamp+t_off_new;
 
     // Select bounding inertial measurements
     std::vector<ov_core::ImuData> imu_recent = Propagator::select_imu_readings(imu_data, time0, time1);
@@ -78,9 +78,9 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     // Large final matrices used for update
     int h_size = (integrated_accel_constraint) ? 12 : 9;
     int m_size = 6*(imu_recent.size()-1);
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m_size,h_size);
-    Eigen::VectorXd res = Eigen::VectorXd::Zero(m_size);
-    Eigen::MatrixXd R = Eigen::MatrixXd::Identity(m_size,m_size);
+    Eigen::MatrixXf H = Eigen::MatrixXf::Zero(m_size,h_size);
+    Eigen::VectorXf res = Eigen::VectorXf::Zero(m_size);
+    Eigen::MatrixXf R = Eigen::MatrixXf::Identity(m_size,m_size);
 
     // Loop through all our IMU and construct the residual and Jacobian
     // State order is: [q_GtoI, bg, ba, v_IinG]
@@ -88,12 +88,12 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     // w_true = w_m - bw - nw
     // a_true = a_m - ba - R*g - na
     // v_true = v_k - g*dt + R^T*(a_m - ba - na)*dt
-    double dt_summed = 0;
+    float dt_summed = 0;
     for(size_t i=0; i<imu_recent.size()-1; i++) {
 
         // Precomputed values
-        double dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
-        Eigen::Vector3d a_hat = imu_recent.at(i).am - state->_imu->bias_a();
+        float dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
+        Eigen::Vector3f a_hat = imu_recent.at(i).am - state->_imu->bias_a();
 
         // Measurement residual (true value is zero)
         res.block(6*i+0,0,3,1) = -(imu_recent.at(i).wm - state->_imu->bias_g());
@@ -104,15 +104,15 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
         }
 
         // Measurement Jacobian
-        Eigen::Matrix3d R_GtoI_jacob = (state->_options.do_fej)? state->_imu->Rot_fej() : state->_imu->Rot();
-        H.block(6*i+0,3,3,3) = -Eigen::Matrix<double,3,3>::Identity();
+        Eigen::Matrix3f R_GtoI_jacob = (state->_options.do_fej)? state->_imu->Rot_fej() : state->_imu->Rot();
+        H.block(6*i+0,3,3,3) = -Eigen::Matrix<float,3,3>::Identity();
         if(!integrated_accel_constraint) {
             H.block(6*i+3,0,3,3) = -skew_x(R_GtoI_jacob*_gravity);
-            H.block(6*i+3,6,3,3) = -Eigen::Matrix<double,3,3>::Identity();
+            H.block(6*i+3,6,3,3) = -Eigen::Matrix<float,3,3>::Identity();
         } else {
             H.block(6*i+3,0,3,3) = -R_GtoI_jacob.transpose()*skew_x(a_hat)*dt;
             H.block(6*i+3,6,3,3) = -R_GtoI_jacob.transpose()*dt;
-            H.block(6*i+3,9,3,3) = Eigen::Matrix<double,3,3>::Identity();
+            H.block(6*i+3,9,3,3) = Eigen::Matrix<float,3,3>::Identity();
         }
 
         // Measurement noise (convert from continuous to discrete)
@@ -133,20 +133,20 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
 
     // Next propagate the biases forward in time
     // NOTE: G*Qd*G^t = dt*Qd*dt = dt*Qc
-    Eigen::MatrixXd Q_bias = Eigen::MatrixXd::Identity(6,6);
+    Eigen::MatrixXf Q_bias = Eigen::MatrixXf::Identity(6,6);
     Q_bias.block(0,0,3,3) *= dt_summed*_noises.sigma_wb;
     Q_bias.block(3,3,3,3) *= dt_summed*_noises.sigma_ab;
 
     // Chi2 distance check
     // NOTE: we also append the propagation we "would do before the update" if this was to be accepted
     // NOTE: we don't propagate first since if we fail the chi2 then we just want to return and do normal logic
-    Eigen::MatrixXd P_marg = StateHelper::get_marginal_covariance(state, Hx_order);
+    Eigen::MatrixXf P_marg = StateHelper::get_marginal_covariance(state, Hx_order);
     P_marg.block(3,3,6,6) += Q_bias;
-    Eigen::MatrixXd S = H*P_marg*H.transpose() + R;
-    double chi2 = res.dot(S.llt().solve(res));
+    Eigen::MatrixXf S = H*P_marg*H.transpose() + R;
+    float chi2 = res.dot(S.llt().solve(res));
 
     // Get our threshold (we precompute up to 1000 but handle the case that it is more)
-    double chi2_check;
+    float chi2_check;
     if(res.rows() < 1000) {
         chi2_check = chi_squared_table[res.rows()];
     } else {
@@ -165,7 +165,7 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     // Next propagate the biases forward in time
     // NOTE: G*Qd*G^t = dt*Qd*dt = dt*Qc
     if(model_time_varying_bias) {
-        Eigen::MatrixXd Phi_bias = Eigen::MatrixXd::Identity(6,6);
+        Eigen::MatrixXf Phi_bias = Eigen::MatrixXf::Identity(6,6);
         std::vector<std::shared_ptr<Type>> Phi_order;
         Phi_order.push_back(state->_imu->bg());
         Phi_order.push_back(state->_imu->ba());

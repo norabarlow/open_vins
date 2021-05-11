@@ -52,36 +52,36 @@ namespace ov_core {
         struct ClonePose {
 
             /// Rotation
-            Eigen::Matrix<double,3,3> _Rot;
+            Eigen::Matrix<float,3,3> _Rot;
 
             /// Position
-            Eigen::Matrix<double,3,1> _pos;
+            Eigen::Matrix<float,3,1> _pos;
 
             /// Constructs pose from rotation and position
-            ClonePose(const Eigen::Matrix<double,3,3> &R, const Eigen::Matrix<double,3,1> &p) {
+            ClonePose(const Eigen::Matrix<float,3,3> &R, const Eigen::Matrix<float,3,1> &p) {
                 _Rot = R;
                 _pos = p;
             }
 
             /// Constructs pose from quaternion and position
-            ClonePose(const Eigen::Matrix<double,4,1> &q, const Eigen::Matrix<double,3,1> &p) {
+            ClonePose(const Eigen::Matrix<float,4,1> &q, const Eigen::Matrix<float,3,1> &p) {
                 _Rot = quat_2_Rot(q);
                 _pos = p;
             }
 
             /// Default constructor
             ClonePose() {
-                _Rot = Eigen::Matrix<double,3,3>::Identity();
-                _pos = Eigen::Matrix<double,3,1>::Zero();
+                _Rot = Eigen::Matrix<float,3,3>::Identity();
+                _pos = Eigen::Matrix<float,3,1>::Zero();
             }
 
             /// Accessor for rotation
-            const Eigen::Matrix<double,3,3> &Rot() {
+            const Eigen::Matrix<float,3,3> &Rot() {
                 return _Rot;
             }
 
             /// Accessor for position
-            const Eigen::Matrix<double,3,1> &pos() {
+            const Eigen::Matrix<float,3,1> &pos() {
                 return _pos;
             }
 
@@ -103,7 +103,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to triangulate (based on the thresholds)
          */
-        bool single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM);
 
         /**
          * @brief Uses a linear triangulation to get initial estimate for the feature, treating the anchor observation as a true bearing.
@@ -115,7 +115,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to triangulate (based on the thresholds)
          */
-        bool single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM);
 
         /**
          * @brief Uses a nonlinear triangulation to refine initial linear estimate of the feature
@@ -123,7 +123,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to be optimize (based on the thresholds)
          */
-        bool single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM);
 
         /**
          * @brief Gets the current configuration of the feature initializer
@@ -147,7 +147,7 @@ namespace ov_core {
          * @param beta y/z in anchor
          * @param rho 1/z inverse depth
          */
-        double compute_error(std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM,Feature* feat,double alpha,double beta,double rho);
+        float compute_error(std::unordered_map<size_t,std::unordered_map<float,ClonePose>> &clonesCAM,Feature* feat,float alpha,float beta,float rho);
 
     };
 

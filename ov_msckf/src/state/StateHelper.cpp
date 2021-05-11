@@ -28,7 +28,7 @@ using namespace ov_msckf;
 
 void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &order_NEW,
                                  const std::vector<std::shared_ptr<Type>> &order_OLD,
-                                 const Eigen::MatrixXd &Phi, const Eigen::MatrixXd &Q) {
+                                 const Eigen::MatrixXf &Phi, const Eigen::MatrixXf &Q) {
 
     // We need at least one old and new variable
     if (order_NEW.empty() || order_OLD.empty()) {
@@ -69,7 +69,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
 
     // Loop through all our old states and get the state transition times it
     // Cov_PhiT = [ Pxx ] [ Phi' ]'
-    Eigen::MatrixXd Cov_PhiT = Eigen::MatrixXd::Zero(state->_Cov.rows(), Phi.rows());
+    Eigen::MatrixXf Cov_PhiT = Eigen::MatrixXf::Zero(state->_Cov.rows(), Phi.rows());
     for (size_t i=0; i<order_OLD.size(); i++) {
         std::shared_ptr<Type> var = order_OLD.at(i);
         Cov_PhiT.noalias() += state->_Cov.block(0, var->id(), state->_Cov.rows(), var->size())
@@ -78,7 +78,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
     }
 
     // Get Phi_NEW*Covariance*Phi_NEW^t + Q
-    Eigen::MatrixXd Phi_Cov_PhiT = Q.selfadjointView<Eigen::Upper>();
+    Eigen::MatrixXf Phi_Cov_PhiT = Q.selfadjointView<Eigen::Upper>();
     for (size_t i=0; i<order_OLD.size(); i++) {
         std::shared_ptr<Type> var = order_OLD.at(i);
         Phi_Cov_PhiT.noalias() += Phi.block(0, Phi_id[i], Phi.rows(), var->size())
@@ -94,7 +94,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
     state->_Cov.block(start_id,start_id,phi_size,phi_size) = Phi_Cov_PhiT;
 
     // We should check if we are not positive semi-definitate (i.e. negative diagionals is not s.p.d)
-    Eigen::VectorXd diags = state->_Cov.diagonal();
+    Eigen::VectorXf diags = state->_Cov.diagonal();
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
@@ -108,14 +108,14 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
 
 
 void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &H_order,
-                            const Eigen::MatrixXd &H, const Eigen::VectorXd &res, const Eigen::MatrixXd &R) {
+                            const Eigen::MatrixXf &H, const Eigen::VectorXf &res, const Eigen::MatrixXf &R) {
 
     //==========================================================
     //==========================================================
     // Part of the Kalman Gain K = (P*H^T)*S^{-1} = M*S^{-1}
     assert(res.rows() == R.rows());
     assert(H.rows() == res.rows());
-    Eigen::MatrixXd M_a = Eigen::MatrixXd::Zero(state->_Cov.rows(), res.rows());
+    Eigen::MatrixXf M_a = Eigen::MatrixXf::Zero(state->_Cov.rows(), res.rows());
 
     // Get the location in small jacobian for each measuring variable
     int current_it = 0;
@@ -130,7 +130,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     // For each active variable find its M = P*H^T
     for (const auto &var: state->_variables) {
         // Sum up effect of each subjacobian = K_i= \sum_m (P_im Hm^T)
-        Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res.rows());
+        Eigen::MatrixXf M_i = Eigen::MatrixXf::Zero(var->size(), res.rows());
         for (size_t i = 0; i < H_order.size(); i++) {
             std::shared_ptr<Type> meas_var = H_order[i];
             M_i.noalias() += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
@@ -142,19 +142,19 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     //==========================================================
     //==========================================================
     // Get covariance of the involved terms
-    Eigen::MatrixXd P_small = StateHelper::get_marginal_covariance(state, H_order);
+    Eigen::MatrixXf P_small = StateHelper::get_marginal_covariance(state, H_order);
 
     // Residual covariance S = H*Cov*H' + R
-    Eigen::MatrixXd S(R.rows(), R.rows());
+    Eigen::MatrixXf S(R.rows(), R.rows());
     S.triangularView<Eigen::Upper>() = H * P_small * H.transpose();
     S.triangularView<Eigen::Upper>() += R;
-    //Eigen::MatrixXd S = H * P_small * H.transpose() + R;
+    //Eigen::MatrixXf S = H * P_small * H.transpose() + R;
 
     // Invert our S (should we use a more stable method here??)
-    Eigen::MatrixXd Sinv = Eigen::MatrixXd::Identity(R.rows(), R.rows());
+    Eigen::MatrixXf Sinv = Eigen::MatrixXf::Identity(R.rows(), R.rows());
     S.selfadjointView<Eigen::Upper>().llt().solveInPlace(Sinv);
-    Eigen::MatrixXd K = M_a * Sinv.selfadjointView<Eigen::Upper>();
-    //Eigen::MatrixXd K = M_a * S.inverse();
+    Eigen::MatrixXf K = M_a * Sinv.selfadjointView<Eigen::Upper>();
+    //Eigen::MatrixXf K = M_a * S.inverse();
 
     // Update Covariance
     state->_Cov.triangularView<Eigen::Upper>() -= K * M_a.transpose();
@@ -163,7 +163,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     //Cov = 0.5*(Cov+Cov.transpose());
 
     // We should check if we are not positive semi-definitate (i.e. negative diagionals is not s.p.d)
-    Eigen::VectorXd diags = state->_Cov.diagonal();
+    Eigen::VectorXf diags = state->_Cov.diagonal();
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
@@ -174,7 +174,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     assert(!found_neg);
 
     // Calculate our delta and update all our active states
-    Eigen::VectorXd dx = K*res;
+    Eigen::VectorXf dx = K*res;
     for (size_t i = 0; i < state->_variables.size(); i++) {
         state->_variables.at(i)->update(dx.block(state->_variables.at(i)->id(), 0, state->_variables.at(i)->size(), 1));
     }
@@ -182,7 +182,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
 }
 
 
-void StateHelper::fix_4dof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4d &q_GtoI) {
+void StateHelper::fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4f &q_GtoI) {
 
     // Fix our global yaw and position
     state->_Cov(state->_imu->q()->id()+2, state->_imu->q()->id()+2) = 0.0;
@@ -190,14 +190,14 @@ void StateHelper::fix_4dof_gauge_freedoms(std::shared_ptr<State> state, const Ei
 
     // Propagate into the current local IMU frame
     // R_GtoI = R_GtoI*R_GtoG -> H = R_GtoI
-    Eigen::Matrix3d R_GtoI = quat_2_Rot(q_GtoI);
+    Eigen::Matrix3f R_GtoI = quat_2_Rot(q_GtoI);
     state->_Cov.block(state->_imu->q()->id(), state->_imu->q()->id(), 3, 3) =
             R_GtoI*state->_Cov.block(state->_imu->q()->id(), state->_imu->q()->id(), 3, 3)*R_GtoI.transpose();
 
 }
 
 
-Eigen::MatrixXd StateHelper::get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables) {
+Eigen::MatrixXf StateHelper::get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables) {
 
     // Calculate the marginal covariance size we need to make our matrix
     int cov_size = 0;
@@ -206,7 +206,7 @@ Eigen::MatrixXd StateHelper::get_marginal_covariance(std::shared_ptr<State> stat
     }
 
     // Construct our return covariance
-    Eigen::MatrixXd Small_cov = Eigen::MatrixXd::Zero(cov_size, cov_size);
+    Eigen::MatrixXf Small_cov = Eigen::MatrixXf::Zero(cov_size, cov_size);
 
     // For each variable, lets copy over all other variable cross terms
     // Note: this copies over itself to when i_index=k_index
@@ -228,13 +228,13 @@ Eigen::MatrixXd StateHelper::get_marginal_covariance(std::shared_ptr<State> stat
 
 
 
-Eigen::MatrixXd StateHelper::get_full_covariance(std::shared_ptr<State> state) {
+Eigen::MatrixXf StateHelper::get_full_covariance(std::shared_ptr<State> state) {
 
     // Size of the covariance is the active
     int cov_size = (int)state->_Cov.rows();
 
     // Construct our return covariance
-    Eigen::MatrixXd full_cov = Eigen::MatrixXd::Zero(cov_size, cov_size);
+    Eigen::MatrixXf full_cov = Eigen::MatrixXf::Zero(cov_size, cov_size);
 
     // Copy in the active state elements
     full_cov.block(0,0,state->_Cov.rows(),state->_Cov.rows()) = state->_Cov;
@@ -273,7 +273,7 @@ void StateHelper::marginalize(std::shared_ptr<State> state, std::shared_ptr<Type
     int marg_id = marg->id();
     int x2_size = (int)state->_Cov.rows() - marg_id - marg_size;
 
-    Eigen::MatrixXd Cov_new(state->_Cov.rows() - marg_size, state->_Cov.rows() - marg_size);
+    Eigen::MatrixXf Cov_new(state->_Cov.rows() - marg_size, state->_Cov.rows() - marg_size);
 
     //P_(x_1,x_1)
     Cov_new.block(0, 0, marg_id, marg_id) = state->_Cov.block(0, 0, marg_id, marg_id);
@@ -328,7 +328,7 @@ std::shared_ptr<Type> StateHelper::clone(std::shared_ptr<State> state, std::shar
     int new_loc = (int)state->_Cov.rows();
 
     // Resize both our covariance to the new size
-    state->_Cov.conservativeResizeLike(Eigen::MatrixXd::Zero(old_size + total_size, old_size + total_size));
+    state->_Cov.conservativeResizeLike(Eigen::MatrixXf::Zero(old_size + total_size, old_size + total_size));
 
     // What is the new state, and variable we inserted
     const std::vector<std::shared_ptr<Type>> new_variables = state->_variables;
@@ -378,7 +378,7 @@ std::shared_ptr<Type> StateHelper::clone(std::shared_ptr<State> state, std::shar
 
 
 bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                             Eigen::MatrixXd &H_R, Eigen::MatrixXd &H_L, Eigen::MatrixXd &R, Eigen::VectorXd &res, double chi_2_mult) {
+                             Eigen::MatrixXf &H_R, Eigen::MatrixXf &H_L, Eigen::MatrixXf &R, Eigen::VectorXf &res, float chi_2_mult) {
 
     // Check that this new variable is not already initialized
     if (std::find(state->_variables.begin(), state->_variables.end(), new_variable) != state->_variables.end()) {
@@ -412,7 +412,7 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
     size_t new_var_size = new_variable->size();
     assert((int)new_var_size == H_L.cols());
 
-    Eigen::JacobiRotation<double> tempHo_GR;
+    Eigen::JacobiRotation<float> tempHo_GR;
     for (int n = 0; n < H_L.cols(); ++n) {
         for (int m = (int) H_L.rows() - 1; m > n; m--) {
             // Givens matrix G
@@ -428,29 +428,29 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
 
     // Separate into initializing and updating portions
     // 1. Invertible initializing system
-    Eigen::MatrixXd Hxinit = H_R.block(0, 0, new_var_size, H_R.cols());
-    Eigen::MatrixXd H_finit = H_L.block(0, 0, new_var_size, new_var_size);
-    Eigen::VectorXd resinit = res.block(0, 0, new_var_size, 1);
-    Eigen::MatrixXd Rinit = R.block(0, 0, new_var_size, new_var_size);
+    Eigen::MatrixXf Hxinit = H_R.block(0, 0, new_var_size, H_R.cols());
+    Eigen::MatrixXf H_finit = H_L.block(0, 0, new_var_size, new_var_size);
+    Eigen::VectorXf resinit = res.block(0, 0, new_var_size, 1);
+    Eigen::MatrixXf Rinit = R.block(0, 0, new_var_size, new_var_size);
 
     // 2. Nullspace projected updating system
-    Eigen::MatrixXd Hup = H_R.block(new_var_size, 0, H_R.rows() - new_var_size, H_R.cols());
-    Eigen::VectorXd resup = res.block(new_var_size, 0, res.rows() - new_var_size, 1);
-    Eigen::MatrixXd Rup = R.block(new_var_size, new_var_size, R.rows() - new_var_size, R.rows() - new_var_size);
+    Eigen::MatrixXf Hup = H_R.block(new_var_size, 0, H_R.rows() - new_var_size, H_R.cols());
+    Eigen::VectorXf resup = res.block(new_var_size, 0, res.rows() - new_var_size, 1);
+    Eigen::MatrixXf Rup = R.block(new_var_size, new_var_size, R.rows() - new_var_size, R.rows() - new_var_size);
 
     //==========================================================
     //==========================================================
 
     // Do mahalanobis distance testing
-    Eigen::MatrixXd P_up = get_marginal_covariance(state, H_order);
+    Eigen::MatrixXf P_up = get_marginal_covariance(state, H_order);
     assert(Rup.rows() == Hup.rows());
     assert(Hup.cols() == P_up.cols());
-    Eigen::MatrixXd S = Hup*P_up*Hup.transpose()+Rup;
-    double chi2 = resup.dot(S.llt().solve(resup));
+    Eigen::MatrixXf S = Hup*P_up*Hup.transpose()+Rup;
+    float chi2 = resup.dot(S.llt().solve(resup));
 
     // Get what our threshold should be
     boost::math::chi_squared chi_squared_dist(res.rows());
-    double chi2_check = boost::math::quantile(chi_squared_dist, 0.95);
+    float chi2_check = boost::math::quantile(chi_squared_dist, 0.95);
     if (chi2 > chi_2_mult*chi2_check) {
         return false;
     }
@@ -470,7 +470,7 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
 
 
 void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                                        const Eigen::MatrixXd &H_R, const Eigen::MatrixXd &H_L, const Eigen::MatrixXd &R, const Eigen::VectorXd &res) {
+                                        const Eigen::MatrixXf &H_R, const Eigen::MatrixXf &H_L, const Eigen::MatrixXf &R, const Eigen::VectorXf &res) {
 
     // Check that this new variable is not already initialized
     if (std::find(state->_variables.begin(), state->_variables.end(), new_variable) != state->_variables.end()) {
@@ -503,7 +503,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     assert(res.rows() == R.rows());
     assert(H_L.rows() == res.rows());
     assert(H_L.rows() == H_R.rows());
-    Eigen::MatrixXd M_a = Eigen::MatrixXd::Zero(state->_Cov.rows(), res.rows());
+    Eigen::MatrixXf M_a = Eigen::MatrixXf::Zero(state->_Cov.rows(), res.rows());
 
     // Get the location in small jacobian for each measuring variable
     int current_it = 0;
@@ -518,7 +518,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     // For each active variable find its M = P*H^T
     for (const auto &var: state->_variables) {
         // Sum up effect of each subjacobian= K_i= \sum_m (P_im Hm^T)
-        Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res.rows());
+        Eigen::MatrixXf M_i = Eigen::MatrixXf::Zero(var->size(), res.rows());
         for (size_t i = 0; i < H_order.size(); i++) {
             std::shared_ptr<Type> meas_var = H_order.at(i);
             M_i += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
@@ -530,22 +530,22 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     //==========================================================
     //==========================================================
     // Get covariance of this small jacobian
-    Eigen::MatrixXd P_small = StateHelper::get_marginal_covariance(state, H_order);
+    Eigen::MatrixXf P_small = StateHelper::get_marginal_covariance(state, H_order);
 
     // M = H_R*Cov*H_R' + R
-    Eigen::MatrixXd M(H_R.rows(), H_R.rows());
+    Eigen::MatrixXf M(H_R.rows(), H_R.rows());
     M.triangularView<Eigen::Upper>() = H_R * P_small * H_R.transpose();
     M.triangularView<Eigen::Upper>() += R;
 
     // Covariance of the variable/landmark that will be initialized
     assert(H_L.rows()==H_L.cols());
     assert(H_L.rows() == new_variable->size());
-    Eigen::MatrixXd H_Linv = H_L.inverse();
-    Eigen::MatrixXd P_LL = H_Linv * M.selfadjointView<Eigen::Upper>() * H_Linv.transpose();
+    Eigen::MatrixXf H_Linv = H_L.inverse();
+    Eigen::MatrixXf P_LL = H_Linv * M.selfadjointView<Eigen::Upper>() * H_Linv.transpose();
 
     // Augment the covariance matrix
     size_t oldSize = state->_Cov.rows();
-    state->_Cov.conservativeResizeLike(Eigen::MatrixXd::Zero(oldSize + new_variable->size(), oldSize + new_variable->size()));
+    state->_Cov.conservativeResizeLike(Eigen::MatrixXf::Zero(oldSize + new_variable->size(), oldSize + new_variable->size()));
     state->_Cov.block(0, oldSize, oldSize, new_variable->size()).noalias() = -M_a * H_Linv.transpose();
     state->_Cov.block(oldSize, 0, new_variable->size(), oldSize) = state->_Cov.block(0, oldSize, oldSize, new_variable->size()).transpose();
     state->_Cov.block(oldSize, oldSize, new_variable->size(), new_variable->size()) = P_LL;
@@ -562,7 +562,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
 }
 
 
-void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<double, 3, 1> last_w) {
+void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<float, 3, 1> last_w) {
 
     // We can't insert a clone that occured at the same timestamp!
     if (state->_clones_IMU.find(state->_timestamp) != state->_clones_IMU.end()) {
@@ -589,7 +589,7 @@ void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<doub
     // http://journals.sagepub.com/doi/pdf/10.1177/0278364913515286
     if (state->_options.do_calib_camera_timeoffset) {
         // Jacobian to augment by
-        Eigen::Matrix<double, 6, 1> dnc_dt = Eigen::MatrixXd::Zero(6, 1);
+        Eigen::Matrix<float, 6, 1> dnc_dt = Eigen::MatrixXf::Zero(6, 1);
         dnc_dt.block(0, 0, 3, 1) = last_w;
         dnc_dt.block(3, 0, 3, 1) = state->_imu->vel();
         // Augment covariance with time offset Jacobian

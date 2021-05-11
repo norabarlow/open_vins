@@ -233,7 +233,7 @@ namespace matplotlibcpp {
         detail::s_backend = name;
     }
 
-    inline bool annotate(std::string annotation, double x, double y)
+    inline bool annotate(std::string annotation, float x, float y)
     {
         PyObject * xy = PyTuple_New(2);
         PyObject * str = PyString_FromString(annotation.c_str());
@@ -260,7 +260,7 @@ namespace matplotlibcpp {
 #ifndef WITHOUT_NUMPY
 // Type selector for numpy array conversion
     template <typename T> struct select_npy_type { const static NPY_TYPES type = NPY_NOTYPE; }; //Default
-    template <> struct select_npy_type<double> { const static NPY_TYPES type = NPY_DOUBLE; };
+    template <> struct select_npy_type<float> { const static NPY_TYPES type = NPY_DOUBLE; };
     template <> struct select_npy_type<float> { const static NPY_TYPES type = NPY_FLOAT; };
     template <> struct select_npy_type<bool> { const static NPY_TYPES type = NPY_BOOL; };
     template <> struct select_npy_type<int8_t> { const static NPY_TYPES type = NPY_INT8; };
@@ -279,7 +279,7 @@ namespace matplotlibcpp {
         NPY_TYPES type = select_npy_type<Numeric>::type;
         if (type == NPY_NOTYPE)
         {
-            std::vector<double> vd(v.size());
+            std::vector<float> vd(v.size());
             npy_intp vsize = v.size();
             std::copy(v.begin(),v.end(),vd.begin());
             PyObject* varray = PyArray_SimpleNewFromData(1, &vsize, NPY_DOUBLE, (void*)(vd.data()));
@@ -292,10 +292,10 @@ namespace matplotlibcpp {
     }
 
     template<typename Numeric>
-    PyObject* get_2darray(const std::vector<::std::vector<Numeric>>& v)
+    PyObject* get_2farray(const std::vector<::std::vector<Numeric>>& v)
     {
         detail::_interpreter::get();    //interpreter needs to be initialized for the numpy commands to work
-        if (v.size() < 1) throw std::runtime_error("get_2d_array v too small");
+        if (v.size() < 1) throw std::runtime_error("get_2f_array v too small");
 
         npy_intp vsize[2] = {static_cast<npy_intp>(v.size()),
                              static_cast<npy_intp>(v[0].size())};
@@ -303,7 +303,7 @@ namespace matplotlibcpp {
         PyArrayObject *varray =
                 (PyArrayObject *)PyArray_SimpleNew(2, vsize, NPY_DOUBLE);
 
-        double *vd_begin = static_cast<double *>(PyArray_DATA(varray));
+        float *vd_begin = static_cast<float *>(PyArray_DATA(varray));
 
         for (const ::std::vector<Numeric> &v_row : v) {
             if (v_row.size() != static_cast<size_t>(vsize[1]))
@@ -369,31 +369,31 @@ PyObject* get_array(const std::vector<Numeric>& v)
         // We lazily load the modules here the first time this function is called
         // because I'm not sure that we can assume "matplotlib installed" implies
         // "mpl_toolkits installed" on all platforms, and we don't want to require
-        // it for people who don't need 3d plots.
-        static PyObject *mpl_toolkitsmod = nullptr, *axis3dmod = nullptr;
+        // it for people who don't need 3f plots.
+        static PyObject *mpl_toolkitsmod = nullptr, *axis3fmod = nullptr;
         if (!mpl_toolkitsmod) {
             detail::_interpreter::get();
 
             PyObject* mpl_toolkits = PyString_FromString("mpl_toolkits");
-            PyObject* axis3d = PyString_FromString("mpl_toolkits.mplot3d");
-            if (!mpl_toolkits || !axis3d) { throw std::runtime_error("couldnt create string"); }
+            PyObject* axis3f = PyString_FromString("mpl_toolkits.mplot3f");
+            if (!mpl_toolkits || !axis3f) { throw std::runtime_error("couldnt create string"); }
 
             mpl_toolkitsmod = PyImport_Import(mpl_toolkits);
             Py_DECREF(mpl_toolkits);
             if (!mpl_toolkitsmod) { throw std::runtime_error("Error loading module mpl_toolkits!"); }
 
-            axis3dmod = PyImport_Import(axis3d);
-            Py_DECREF(axis3d);
-            if (!axis3dmod) { throw std::runtime_error("Error loading module mpl_toolkits.mplot3d!"); }
+            axis3fmod = PyImport_Import(axis3f);
+            Py_DECREF(axis3f);
+            if (!axis3fmod) { throw std::runtime_error("Error loading module mpl_toolkits.mplot3f!"); }
         }
 
         assert(x.size() == y.size());
         assert(y.size() == z.size());
 
         // using numpy arrays
-        PyObject *xarray = get_2darray(x);
-        PyObject *yarray = get_2darray(y);
-        PyObject *zarray = get_2darray(z);
+        PyObject *xarray = get_2farray(x);
+        PyObject *yarray = get_2farray(y);
+        PyObject *zarray = get_2farray(z);
 
         // construct positional args
         PyObject *args = PyTuple_New(3);
@@ -424,7 +424,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         if (!fig) throw std::runtime_error("Call to figure() failed.");
 
         PyObject *gca_kwargs = PyDict_New();
-        PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3d"));
+        PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3f"));
 
         PyObject *gca = PyObject_GetAttrString(fig, "gca");
         if (!gca) throw std::runtime_error("No gca");
@@ -548,7 +548,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
     template< typename Numeric>
     bool hist(const std::vector<Numeric>& y, long bins=10,std::string color="b",
-              double alpha=1.0, bool cumulative=false)
+              float alpha=1.0, bool cumulative=false)
     {
 
         PyObject* yarray = get_array(y);
@@ -649,7 +649,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     template<typename NumericX, typename NumericY>
     bool scatter(const std::vector<NumericX>& x,
                  const std::vector<NumericY>& y,
-                 const double s=1.0) // The marker size in points**2
+                 const float s=1.0) // The marker size in points**2
     {
         assert(x.size() == y.size());
 
@@ -673,7 +673,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template< typename Numeric>
-    bool bar(const std::vector<Numeric>& y, std::string ec = "black", std::string ls = "-", double lw = 1.0,
+    bool bar(const std::vector<Numeric>& y, std::string ec = "black", std::string ls = "-", float lw = 1.0,
              const std::map<std::string, std::string>& keywords = {})
     {
         PyObject* yarray = get_array(y);
@@ -703,11 +703,11 @@ PyObject* get_array(const std::vector<Numeric>& v)
         return res;
     }
 
-    inline bool subplots_adjust(const std::map<std::string, double>& keywords = {})
+    inline bool subplots_adjust(const std::map<std::string, float>& keywords = {})
     {
 
         PyObject* kwargs = PyDict_New();
-        for (std::map<std::string, double>::const_iterator it =
+        for (std::map<std::string, float>::const_iterator it =
                 keywords.begin(); it != keywords.end(); ++it) {
             PyDict_SetItemString(kwargs, it->first.c_str(),
                                  PyFloat_FromDouble(it->second));
@@ -726,7 +726,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template< typename Numeric>
-    bool named_hist(std::string label,const std::vector<Numeric>& y, long bins=10, std::string color="b", double alpha=1.0)
+    bool named_hist(std::string label,const std::vector<Numeric>& y, long bins=10, std::string color="b", float alpha=1.0)
     {
         PyObject* yarray = get_array(y);
 
@@ -807,7 +807,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template<typename NumericX>
-    bool boxplot(const std::vector<NumericX>& x, const double &position, const double &width, const std::string &color, const std::string &linestyle,
+    bool boxplot(const std::vector<NumericX>& x, const float &position, const float &width, const std::string &color, const std::string &linestyle,
                  const std::map<std::string, std::string>& keywords = {}, bool vert=true)
     {
 
@@ -1244,8 +1244,8 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
         const size_t dpi = 100;
         PyObject* size = PyTuple_New(2);
-        PyTuple_SetItem(size, 0, PyFloat_FromDouble((double)w / dpi));
-        PyTuple_SetItem(size, 1, PyFloat_FromDouble((double)h / dpi));
+        PyTuple_SetItem(size, 0, PyFloat_FromDouble((float)w / dpi));
+        PyTuple_SetItem(size, 1, PyFloat_FromDouble((float)h / dpi));
 
         PyObject* kwargs = PyDict_New();
         PyDict_SetItemString(kwargs, "figsize", size);
@@ -1303,14 +1303,14 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
 
-    inline double* xlim()
+    inline float* xlim()
     {
         PyObject* args = PyTuple_New(0);
         PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_xlim, args);
         PyObject* left = PyTuple_GetItem(res,0);
         PyObject* right = PyTuple_GetItem(res,1);
 
-        double* arr = new double[2];
+        float* arr = new float[2];
         arr[0] = PyFloat_AsDouble(left);
         arr[1] = PyFloat_AsDouble(right);
 
@@ -1321,14 +1321,14 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
 
-    inline double* ylim()
+    inline float* ylim()
     {
         PyObject* args = PyTuple_New(0);
         PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_ylim, args);
         PyObject* left = PyTuple_GetItem(res,0);
         PyObject* right = PyTuple_GetItem(res,1);
 
-        double* arr = new double[2];
+        float* arr = new float[2];
         arr[0] = PyFloat_AsDouble(left);
         arr[1] = PyFloat_AsDouble(right);
 
@@ -1658,7 +1658,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         Py_DECREF(res);
     }
 
-    inline std::vector<std::array<double, 2>> ginput(const int numClicks = 1, const std::map<std::string, std::string>& keywords = {})
+    inline std::vector<std::array<float, 2>> ginput(const int numClicks = 1, const std::map<std::string, std::string>& keywords = {})
     {
         PyObject *args = PyTuple_New(1);
         PyTuple_SetItem(args, 0, PyLong_FromLong(numClicks));
@@ -1678,11 +1678,11 @@ PyObject* get_array(const std::vector<Numeric>& v)
         if (!res) throw std::runtime_error("Call to ginput() failed.");
 
         const size_t len = PyList_Size(res);
-        std::vector<std::array<double, 2>> out;
+        std::vector<std::array<float, 2>> out;
         out.reserve(len);
         for (size_t i = 0; i < len; i++) {
             PyObject *current = PyList_GetItem(res, i);
-            std::array<double, 2> position;
+            std::array<float, 2> position;
             position[0] = PyFloat_AsDouble(PyTuple_GetItem(current, 0));
             position[1] = PyFloat_AsDouble(PyTuple_GetItem(current, 1));
             out.push_back(position);
@@ -1797,8 +1797,8 @@ PyObject* get_array(const std::vector<Numeric>& v)
                 if(begin(ticks) == end(ticks)) return true;
 
                 // We could use additional meta-programming to deduce the correct element type of y,
-                // but all values have to be convertible to double anyways
-                std::vector<double> y;
+                // but all values have to be convertible to float anyways
+                std::vector<float> y;
                 for(auto x : ticks) y.push_back(f(x));
                 return plot_impl<std::false_type>()(ticks,y,format);
             }
@@ -1820,16 +1820,16 @@ PyObject* get_array(const std::vector<Numeric>& v)
  * This group of plot() functions is needed to support initializer lists, i.e. calling
  *    plot( {1,2,3,4} )
  */
-    inline bool plot(const std::vector<double>& x, const std::vector<double>& y, const std::string& format = "") {
-        return plot<double,double>(x,y,format);
+    inline bool plot(const std::vector<float>& x, const std::vector<float>& y, const std::string& format = "") {
+        return plot<float,float>(x,y,format);
     }
 
-    inline bool plot(const std::vector<double>& y, const std::string& format = "") {
-        return plot<double>(y,format);
+    inline bool plot(const std::vector<float>& y, const std::string& format = "") {
+        return plot<float>(y,format);
     }
 
-    inline bool plot(const std::vector<double>& x, const std::vector<double>& y, const std::map<std::string, std::string>& keywords) {
-        return plot<double>(x,y,keywords);
+    inline bool plot(const std::vector<float>& x, const std::vector<float>& y, const std::map<std::string, std::string>& keywords) {
+        return plot<float>(x,y,keywords);
     }
 
 /*
@@ -1879,7 +1879,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         // shorter initialization with name or format only
         // basically calls line, = plot([], [])
         Plot(const std::string& name = "", const std::string& format = "")
-                : Plot(name, std::vector<double>(), std::vector<double>(), format) {}
+                : Plot(name, std::vector<float>(), std::vector<float>(), format) {}
 
         template<typename Numeric>
         bool update(const std::vector<Numeric>& x, const std::vector<Numeric>& y) {
@@ -1902,7 +1902,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
         // clears the plot but keep it available
         bool clear() {
-            return update(std::vector<double>(), std::vector<double>());
+            return update(std::vector<float>(), std::vector<float>());
         }
 
         // definitely remove this line

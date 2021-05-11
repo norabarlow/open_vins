@@ -64,7 +64,7 @@ namespace ov_core {
          * @param sigma_ab accelerometer random walk (m/s^3/sqrt(hz))
          * @param imu_avg_ if we want to average the imu measurements (IJRR paper did not do this)
          */
-        CpiBase(double sigma_w, double sigma_wb, double sigma_a, double sigma_ab, bool imu_avg_ = false) {
+        CpiBase(float sigma_w, float sigma_wb, float sigma_a, float sigma_ab, bool imu_avg_ = false) {
             // Calculate our covariance matrix
             Q_c.block(0, 0, 3, 3) = std::pow(sigma_w, 2) * eye3;
             Q_c.block(3, 3, 3, 3) = std::pow(sigma_wb, 2) * eye3;
@@ -91,9 +91,9 @@ namespace ov_core {
          * This function sets the linearization points we are to preintegrate about.
          * For model 2 we will also pass the q_GtoK and current gravity estimate.
          */
-        void setLinearizationPoints(Eigen::Matrix<double, 3, 1> b_w_lin_, Eigen::Matrix<double, 3, 1> b_a_lin_,
-                                    Eigen::Matrix<double, 4, 1> q_k_lin_ = Eigen::Matrix<double, 4, 1>::Zero(),
-                                    Eigen::Matrix<double, 3, 1> grav_ = Eigen::Matrix<double, 3, 1>::Zero()) {
+        void setLinearizationPoints(Eigen::Matrix<float, 3, 1> b_w_lin_, Eigen::Matrix<float, 3, 1> b_a_lin_,
+                                    Eigen::Matrix<float, 4, 1> q_k_lin_ = Eigen::Matrix<float, 4, 1>::Zero(),
+                                    Eigen::Matrix<float, 3, 1> grav_ = Eigen::Matrix<float, 3, 1>::Zero()) {
             b_w_lin = b_w_lin_;
             b_a_lin = b_a_lin_;
             q_k_lin = q_k_lin_;
@@ -113,9 +113,9 @@ namespace ov_core {
          * This new IMU messages and will precompound our measurements, jacobians, and measurement covariance.
          * Please see both CpiV1 and CpiV2 classes for implementation details on how this works.
          */
-        virtual void feed_IMU(double t_0, double t_1, Eigen::Matrix<double, 3, 1> w_m_0, Eigen::Matrix<double, 3, 1> a_m_0,
-                              Eigen::Matrix<double, 3, 1> w_m_1 = Eigen::Matrix<double, 3, 1>::Zero(),
-                              Eigen::Matrix<double, 3, 1> a_m_1 = Eigen::Matrix<double, 3, 1>::Zero()) = 0;
+        virtual void feed_IMU(float t_0, float t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
+                              Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
+                              Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) = 0;
 
 
         // Flag if we should perform IMU averaging or not
@@ -125,32 +125,32 @@ namespace ov_core {
 
 
         // Measurement Means
-        double DT = 0; ///< measurement integration time
-        Eigen::Matrix<double, 3, 1> alpha_tau = Eigen::Matrix<double, 3, 1>::Zero(); ///< alpha measurement mean
-        Eigen::Matrix<double, 3, 1> beta_tau = Eigen::Matrix<double, 3, 1>::Zero(); ///< beta measurement mean
-        Eigen::Matrix<double, 4, 1> q_k2tau; ///< orientation measurement mean
-        Eigen::Matrix<double, 3, 3> R_k2tau = Eigen::Matrix<double, 3, 3>::Identity(); ///< orientation measurement mean
+        float DT = 0; ///< measurement integration time
+        Eigen::Matrix<float, 3, 1> alpha_tau = Eigen::Matrix<float, 3, 1>::Zero(); ///< alpha measurement mean
+        Eigen::Matrix<float, 3, 1> beta_tau = Eigen::Matrix<float, 3, 1>::Zero(); ///< beta measurement mean
+        Eigen::Matrix<float, 4, 1> q_k2tau; ///< orientation measurement mean
+        Eigen::Matrix<float, 3, 3> R_k2tau = Eigen::Matrix<float, 3, 3>::Identity(); ///< orientation measurement mean
 
         // Jacobians
-        Eigen::Matrix<double, 3, 3> J_q = Eigen::Matrix<double, 3, 3>::Zero(); ///< orientation Jacobian wrt b_w
-        Eigen::Matrix<double, 3, 3> J_a = Eigen::Matrix<double, 3, 3>::Zero(); ///< alpha Jacobian wrt b_w
-        Eigen::Matrix<double, 3, 3> J_b = Eigen::Matrix<double, 3, 3>::Zero(); ///< beta Jacobian wrt b_w
-        Eigen::Matrix<double, 3, 3> H_a = Eigen::Matrix<double, 3, 3>::Zero(); ///< alpha Jacobian wrt b_a
-        Eigen::Matrix<double, 3, 3> H_b = Eigen::Matrix<double, 3, 3>::Zero(); ///< beta Jacobian wrt b_a
+        Eigen::Matrix<float, 3, 3> J_q = Eigen::Matrix<float, 3, 3>::Zero(); ///< orientation Jacobian wrt b_w
+        Eigen::Matrix<float, 3, 3> J_a = Eigen::Matrix<float, 3, 3>::Zero(); ///< alpha Jacobian wrt b_w
+        Eigen::Matrix<float, 3, 3> J_b = Eigen::Matrix<float, 3, 3>::Zero(); ///< beta Jacobian wrt b_w
+        Eigen::Matrix<float, 3, 3> H_a = Eigen::Matrix<float, 3, 3>::Zero(); ///< alpha Jacobian wrt b_a
+        Eigen::Matrix<float, 3, 3> H_b = Eigen::Matrix<float, 3, 3>::Zero(); ///< beta Jacobian wrt b_a
 
         // Linearization points
-        Eigen::Matrix<double, 3, 1> b_w_lin; ///< b_w linearization point (gyroscope)
-        Eigen::Matrix<double, 3, 1> b_a_lin; ///< b_a linearization point (accelerometer)
-        Eigen::Matrix<double, 4, 1> q_k_lin; ///< q_k linearization point (only model 2 uses)
+        Eigen::Matrix<float, 3, 1> b_w_lin; ///< b_w linearization point (gyroscope)
+        Eigen::Matrix<float, 3, 1> b_a_lin; ///< b_a linearization point (accelerometer)
+        Eigen::Matrix<float, 4, 1> q_k_lin; ///< q_k linearization point (only model 2 uses)
 
         /// Global gravity
-        Eigen::Matrix<double, 3, 1> grav = Eigen::Matrix<double, 3, 1>::Zero();
+        Eigen::Matrix<float, 3, 1> grav = Eigen::Matrix<float, 3, 1>::Zero();
 
         /// Our continous-time measurement noise matrix (computed from contructor noise values)
-        Eigen::Matrix<double, 12, 12> Q_c = Eigen::Matrix<double, 12, 12>::Zero();
+        Eigen::Matrix<float, 12, 12> Q_c = Eigen::Matrix<float, 12, 12>::Zero();
 
         /// Our final measurement covariance
-        Eigen::Matrix<double, 15, 15> P_meas = Eigen::Matrix<double, 15, 15>::Zero();
+        Eigen::Matrix<float, 15, 15> P_meas = Eigen::Matrix<float, 15, 15>::Zero();
 
 
         //==========================================================================
@@ -158,17 +158,17 @@ namespace ov_core {
         //==========================================================================
 
         // 3x3 identity matrix
-        Eigen::Matrix<double, 3, 3> eye3 = Eigen::Matrix<double, 3, 3>::Identity();
+        Eigen::Matrix<float, 3, 3> eye3 = Eigen::Matrix<float, 3, 3>::Identity();
 
         // Simple unit vectors (used in bias jacobian calculations)
-        Eigen::Matrix<double, 3, 1> e_1;// = Eigen::Matrix<double,3,1>::Constant(1,0,0);
-        Eigen::Matrix<double, 3, 1> e_2;// = Eigen::Matrix<double,3,1>::Constant(0,1,0);
-        Eigen::Matrix<double, 3, 1> e_3;// = Eigen::Matrix<double,3,1>::Constant(0,0,1);
+        Eigen::Matrix<float, 3, 1> e_1;// = Eigen::Matrix<float,3,1>::Constant(1,0,0);
+        Eigen::Matrix<float, 3, 1> e_2;// = Eigen::Matrix<float,3,1>::Constant(0,1,0);
+        Eigen::Matrix<float, 3, 1> e_3;// = Eigen::Matrix<float,3,1>::Constant(0,0,1);
 
         // Calculate the skew-symetric of our unit vectors
-        Eigen::Matrix<double, 3, 3> e_1x;// = skew_x(e_1);
-        Eigen::Matrix<double, 3, 3> e_2x;// = skew_x(e_2);
-        Eigen::Matrix<double, 3, 3> e_3x;// = skew_x(e_3);
+        Eigen::Matrix<float, 3, 3> e_1x;// = skew_x(e_1);
+        Eigen::Matrix<float, 3, 3> e_2x;// = skew_x(e_2);
+        Eigen::Matrix<float, 3, 3> e_3x;// = skew_x(e_3);
 
 
     };

@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     ROS_INFO("ros bag path is: %s", path_to_bag.c_str());
 
     // Load groundtruth if we have it
-    std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
+    std::map<float, Eigen::Matrix<float, 17, 1>> gt_states;
     if (nh.hasParam("path_gt")) {
         std::string path_to_gt;
         nh.param<std::string>("path_gt", path_to_gt, "");
@@ -108,9 +108,9 @@ int main(int argc, char** argv)
 
     // Get our start location and how much of the bag we want to play
     // Make the bag duration < 0 to just process to the end of the bag
-    double bag_start, bag_durr;
-    nh.param<double>("bag_start", bag_start, 0);
-    nh.param<double>("bag_durr", bag_durr, -1);
+    float bag_start, bag_durr;
+    nh.param<float>("bag_start", bag_start, 0);
+    nh.param<float>("bag_durr", bag_durr, -1);
     ROS_INFO("bag start: %.1f",bag_start);
     ROS_INFO("bag duration: %.1f",bag_durr);
 
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 
 
     // Latest collection of image information
-    std::map<size_t, std::pair<double,cv::Mat>> image_buffer;
+    std::map<size_t, std::pair<float,cv::Mat>> image_buffer;
 
     // Step through the rosbag
     for (const rosbag::MessageInstance& m : view) {
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
                 continue;
             }
             // process once we have initialized with the GT
-            Eigen::Matrix<double, 17, 1> imustate;
+            Eigen::Matrix<float, 17, 1> imustate;
             if(!gt_states.empty() && !sys->initialized() && DatasetReader::get_gt_state(it0->second.first, imustate, gt_states)) {
                 //biases are pretty bad normally, so zero them
                 //imustate.block(11,0,6,1).setZero();
@@ -227,7 +227,7 @@ int main(int argc, char** argv)
             if(image_buffer.find(stereo.first) == image_buffer.end() || image_buffer.find(stereo.second) == image_buffer.end())
                 continue;
             // process once we have initialized with the GT
-            Eigen::Matrix<double, 17, 1> imustate;
+            Eigen::Matrix<float, 17, 1> imustate;
             if(!gt_states.empty() && !sys->initialized() && DatasetReader::get_gt_state(image_buffer.at(stereo.first).first, imustate, gt_states)) {
                 //biases are pretty bad normally, so zero them
                 //imustate.block(11,0,6,1).setZero();

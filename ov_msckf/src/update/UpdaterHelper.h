@@ -65,7 +65,7 @@ namespace ov_msckf {
             std::unordered_map<size_t, std::vector<Eigen::VectorXf>> uvs_norm;
 
             /// Timestamps of each UV measurement (mapped by camera ID)
-            std::unordered_map<size_t, std::vector<double>> timestamps;
+            std::unordered_map<size_t, std::vector<float>> timestamps;
 
             /// What representation our feature is in
             LandmarkRepresentation::Representation feat_representation;
@@ -74,19 +74,19 @@ namespace ov_msckf {
             int anchor_cam_id = -1;
 
             /// Timestamp of anchor clone
-            double anchor_clone_timestamp = -1;
+            float anchor_clone_timestamp = -1;
 
             /// Triangulated position of this feature, in the anchor frame
-            Eigen::Vector3d p_FinA;
+            Eigen::Vector3f p_FinA;
 
             /// Triangulated position of this feature, in the anchor frame first estimate
-            Eigen::Vector3d p_FinA_fej;
+            Eigen::Vector3f p_FinA_fej;
 
             /// Triangulated position of this feature, in the global frame
-            Eigen::Vector3d p_FinG;
+            Eigen::Vector3f p_FinG;
 
             /// Triangulated position of this feature, in the global frame first estimate
-            Eigen::Vector3d p_FinG_fej;
+            Eigen::Vector3f p_FinG_fej;
 
         };
 
@@ -100,8 +100,8 @@ namespace ov_msckf {
          * @param[out] H_x Extra Jacobians in respect to the state (for example anchored pose)
          * @param[out] x_order Extra variables our extra Jacobian has (for example anchored pose)
          */
-        static void get_feature_jacobian_representation(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXd &H_f,
-                                                        std::vector<Eigen::MatrixXd> &H_x, std::vector<std::shared_ptr<Type>> &x_order);
+        static void get_feature_jacobian_representation(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXf &H_f,
+                                                        std::vector<Eigen::MatrixXf> &H_x, std::vector<std::shared_ptr<Type>> &x_order);
 
         /**
          * @brief This will compute the Jacobian in respect to the intrinsic calibration parameters and normalized coordinates
@@ -113,7 +113,7 @@ namespace ov_msckf {
          * @param dz_dzn Derivative in respect to normalized coordinates
          * @param dz_dzeta Derivative in respect to distortion paramters
          */
-        static void get_feature_jacobian_intrinsics(std::shared_ptr<State> state, const Eigen::Vector2d &uv_norm, bool isfisheye, Eigen::Matrix<double,8,1> cam_d, Eigen::Matrix<double,2,2> &dz_dzn, Eigen::Matrix<double,2,8> &dz_dzeta);
+        static void get_feature_jacobian_intrinsics(std::shared_ptr<State> state, const Eigen::Vector2f &uv_norm, bool isfisheye, Eigen::Matrix<float,8,1> cam_d, Eigen::Matrix<float,2,2> &dz_dzn, Eigen::Matrix<float,2,8> &dz_dzeta);
 
 
         /**
@@ -126,7 +126,7 @@ namespace ov_msckf {
          * @param[out] res Measurement residual for this feature
          * @param[out] x_order Extra variables our extra Jacobian has (for example anchored pose)
          */
-        static void get_feature_jacobian_full(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXd &H_f, Eigen::MatrixXd &H_x, Eigen::VectorXd &res, std::vector<std::shared_ptr<Type>> &x_order);
+        static void get_feature_jacobian_full(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXf &H_f, Eigen::MatrixXf &H_x, Eigen::VectorXf &res, std::vector<std::shared_ptr<Type>> &x_order);
 
 
         /**
@@ -140,7 +140,7 @@ namespace ov_msckf {
          * @param H_x State jacobian
          * @param res Measurement residual
          */
-        static void nullspace_project_inplace(Eigen::MatrixXd &H_f, Eigen::MatrixXd &H_x, Eigen::VectorXd &res);
+        static void nullspace_project_inplace(Eigen::MatrixXf &H_f, Eigen::MatrixXf &H_x, Eigen::VectorXf &res);
 
 
         /**
@@ -152,7 +152,7 @@ namespace ov_msckf {
          * @param H_x State jacobian
          * @param res Measurement residual
          */
-        static void measurement_compress_inplace(Eigen::MatrixXd &H_x, Eigen::VectorXd &res);
+        static void measurement_compress_inplace(Eigen::MatrixXf &H_x, Eigen::VectorXf &res);
 
 
 

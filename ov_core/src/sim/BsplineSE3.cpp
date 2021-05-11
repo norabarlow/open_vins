@@ -27,11 +27,11 @@ using namespace ov_core;
 
 
 
-void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
+void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXf> traj_points) {
 
 
     // Find the average frequency to use as our uniform timesteps
-    double sumdt = 0;
+    float sumdt = 0;
     for(size_t i=0; i<traj_points.size()-1; i++) {
         sumdt += traj_points.at(i+1)(0)-traj_points.at(i)(0);
     }
@@ -41,17 +41,17 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
 
     // convert all our trajectory points into SE(3) matrices
     // we are given [timestamp, p_IinG, q_GtoI]
-    AlignedEigenMat4d trajectory_points;
+    AlignedEigenMat4f trajectory_points;
     for(size_t i=0; i<traj_points.size()-1; i++) {
-        Eigen::Matrix4d T_IinG = Eigen::Matrix4d::Identity();
+        Eigen::Matrix4f T_IinG = Eigen::Matrix4f::Identity();
         T_IinG.block(0,0,3,3) = quat_2_Rot(traj_points.at(i).block(4,0,4,1)).transpose();
         T_IinG.block(0,3,3,1) = traj_points.at(i).block(1,0,3,1);
         trajectory_points.insert({traj_points.at(i)(0),T_IinG});
     }
 
     // Get the oldest timestamp
-    double timestamp_min = INFINITY;
-    double timestamp_max = -INFINITY;
+    float timestamp_min = INFINITY;
+    float timestamp_max = -INFINITY;
     for(const auto &pose : trajectory_points) {
         if(pose.first <= timestamp_min) {
             timestamp_min = pose.first;
@@ -65,12 +65,12 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
 
 
     // then create spline control points
-    double timestamp_curr = timestamp_min;
+    float timestamp_curr = timestamp_min;
     while(true) {
 
         // Get bounding posed for the current time
-        double t0, t1;
-        Eigen::Matrix4d pose0, pose1;
+        float t0, t1;
+        Eigen::Matrix4f pose0, pose1;
         bool success = find_bounding_poses(timestamp_curr, trajectory_points, t0, pose0, t1, pose1);
         //printf("[SIM]: time curr = %.6f | lambda = %.3f | dt = %.3f | dtmeas = %.3f\n",timestamp_curr,(timestamp_curr-t0)/(t1-t0),dt,(t1-t0));
 
@@ -80,8 +80,8 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
             break;
 
         // Linear interpolation and append to our control points
-        double lambda = (timestamp_curr-t0)/(t1-t0);
-        Eigen::Matrix4d pose_interp = exp_se3(lambda*log_se3(pose1*Inv_se3(pose0)))*pose0;
+        float lambda = (timestamp_curr-t0)/(t1-t0);
+        Eigen::Matrix4f pose_interp = exp_se3(lambda*log_se3(pose1*Inv_se3(pose0)))*pose0;
         control_points.insert({timestamp_curr, pose_interp});
         timestamp_curr += dt;
         //std::cout << pose_interp(0,3) << "," << pose_interp(1,3) << "," << pose_interp(2,3) << std::endl;
@@ -98,11 +98,11 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
 
 
 
-bool BsplineSE3::get_pose(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vector3d &p_IinG) {
+bool BsplineSE3::get_pose(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    double t0, t1, t2, t3;
-    Eigen::Matrix4d pose0, pose1, pose2, pose3;
+    float t0, t1, t2, t3;
+    Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
     //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
 
@@ -114,19 +114,19 @@ bool BsplineSE3::get_pose(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vect
     }
 
     // Our De Boor-Cox matrix scalars
-    double DT = (t2-t1);
-    double u = (timestamp-t1)/DT;
-    double b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
-    double b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
-    double b2 = 1.0/6.0*(u*u*u);
+    float DT = (t2-t1);
+    float u = (timestamp-t1)/DT;
+    float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
+    float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
+    float b2 = 1.0/6.0*(u*u*u);
 
     // Calculate interpolated poses
-    Eigen::Matrix4d A0 = exp_se3(b0*log_se3(Inv_se3(pose0)*pose1));
-    Eigen::Matrix4d A1 = exp_se3(b1*log_se3(Inv_se3(pose1)*pose2));
-    Eigen::Matrix4d A2 = exp_se3(b2*log_se3(Inv_se3(pose2)*pose3));
+    Eigen::Matrix4f A0 = exp_se3(b0*log_se3(Inv_se3(pose0)*pose1));
+    Eigen::Matrix4f A1 = exp_se3(b1*log_se3(Inv_se3(pose1)*pose2));
+    Eigen::Matrix4f A2 = exp_se3(b2*log_se3(Inv_se3(pose2)*pose3));
 
     // Finally get the interpolated pose
-    Eigen::Matrix4d pose_interp = pose0*A0*A1*A2;
+    Eigen::Matrix4f pose_interp = pose0*A0*A1*A2;
     R_GtoI = pose_interp.block(0,0,3,3).transpose();
     p_IinG = pose_interp.block(0,3,3,1);
     return true;
@@ -136,11 +136,11 @@ bool BsplineSE3::get_pose(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vect
 
 
 
-bool BsplineSE3::get_velocity(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vector3d &p_IinG, Eigen::Vector3d &w_IinI, Eigen::Vector3d &v_IinG) {
+bool BsplineSE3::get_velocity(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    double t0, t1, t2, t3;
-    Eigen::Matrix4d pose0, pose1, pose2, pose3;
+    float t0, t1, t2, t3;
+    Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
     //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
 
@@ -152,36 +152,36 @@ bool BsplineSE3::get_velocity(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::
     }
 
     // Our De Boor-Cox matrix scalars
-    double DT = (t2-t1);
-    double u = (timestamp-t1)/DT;
-    double b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
-    double b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
-    double b2 = 1.0/6.0*(u*u*u);
-    double b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
-    double b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
-    double b2dot = 1.0/(6.0*DT)*(3*u*u);
+    float DT = (t2-t1);
+    float u = (timestamp-t1)/DT;
+    float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
+    float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
+    float b2 = 1.0/6.0*(u*u*u);
+    float b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
+    float b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
+    float b2fot = 1.0/(6.0*DT)*(3*u*u);
 
     // Cache some values we use alot
-    Eigen::Matrix<double,6,1> omega_10 = log_se3(Inv_se3(pose0)*pose1);
-    Eigen::Matrix<double,6,1> omega_21 = log_se3(Inv_se3(pose1)*pose2);
-    Eigen::Matrix<double,6,1> omega_32 = log_se3(Inv_se3(pose2)*pose3);
+    Eigen::Matrix<float,6,1> omega_10 = log_se3(Inv_se3(pose0)*pose1);
+    Eigen::Matrix<float,6,1> omega_21 = log_se3(Inv_se3(pose1)*pose2);
+    Eigen::Matrix<float,6,1> omega_32 = log_se3(Inv_se3(pose2)*pose3);
 
     // Calculate interpolated poses
-    Eigen::Matrix4d A0 = exp_se3(b0*omega_10);
-    Eigen::Matrix4d A1 = exp_se3(b1*omega_21);
-    Eigen::Matrix4d A2 = exp_se3(b2*omega_32);
-    Eigen::Matrix4d A0dot = b0dot*hat_se3(omega_10)*A0;
-    Eigen::Matrix4d A1dot = b1dot*hat_se3(omega_21)*A1;
-    Eigen::Matrix4d A2dot = b2dot*hat_se3(omega_32)*A2;
+    Eigen::Matrix4f A0 = exp_se3(b0*omega_10);
+    Eigen::Matrix4f A1 = exp_se3(b1*omega_21);
+    Eigen::Matrix4f A2 = exp_se3(b2*omega_32);
+    Eigen::Matrix4f A0dot = b0dot*hat_se3(omega_10)*A0;
+    Eigen::Matrix4f A1dot = b1dot*hat_se3(omega_21)*A1;
+    Eigen::Matrix4f A2fot = b2fot*hat_se3(omega_32)*A2;
 
     // Get the interpolated pose
-    Eigen::Matrix4d pose_interp = pose0*A0*A1*A2;
+    Eigen::Matrix4f pose_interp = pose0*A0*A1*A2;
     R_GtoI = pose_interp.block(0,0,3,3).transpose();
     p_IinG = pose_interp.block(0,3,3,1);
 
     // Finally get the interpolated velocities
     // NOTE: Rdot = R*skew(omega) => R^T*Rdot = skew(omega)
-    Eigen::Matrix4d vel_interp = pose0*(A0dot*A1*A2+A0*A1dot*A2+A0*A1*A2dot);
+    Eigen::Matrix4f vel_interp = pose0*(A0dot*A1*A2+A0*A1dot*A2+A0*A1*A2fot);
     w_IinI = vee(pose_interp.block(0,0,3,3).transpose()*vel_interp.block(0,0,3,3));
     v_IinG = vel_interp.block(0,3,3,1);
     return true;
@@ -191,13 +191,13 @@ bool BsplineSE3::get_velocity(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::
 
 
 
-bool BsplineSE3::get_acceleration(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vector3d &p_IinG,
-                                  Eigen::Vector3d &w_IinI, Eigen::Vector3d &v_IinG,
-                                  Eigen::Vector3d &alpha_IinI, Eigen::Vector3d &a_IinG) {
+bool BsplineSE3::get_acceleration(float timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
+                                  Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG,
+                                  Eigen::Vector3f &alpha_IinI, Eigen::Vector3f &a_IinG) {
 
     // Get the bounding poses for the desired timestamp
-    double t0, t1, t2, t3;
-    Eigen::Matrix4d pose0, pose1, pose2, pose3;
+    float t0, t1, t2, t3;
+    Eigen::Matrix4f pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
 
     // Return failure if we can't get bounding poses
@@ -208,54 +208,54 @@ bool BsplineSE3::get_acceleration(double timestamp, Eigen::Matrix3d &R_GtoI, Eig
     }
 
     // Our De Boor-Cox matrix scalars
-    double DT = (t2-t1);
-    double u = (timestamp-t1)/DT;
-    double b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
-    double b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
-    double b2 = 1.0/6.0*(u*u*u);
-    double b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
-    double b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
-    double b2dot = 1.0/(6.0*DT)*(3*u*u);
-    double b0dotdot = 1.0/(6.0*DT*DT)*(-6+6*u);
-    double b1dotdot = 1.0/(6.0*DT*DT)*(6-12*u);
-    double b2dotdot = 1.0/(6.0*DT*DT)*(6*u);
+    float DT = (t2-t1);
+    float u = (timestamp-t1)/DT;
+    float b0 = 1.0/6.0*(5+3*u-3*u*u+u*u*u);
+    float b1 = 1.0/6.0*(1+3*u+3*u*u-2*u*u*u);
+    float b2 = 1.0/6.0*(u*u*u);
+    float b0dot = 1.0/(6.0*DT)*(3-6*u+3*u*u);
+    float b1dot = 1.0/(6.0*DT)*(3+6*u-6*u*u);
+    float b2fot = 1.0/(6.0*DT)*(3*u*u);
+    float b0dotdot = 1.0/(6.0*DT*DT)*(-6+6*u);
+    float b1dotdot = 1.0/(6.0*DT*DT)*(6-12*u);
+    float b2fotdot = 1.0/(6.0*DT*DT)*(6*u);
 
     // Cache some values we use alot
-    Eigen::Matrix<double,6,1> omega_10 = log_se3(Inv_se3(pose0)*pose1);
-    Eigen::Matrix<double,6,1> omega_21 = log_se3(Inv_se3(pose1)*pose2);
-    Eigen::Matrix<double,6,1> omega_32 = log_se3(Inv_se3(pose2)*pose3);
-    Eigen::Matrix4d omega_10_hat = hat_se3(omega_10);
-    Eigen::Matrix4d omega_21_hat = hat_se3(omega_21);
-    Eigen::Matrix4d omega_32_hat = hat_se3(omega_32);
+    Eigen::Matrix<float,6,1> omega_10 = log_se3(Inv_se3(pose0)*pose1);
+    Eigen::Matrix<float,6,1> omega_21 = log_se3(Inv_se3(pose1)*pose2);
+    Eigen::Matrix<float,6,1> omega_32 = log_se3(Inv_se3(pose2)*pose3);
+    Eigen::Matrix4f omega_10_hat = hat_se3(omega_10);
+    Eigen::Matrix4f omega_21_hat = hat_se3(omega_21);
+    Eigen::Matrix4f omega_32_hat = hat_se3(omega_32);
 
     // Calculate interpolated poses
-    Eigen::Matrix4d A0 = exp_se3(b0*omega_10);
-    Eigen::Matrix4d A1 = exp_se3(b1*omega_21);
-    Eigen::Matrix4d A2 = exp_se3(b2*omega_32);
-    Eigen::Matrix4d A0dot = b0dot*omega_10_hat*A0;
-    Eigen::Matrix4d A1dot = b1dot*omega_21_hat*A1;
-    Eigen::Matrix4d A2dot = b2dot*omega_32_hat*A2;
-    Eigen::Matrix4d A0dotdot = b0dot*omega_10_hat*A0dot+b0dotdot*omega_10_hat*A0;
-    Eigen::Matrix4d A1dotdot = b1dot*omega_21_hat*A1dot+b1dotdot*omega_21_hat*A1;
-    Eigen::Matrix4d A2dotdot = b2dot*omega_32_hat*A2dot+b2dotdot*omega_32_hat*A2;
+    Eigen::Matrix4f A0 = exp_se3(b0*omega_10);
+    Eigen::Matrix4f A1 = exp_se3(b1*omega_21);
+    Eigen::Matrix4f A2 = exp_se3(b2*omega_32);
+    Eigen::Matrix4f A0dot = b0dot*omega_10_hat*A0;
+    Eigen::Matrix4f A1dot = b1dot*omega_21_hat*A1;
+    Eigen::Matrix4f A2fot = b2fot*omega_32_hat*A2;
+    Eigen::Matrix4f A0dotdot = b0dot*omega_10_hat*A0dot+b0dotdot*omega_10_hat*A0;
+    Eigen::Matrix4f A1dotdot = b1dot*omega_21_hat*A1dot+b1dotdot*omega_21_hat*A1;
+    Eigen::Matrix4f A2fotdot = b2fot*omega_32_hat*A2fot+b2fotdot*omega_32_hat*A2;
 
     // Get the interpolated pose
-    Eigen::Matrix4d pose_interp = pose0*A0*A1*A2;
+    Eigen::Matrix4f pose_interp = pose0*A0*A1*A2;
     R_GtoI = pose_interp.block(0,0,3,3).transpose();
     p_IinG = pose_interp.block(0,3,3,1);
 
     // Get the interpolated velocities
     // NOTE: Rdot = R*skew(omega) => R^T*Rdot = skew(omega)
-    Eigen::Matrix4d vel_interp = pose0*(A0dot*A1*A2+A0*A1dot*A2+A0*A1*A2dot);
+    Eigen::Matrix4f vel_interp = pose0*(A0dot*A1*A2+A0*A1dot*A2+A0*A1*A2fot);
     w_IinI = vee(pose_interp.block(0,0,3,3).transpose()*vel_interp.block(0,0,3,3));
     v_IinG = vel_interp.block(0,3,3,1);
 
     // Finally get the interpolated velocities
     // NOTE: Rdot = R*skew(omega)
     // NOTE: Rdotdot = Rdot*skew(omega) + R*skew(alpha) => R^T*(Rdotdot-Rdot*skew(omega))=skew(alpha)
-    Eigen::Matrix4d acc_interp = pose0*(A0dotdot*A1*A2+A0*A1dotdot*A2+A0*A1*A2dotdot
-                                        +2*A0dot*A1dot*A2+2*A0*A1dot*A2dot+2*A0dot*A1*A2dot);
-    Eigen::Matrix3d omegaskew = pose_interp.block(0,0,3,3).transpose()*vel_interp.block(0,0,3,3);
+    Eigen::Matrix4f acc_interp = pose0*(A0dotdot*A1*A2+A0*A1dotdot*A2+A0*A1*A2fotdot
+                                        +2*A0dot*A1dot*A2+2*A0*A1dot*A2fot+2*A0dot*A1*A2fot);
+    Eigen::Matrix3f omegaskew = pose_interp.block(0,0,3,3).transpose()*vel_interp.block(0,0,3,3);
     alpha_IinI = vee(pose_interp.block(0,0,3,3).transpose()*(acc_interp.block(0,0,3,3)-vel_interp.block(0,0,3,3)*omegaskew));
     a_IinG = acc_interp.block(0,3,3,1);
     return true;
@@ -263,14 +263,14 @@ bool BsplineSE3::get_acceleration(double timestamp, Eigen::Matrix3d &R_GtoI, Eig
 }
 
 
-bool BsplineSE3::find_bounding_poses(const double timestamp, const AlignedEigenMat4d &poses,
-                                     double &t0, Eigen::Matrix4d &pose0, double &t1, Eigen::Matrix4d &pose1) {
+bool BsplineSE3::find_bounding_poses(const float timestamp, const AlignedEigenMat4f &poses,
+                                     float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1) {
 
     // Set the default values
     t0 = -1;
     t1 = -1;
-    pose0 = Eigen::Matrix4d::Identity();
-    pose1 = Eigen::Matrix4d::Identity();
+    pose0 = Eigen::Matrix4f::Identity();
+    pose1 = Eigen::Matrix4f::Identity();
 
     // Find the bounding poses
     bool found_older = false;
@@ -318,19 +318,19 @@ bool BsplineSE3::find_bounding_poses(const double timestamp, const AlignedEigenM
 
 
 
-bool BsplineSE3::find_bounding_control_points(const double timestamp, const AlignedEigenMat4d &poses,
-                                              double &t0, Eigen::Matrix4d &pose0, double &t1, Eigen::Matrix4d &pose1,
-                                              double &t2, Eigen::Matrix4d &pose2, double &t3, Eigen::Matrix4d &pose3) {
+bool BsplineSE3::find_bounding_control_points(const float timestamp, const AlignedEigenMat4f &poses,
+                                              float &t0, Eigen::Matrix4f &pose0, float &t1, Eigen::Matrix4f &pose1,
+                                              float &t2, Eigen::Matrix4f &pose2, float &t3, Eigen::Matrix4f &pose3) {
 
     // Set the default values
     t0 = -1;
     t1 = -1;
     t2 = -1;
     t3 = -1;
-    pose0 = Eigen::Matrix4d::Identity();
-    pose1 = Eigen::Matrix4d::Identity();
-    pose2 = Eigen::Matrix4d::Identity();
-    pose3 = Eigen::Matrix4d::Identity();
+    pose0 = Eigen::Matrix4f::Identity();
+    pose1 = Eigen::Matrix4f::Identity();
+    pose2 = Eigen::Matrix4f::Identity();
+    pose3 = Eigen::Matrix4f::Identity();
 
     // Get the two bounding poses
     bool success = find_bounding_poses(timestamp, poses, t1, pose1, t2, pose2);

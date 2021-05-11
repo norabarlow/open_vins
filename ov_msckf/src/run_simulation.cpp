@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Get initial state
-    Eigen::Matrix<double, 17, 1> imustate;
+    Eigen::Matrix<float, 17, 1> imustate;
     bool success = sim->get_state(sim->current_timestamp(),imustate);
     if(!success) {
         printf(RED "[SIM]: Could not initialize the filter to the first state\n" RESET);
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Buffer our camera image
-    double buffer_timecam = -1;
+    float buffer_timecam = -1;
     std::vector<int> buffer_camids;
     std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> buffer_feats;
 
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        double time_cam;
+        float time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim->get_next_cam(time_cam, camids, feats);

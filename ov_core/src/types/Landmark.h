@@ -54,7 +54,7 @@ namespace ov_type {
         int _anchor_cam_id = -1;
 
         /// Timestamp of anchor clone
-        double _anchor_clone_timestamp = -1;
+        float _anchor_clone_timestamp = -1;
 
         /// Boolean if this landmark has had at least one anchor change
         bool has_had_anchor_change = false;
@@ -63,10 +63,10 @@ namespace ov_type {
         bool should_marg = false;
 
         /// First normalized uv coordinate bearing of this measurement (used for single depth representation)
-        Eigen::Vector3d uv_norm_zero;
+        Eigen::Vector3f uv_norm_zero;
 
         /// First estimate normalized uv coordinate bearing of this measurement (used for single depth representation)
-        Eigen::Vector3d uv_norm_zero_fej;
+        Eigen::Vector3f uv_norm_zero_fej;
 
         /// What feature representation this feature currently has
         LandmarkRepresentation::Representation _feat_representation;
@@ -76,7 +76,7 @@ namespace ov_type {
          * We want to selectively update the FEJ value if we are using an anchored representation.
          * @param dx Additive error state correction
          */
-        void update(const Eigen::VectorXd& dx) override {
+        void update(const Eigen::VectorXf& dx) override {
             // Update estimate
             assert(dx.rows() == _size);
             set_value(_value+dx);
@@ -92,7 +92,7 @@ namespace ov_type {
          * @param getfej Set to true to get the landmark FEJ value
          * @return Position of feature either in global or anchor frame
          */
-        Eigen::Matrix<double,3,1> get_xyz(bool getfej) const;
+        Eigen::Matrix<float,3,1> get_xyz(bool getfej) const;
 
 
         /**
@@ -100,7 +100,7 @@ namespace ov_type {
          * @param p_FinG Position of the feature either in global or anchor frame
          * @param isfej Set to true to set the landmark FEJ value
          */
-        void set_from_xyz(Eigen::Matrix<double,3,1> p_FinG, bool isfej);
+        void set_from_xyz(Eigen::Matrix<float,3,1> p_FinG, bool isfej);
 
 
     };

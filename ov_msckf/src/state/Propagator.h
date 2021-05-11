@@ -50,28 +50,28 @@ namespace ov_msckf {
         struct NoiseManager {
 
             /// Gyroscope white noise (rad/s/sqrt(hz))
-            double sigma_w = 1.6968e-04;
+            float sigma_w = 1.6968e-04;
 
             /// Gyroscope white noise covariance
-            double sigma_w_2 = pow(1.6968e-04, 2);
+            float sigma_w_2 = pow(1.6968e-04, 2);
 
             /// Gyroscope random walk (rad/s^2/sqrt(hz))
-            double sigma_wb = 1.9393e-05;
+            float sigma_wb = 1.9393e-05;
 
             /// Gyroscope random walk covariance
-            double sigma_wb_2 = pow(1.9393e-05, 2);
+            float sigma_wb_2 = pow(1.9393e-05, 2);
 
             /// Accelerometer white noise (m/s^2/sqrt(hz))
-            double sigma_a = 2.0000e-3;
+            float sigma_a = 2.0000e-3;
 
             /// Accelerometer white noise covariance
-            double sigma_a_2 = pow(2.0000e-3, 2);
+            float sigma_a_2 = pow(2.0000e-3, 2);
 
             /// Accelerometer random walk (m/s^3/sqrt(hz))
-            double sigma_ab = 3.0000e-03;
+            float sigma_ab = 3.0000e-03;
 
             /// Accelerometer random walk covariance
-            double sigma_ab_2 = pow(3.0000e-03, 2);
+            float sigma_ab_2 = pow(3.0000e-03, 2);
 
             /// Nice print function of what parameters we have loaded
             void print() {
@@ -89,7 +89,7 @@ namespace ov_msckf {
          * @param noises imu noise characteristics (continuous time)
          * @param gravity Global gravity of the system (normally [0,0,9.81])
          */
-        Propagator(NoiseManager noises, Eigen::Vector3d gravity) : _noises(noises), _gravity(gravity) {
+        Propagator(NoiseManager noises, Eigen::Vector3f gravity) : _noises(noises), _gravity(gravity) {
             _noises.sigma_w_2 = std::pow(_noises.sigma_w,2);
             _noises.sigma_a_2 = std::pow(_noises.sigma_a,2);
             _noises.sigma_wb_2 = std::pow(_noises.sigma_wb,2);
@@ -134,7 +134,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param timestamp Time to propagate to and clone at
          */
-        void propagate_and_clone(std::shared_ptr<State> state, double timestamp);
+        void propagate_and_clone(std::shared_ptr<State> state, float timestamp);
 
 
         /**
@@ -148,7 +148,7 @@ namespace ov_msckf {
          * @param timestamp Time to propagate to
          * @param state_plus The propagated state (q_GtoI, p_IinG, v_IinG, w_IinI)
          */
-        void fast_state_propagate(std::shared_ptr<State> state, double timestamp, Eigen::Matrix<double,13,1> &state_plus);
+        void fast_state_propagate(std::shared_ptr<State> state, float timestamp, Eigen::Matrix<float,13,1> &state_plus);
 
 
         /**
@@ -163,7 +163,7 @@ namespace ov_msckf {
          * @param time1 End timestamp
          * @return Vector of measurements (if we could compute them)
          */
-        static std::vector<ov_core::ImuData> select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, double time0, double time1);
+        static std::vector<ov_core::ImuData> select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, float time0, float time1);
 
         /**
          * @brief Nice helper function that will linearly interpolate between two imu messages.
@@ -175,9 +175,9 @@ namespace ov_msckf {
          * @param imu_2 imu at end of interpolation interval
          * @param timestamp Timestamp being interpolated to
          */
-        static ov_core::ImuData interpolate_data(const ov_core::ImuData &imu_1, const ov_core::ImuData &imu_2, double timestamp) {
+        static ov_core::ImuData interpolate_data(const ov_core::ImuData &imu_1, const ov_core::ImuData &imu_2, float timestamp) {
             // time-distance lambda
-            double lambda = (timestamp - imu_1.timestamp) / (imu_2.timestamp - imu_1.timestamp);
+            float lambda = (timestamp - imu_1.timestamp) / (imu_2.timestamp - imu_1.timestamp);
             //cout << "lambda - " << lambda << endl;
             // interpolate between the two times
             ov_core::ImuData data;
@@ -192,7 +192,7 @@ namespace ov_msckf {
 
 
         /// Estimate for time offset at last propagation time
-        double last_prop_time_offset = 0.0;
+        float last_prop_time_offset = 0.0;
         bool have_last_prop_time_offset = false;
 
         /**
@@ -211,7 +211,7 @@ namespace ov_msckf {
          * @param Qd Discrete-time noise covariance over the interval
          */
         void predict_and_compute(std::shared_ptr<State> state, const ov_core::ImuData &data_minus, const ov_core::ImuData &data_plus,
-                                 Eigen::Matrix<double, 15, 15> &F, Eigen::Matrix<double, 15, 15> &Qd);
+                                 Eigen::Matrix<float, 15, 15> &F, Eigen::Matrix<float, 15, 15> &Qd);
 
         /**
          * @brief Discrete imu mean propagation.
@@ -239,10 +239,10 @@ namespace ov_msckf {
          * @param new_v The resulting new velocity after integration
          * @param new_p The resulting new position after integration
          */
-        void predict_mean_discrete(std::shared_ptr<State> state, double dt,
-                                   const Eigen::Vector3d &w_hat1, const Eigen::Vector3d &a_hat1,
-                                   const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
-                                   Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p);
+        void predict_mean_discrete(std::shared_ptr<State> state, float dt,
+                                   const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
+                                   const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
+                                   Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p);
 
         /**
          * @brief RK4 imu mean propagation.
@@ -269,10 +269,10 @@ namespace ov_msckf {
          * @param new_v The resulting new velocity after integration
          * @param new_p The resulting new position after integration
          */
-        void predict_mean_rk4(std::shared_ptr<State> state, double dt,
-                              const Eigen::Vector3d &w_hat1, const Eigen::Vector3d &a_hat1,
-                              const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
-                              Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p);
+        void predict_mean_rk4(std::shared_ptr<State> state, float dt,
+                              const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
+                              const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
+                              Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p);
 
 
         /// Container for the noise values
@@ -282,7 +282,7 @@ namespace ov_msckf {
         std::vector<ov_core::ImuData> imu_data;
 
         /// Gravity vector
-        Eigen::Matrix<double, 3, 1> _gravity;
+        Eigen::Matrix<float, 3, 1> _gravity;
 
 
     };

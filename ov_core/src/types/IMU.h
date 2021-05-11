@@ -49,7 +49,7 @@ namespace ov_type {
             _ba = std::shared_ptr<Vec>(new Vec(3));
 
             // Set our default state value
-            Eigen::VectorXd imu0 = Eigen::VectorXd::Zero(16,1);
+            Eigen::VectorXf imu0 = Eigen::VectorXf::Zero(16,1);
             imu0(3) = 1.0;
             set_value_internal(imu0);
             set_fej_internal(imu0);
@@ -79,13 +79,13 @@ namespace ov_type {
          *
         * @param dx 15 DOF vector encoding update using the following order (q, p, v, bg, ba)
         */
-        void update(const Eigen::VectorXd& dx) override {
+        void update(const Eigen::VectorXf& dx) override {
 
             assert(dx.rows() == _size);
 
-            Eigen::Matrix<double, 16, 1> newX = _value;
+            Eigen::Matrix<float, 16, 1> newX = _value;
 
-            Eigen::Matrix<double, 4, 1> dq;
+            Eigen::Matrix<float, 4, 1> dq;
             dq << .5 * dx.block(0, 0, 3, 1), 1.0;
             dq = ov_core::quatnorm(dq);
 
@@ -105,7 +105,7 @@ namespace ov_type {
          * @brief Sets the value of the estimate
          * @param new_value New value we should set
          */
-        void set_value(const Eigen::MatrixXd& new_value) override {
+        void set_value(const Eigen::MatrixXf& new_value) override {
             set_value_internal(new_value);
         }
 
@@ -113,7 +113,7 @@ namespace ov_type {
          * @brief Sets the value of the first estimate
          * @param new_value New value we should set
          */
-        void set_fej(const Eigen::MatrixXd& new_value) override {
+        void set_fej(const Eigen::MatrixXf& new_value) override {
             set_fej_internal(new_value);
         }
 
@@ -140,62 +140,62 @@ namespace ov_type {
         }
 
         /// Rotation access
-        Eigen::Matrix<double, 3, 3> Rot() const {
+        Eigen::Matrix<float, 3, 3> Rot() const {
             return _pose->Rot();
         }
 
         /// FEJ Rotation access
-        Eigen::Matrix<double, 3, 3> Rot_fej() const {
+        Eigen::Matrix<float, 3, 3> Rot_fej() const {
             return _pose->Rot_fej();
         }
 
         /// Rotation access quaternion
-        Eigen::Matrix<double, 4, 1> quat() const {
+        Eigen::Matrix<float, 4, 1> quat() const {
             return _pose->quat();
         }
 
         /// FEJ Rotation access quaternion
-        Eigen::Matrix<double, 4, 1> quat_fej() const {
+        Eigen::Matrix<float, 4, 1> quat_fej() const {
             return _pose->quat_fej();
         }
 
         /// Position access
-        Eigen::Matrix<double, 3, 1> pos() const {
+        Eigen::Matrix<float, 3, 1> pos() const {
             return _pose->pos();
         }
 
         /// FEJ position access
-        Eigen::Matrix<double, 3, 1> pos_fej() const {
+        Eigen::Matrix<float, 3, 1> pos_fej() const {
             return _pose->pos_fej();
         }
 
         /// Velocity access
-        Eigen::Matrix<double, 3, 1> vel() const {
+        Eigen::Matrix<float, 3, 1> vel() const {
             return _v->value();
         }
 
         // FEJ velocity access
-        Eigen::Matrix<double, 3, 1> vel_fej() const {
+        Eigen::Matrix<float, 3, 1> vel_fej() const {
             return _v->fej();
         }
 
         /// Gyro bias access
-        Eigen::Matrix<double, 3, 1> bias_g() const {
+        Eigen::Matrix<float, 3, 1> bias_g() const {
             return _bg->value();
         }
 
         /// FEJ gyro bias access
-        Eigen::Matrix<double, 3, 1> bias_g_fej() const {
+        Eigen::Matrix<float, 3, 1> bias_g_fej() const {
             return _bg->fej();
         }
 
         /// Accel bias access
-        Eigen::Matrix<double, 3, 1> bias_a() const {
+        Eigen::Matrix<float, 3, 1> bias_a() const {
             return _ba->value();
         }
 
         // FEJ accel bias access
-        Eigen::Matrix<double, 3, 1> bias_a_fej() const {
+        Eigen::Matrix<float, 3, 1> bias_a_fej() const {
             return _ba->fej();
         }
 
@@ -247,7 +247,7 @@ namespace ov_type {
          * @brief Sets the value of the estimate
          * @param new_value New value we should set
          */
-        void set_value_internal(const Eigen::MatrixXd& new_value) {
+        void set_value_internal(const Eigen::MatrixXf& new_value) {
 
             assert(new_value.rows() == 16);
             assert(new_value.cols() == 1);
@@ -264,7 +264,7 @@ namespace ov_type {
          * @brief Sets the value of the first estimate
          * @param new_value New value we should set
          */
-        void set_fej_internal(const Eigen::MatrixXd& new_value) {
+        void set_fej_internal(const Eigen::MatrixXf& new_value) {
 
             assert(new_value.rows() == 16);
             assert(new_value.cols() == 1);

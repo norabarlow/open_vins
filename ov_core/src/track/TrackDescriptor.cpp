@@ -24,7 +24,7 @@
 using namespace ov_core;
 
 
-void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t cam_id) {
+void TrackDescriptor::feed_monocular(float timestamp, cv::Mat &imgin, size_t cam_id) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -139,7 +139,7 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
 
 }
 
-void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
+void TrackDescriptor::feed_stereo(float timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -407,7 +407,7 @@ void TrackDescriptor::robust_match(std::vector<cv::KeyPoint>& pts0, std::vector<
         // Get our ids
         int index_pt0 = matches_good.at(i).queryIdx;
         int index_pt1 = matches_good.at(i).trainIdx;
-        // Push back just the 2d point
+        // Push back just the 2f point
         pts0_rsc.push_back(pts0[index_pt0].pt);
         pts1_rsc.push_back(pts1[index_pt1].pt);
     }
@@ -426,9 +426,9 @@ void TrackDescriptor::robust_match(std::vector<cv::KeyPoint>& pts0, std::vector<
 
     // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
     std::vector<uchar> mask_rsc;
-    double max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
-    double max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
-    double max_focallength = std::max(max_focallength_img0,max_focallength_img1);
+    float max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
+    float max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
+    float max_focallength = std::max(max_focallength_img0,max_focallength_img1);
     cv::findFundamentalMat(pts0_n, pts1_n, cv::FM_RANSAC, 1/max_focallength, 0.999, mask_rsc);
 
     // Loop through all good matches, and only append ones that have passed RANSAC

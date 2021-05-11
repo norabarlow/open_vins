@@ -106,9 +106,9 @@ namespace ov_core {
             auto num_features_grid = (int) (num_features / (grid_x * grid_y)) + 1;
 
             // Either we will parellize with opencv parallel for loop
-            // Or we will run through a standard double for loop
+            // Or we will run through a standard float for loop
             if (multithread) {
-                // Parallelize our 2d grid extraction!!
+                // Parallelize our 2f grid extraction!!
                 int ct_cols = std::floor(img.cols/size_x);
                 int ct_rows = std::floor(img.rows/size_y);
                 std::vector<std::vector<cv::KeyPoint>> collection(ct_cols*ct_rows);

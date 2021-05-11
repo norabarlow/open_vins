@@ -54,7 +54,7 @@ namespace ov_core {
          * @param window_length Amount of time we will initialize over (seconds)
          * @param imu_excite_threshold Variance threshold on our acceleration to be classified as moving
          */
-        InertialInitializer(Eigen::Matrix<double,3,1> gravity, double window_length, double imu_excite_threshold) :
+        InertialInitializer(Eigen::Matrix<float,3,1> gravity, float window_length, float imu_excite_threshold) :
                             _gravity(gravity), _window_length(window_length), _imu_excite_threshold(imu_excite_threshold) {}
 
         /**
@@ -84,20 +84,20 @@ namespace ov_core {
          * @param wait_for_jerk If true we will wait for a "jerk"
          * @return True if we have successfully initialized our system
          */
-        bool initialize_with_imu(double &time0, Eigen::Matrix<double,4,1> &q_GtoI0, Eigen::Matrix<double,3,1> &b_w0,
-                                 Eigen::Matrix<double,3,1> &v_I0inG, Eigen::Matrix<double,3,1> &b_a0, Eigen::Matrix<double,3,1> &p_I0inG, bool wait_for_jerk=true);
+        bool initialize_with_imu(float &time0, Eigen::Matrix<float,4,1> &q_GtoI0, Eigen::Matrix<float,3,1> &b_w0,
+                                 Eigen::Matrix<float,3,1> &v_I0inG, Eigen::Matrix<float,3,1> &b_a0, Eigen::Matrix<float,3,1> &p_I0inG, bool wait_for_jerk=true);
 
 
     protected:
 
         /// Gravity vector
-        Eigen::Matrix<double,3,1> _gravity;
+        Eigen::Matrix<float,3,1> _gravity;
 
         /// Amount of time we will initialize over (seconds)
-        double _window_length;
+        float _window_length;
 
         /// Variance threshold on our acceleration to be classified as moving
-        double _imu_excite_threshold;
+        float _imu_excite_threshold;
 
         /// Our history of IMU messages (time, angular, linear)
         std::vector<ImuData> imu_data;

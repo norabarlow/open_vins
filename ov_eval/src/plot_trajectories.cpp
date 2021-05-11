@@ -42,8 +42,8 @@
 // sudo apt-get install python-matplotlib python-numpy python2.7-dev
 #include "plot/matplotlibcpp.h"
 
-// Will plot the xy 3d position of the pose trajectories
-void plot_xy_positions(const std::string &name, const std::string &color, const std::vector<Eigen::Matrix<double,7,1>> &poses) {
+// Will plot the xy 3f position of the pose trajectories
+void plot_xy_positions(const std::string &name, const std::string &color, const std::vector<Eigen::Matrix<float,7,1>> &poses) {
 
     // Paramters for our line
     std::map<std::string, std::string> params;
@@ -52,7 +52,7 @@ void plot_xy_positions(const std::string &name, const std::string &color, const 
     params.insert({"color", color});
 
     // Create vectors of our x and y axis
-    std::vector<double> x, y;
+    std::vector<float> x, y;
     for(size_t i=0; i<poses.size(); i++) {
         x.push_back(poses.at(i)(0));
         y.push_back(poses.at(i)(1));
@@ -63,8 +63,8 @@ void plot_xy_positions(const std::string &name, const std::string &color, const 
 
 }
 
-// Will plot the z 3d position of the pose trajectories
-void plot_z_positions(const std::string &name, const std::string &color, const std::vector<double> &times, const std::vector<Eigen::Matrix<double,7,1>> &poses) {
+// Will plot the z 3f position of the pose trajectories
+void plot_z_positions(const std::string &name, const std::string &color, const std::vector<float> &times, const std::vector<Eigen::Matrix<float,7,1>> &poses) {
 
     // Paramters for our line
     std::map<std::string, std::string> params;
@@ -73,7 +73,7 @@ void plot_z_positions(const std::string &name, const std::string &color, const s
     params.insert({"color", color});
 
     // Create vectors of our x and y axis
-    std::vector<double> time, z;
+    std::vector<float> time, z;
     for(size_t i=0; i<poses.size(); i++) {
         time.push_back(times.at(i));
         z.push_back(poses.at(i)(2));
@@ -100,22 +100,22 @@ int main(int argc, char **argv) {
 
     // Read in all our trajectories from file
     std::vector<std::string> names;
-    std::vector<std::vector<double>> times;
-    std::vector<std::vector<Eigen::Matrix<double,7,1>>> poses;
+    std::vector<std::vector<float>> times;
+    std::vector<std::vector<Eigen::Matrix<float,7,1>>> poses;
     for(int i=2; i<argc; i++) {
 
         // Read in trajectory data
-        std::vector<double> times_temp;
-        std::vector<Eigen::Matrix<double,7,1>> poses_temp;
-        std::vector<Eigen::Matrix3d> cov_ori_temp, cov_pos_temp;
+        std::vector<float> times_temp;
+        std::vector<Eigen::Matrix<float,7,1>> poses_temp;
+        std::vector<Eigen::Matrix3f> cov_ori_temp, cov_pos_temp;
         ov_eval::Loader::load_data(argv[i], times_temp, poses_temp, cov_ori_temp, cov_pos_temp);
 
         // Align all the non-groundtruth trajectories to the base one
         if(i>2) {
 
             // Intersect timestamps
-            std::vector<double> gt_times_temp(times.at(0));
-            std::vector<Eigen::Matrix<double,7,1>> gt_poses_temp(poses.at(0));
+            std::vector<float> gt_times_temp(times.at(0));
+            std::vector<Eigen::Matrix<float,7,1>> gt_poses_temp(poses.at(0));
             ov_eval::AlignUtils::perform_association(0, 0.02, times_temp, gt_times_temp, poses_temp, gt_poses_temp);
 
             // Return failure if we didn't have any common timestamps
@@ -126,19 +126,19 @@ int main(int argc, char **argv) {
             }
 
             // Perform alignment of the trajectories
-            Eigen::Matrix3d R_ESTtoGT;
-            Eigen::Vector3d t_ESTinGT;
-            double s_ESTtoGT;
+            Eigen::Matrix3f R_ESTtoGT;
+            Eigen::Vector3f t_ESTinGT;
+            float s_ESTtoGT;
             ov_eval::AlignTrajectory::align_trajectory(poses_temp, gt_poses_temp, R_ESTtoGT, t_ESTinGT, s_ESTtoGT, argv[1]);
 
             // Debug print to the user
-            Eigen::Vector4d q_ESTtoGT = ov_eval::Math::rot_2_quat(R_ESTtoGT);
+            Eigen::Vector4f q_ESTtoGT = ov_eval::Math::rot_2_quat(R_ESTtoGT);
             printf("[TRAJ]: q_ESTtoGT = %.3f, %.3f, %.3f, %.3f | p_ESTinGT = %.3f, %.3f, %.3f | s = %.2f\n",q_ESTtoGT(0),q_ESTtoGT(1),q_ESTtoGT(2),q_ESTtoGT(3),t_ESTinGT(0),t_ESTinGT(1),t_ESTinGT(2),s_ESTtoGT);
 
             // Finally lets calculate the aligned trajectories
-            std::vector<Eigen::Matrix<double,7,1>> est_poses_aignedtoGT;
+            std::vector<Eigen::Matrix<float,7,1>> est_poses_aignedtoGT;
             for(size_t j=0; j<gt_times_temp.size(); j++) {
-                Eigen::Matrix<double,7,1> pose_ESTinGT;
+                Eigen::Matrix<float,7,1> pose_ESTinGT;
                 pose_ESTinGT.block(0,0,3,1) = s_ESTtoGT*R_ESTtoGT*poses_temp.at(j).block(0,0,3,1)+t_ESTinGT;
                 pose_ESTinGT.block(3,0,4,1) = ov_eval::Math::quat_multiply(poses_temp.at(j).block(3,0,4,1),ov_eval::Math::Inv(q_ESTtoGT));
                 est_poses_aignedtoGT.push_back(pose_ESTinGT);
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
         // Debug print the length stats
         boost::filesystem::path path(argv[i]);
         std::string name = path.stem().string();
-        double length = ov_eval::Loader::get_total_length(poses_temp);
+        float length = ov_eval::Loader::get_total_length(poses_temp);
         printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times_temp.size(),name.c_str(),length);
 
         // Save this to our arrays
@@ -188,8 +188,8 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1000, 350);
 
     // Zero our time arrays
-    double starttime = (times.at(0).empty())? 0 : times.at(0).at(0);
-    double endtime = (times.at(0).empty())? 0 : times.at(0).at(times.at(0).size()-1);
+    float starttime = (times.at(0).empty())? 0 : times.at(0).at(0);
+    float endtime = (times.at(0).empty())? 0 : times.at(0).at(times.at(0).size()-1);
     for(size_t i=0; i<times.size(); i++) {
         for(size_t j=0; j<times.at(i).size(); j++) {
             times.at(i).at(j) -= starttime;
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     // Display to the user
     matplotlibcpp::xlabel("timestamp (sec)");
     matplotlibcpp::ylabel("z-axis (m)");
-    matplotlibcpp::xlim(0.0,endtime-starttime);
+    matplotlibcpp::xlim(0.0f,endtime-starttime);
     matplotlibcpp::legend();
     matplotlibcpp::show(true);
 

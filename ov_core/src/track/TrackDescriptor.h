@@ -55,7 +55,7 @@ namespace ov_core {
          * @param gridy size of grid in the y-direction / v-direction
          * @param knnratio matching ratio needed (smaller value forces top two descriptors during match to be more different)
          */
-        explicit TrackDescriptor(int numfeats, int numaruco, bool multithread, int fast_threshold, int gridx, int gridy, double knnratio) :
+        explicit TrackDescriptor(int numfeats, int numaruco, bool multithread, int fast_threshold, int gridx, int gridy, float knnratio) :
                                  TrackBase(numfeats, numaruco, multithread), threshold(fast_threshold), grid_x(gridx), grid_y(gridy), knn_ratio(knnratio) {}
 
         /**
@@ -64,7 +64,7 @@ namespace ov_core {
          * @param img new cv:Mat grayscale image
          * @param cam_id the camera id that this new image corresponds too
          */
-        void feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) override;
+        void feed_monocular(float timestamp, cv::Mat &img, size_t cam_id) override;
 
         /**
          * @brief Process new stereo pair of images
@@ -74,7 +74,7 @@ namespace ov_core {
          * @param cam_id_left first image camera id
          * @param cam_id_right second image camera id
          */
-        void feed_stereo(double timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override;
+        void feed_stereo(float timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override;
 
 
     protected:
@@ -130,14 +130,14 @@ namespace ov_core {
          * This will perform a "robust match" between the two sets of points (slow but has great results).
          * First we do a simple KNN match from 1to2 and 2to1, which is followed by a ratio check and symmetry check.
          * Original code is from the "RobustMatcher" in the opencv examples, and seems to give very good results in the matches.
-         * https://github.com/opencv/opencv/blob/master/samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/src/RobustMatcher.cpp
+         * https://github.com/opencv/opencv/blob/master/samples/cpp/tutorial_code/calib3f/real_time_pose_estimation/src/RobustMatcher.cpp
          */
         void robust_match(std::vector<cv::KeyPoint> &pts0, std::vector<cv::KeyPoint> pts1,
                           cv::Mat &desc0, cv::Mat &desc1, size_t id0, size_t id1, std::vector<cv::DMatch> &matches);
 
         // Helper functions for the robust_match function
         // Original code is from the "RobustMatcher" in the opencv examples
-        // https://github.com/opencv/opencv/blob/master/samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/src/RobustMatcher.cpp
+        // https://github.com/opencv/opencv/blob/master/samples/cpp/tutorial_code/calib3f/real_time_pose_estimation/src/RobustMatcher.cpp
         void robust_ratio_test(std::vector<std::vector<cv::DMatch>> &matches);
         void robust_symmetry_test(std::vector<std::vector<cv::DMatch>> &matches1,
                                   std::vector<std::vector<cv::DMatch>> &matches2,
@@ -160,7 +160,7 @@ namespace ov_core {
 
         // The ratio between two kNN matches, if that ratio is larger then this threshold
         // then the two features are too close, so should be considered ambiguous/bad match
-        double knn_ratio;
+        float knn_ratio;
 
         // Descriptor matrices
         std::unordered_map<size_t, cv::Mat> desc_last;

@@ -57,7 +57,7 @@ namespace ov_msckf {
         nh.param<int>("max_msckf_in_update", params.state_options.max_msckf_in_update, params.state_options.max_msckf_in_update);
         nh.param<int>("max_aruco", params.state_options.max_aruco_features, params.state_options.max_aruco_features);
         nh.param<int>("max_cameras", params.state_options.num_cameras, params.state_options.num_cameras);
-        nh.param<double>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
+        nh.param<float>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
 
         // Enforce that we have enough cameras to run
         if(params.state_options.num_cameras < 1) {
@@ -134,14 +134,14 @@ namespace ov_msckf {
         }
 
         // Filter initialization
-        nh.param<double>("init_window_time", params.init_window_time, params.init_window_time);
-        nh.param<double>("init_imu_thresh", params.init_imu_thresh, params.init_imu_thresh);
+        nh.param<float>("init_window_time", params.init_window_time, params.init_window_time);
+        nh.param<float>("init_imu_thresh", params.init_imu_thresh, params.init_imu_thresh);
 
         // Zero velocity update
         nh.param<bool>("try_zupt", params.try_zupt, params.try_zupt);
         nh.param<int>("zupt_chi2_multipler", params.zupt_options.chi2_multipler, params.zupt_options.chi2_multipler);
-        nh.param<double>("zupt_max_velocity", params.zupt_max_velocity, params.zupt_max_velocity);
-        nh.param<double>("zupt_noise_multiplier", params.zupt_noise_multiplier, params.zupt_noise_multiplier);
+        nh.param<float>("zupt_max_velocity", params.zupt_max_velocity, params.zupt_max_velocity);
+        nh.param<float>("zupt_noise_multiplier", params.zupt_noise_multiplier, params.zupt_noise_multiplier);
 
         // Recording of timing information to file
         nh.param<bool>("record_timing_information", params.record_timing_information, params.record_timing_information);
@@ -151,28 +151,28 @@ namespace ov_msckf {
         // NOISE ======================================================================
 
         // Our noise values for inertial sensor
-        nh.param<double>("gyroscope_noise_density", params.imu_noises.sigma_w, params.imu_noises.sigma_w);
-        nh.param<double>("accelerometer_noise_density", params.imu_noises.sigma_a, params.imu_noises.sigma_a);
-        nh.param<double>("gyroscope_random_walk", params.imu_noises.sigma_wb, params.imu_noises.sigma_wb);
-        nh.param<double>("accelerometer_random_walk", params.imu_noises.sigma_ab, params.imu_noises.sigma_ab);
+        nh.param<float>("gyroscope_noise_density", params.imu_noises.sigma_w, params.imu_noises.sigma_w);
+        nh.param<float>("accelerometer_noise_density", params.imu_noises.sigma_a, params.imu_noises.sigma_a);
+        nh.param<float>("gyroscope_random_walk", params.imu_noises.sigma_wb, params.imu_noises.sigma_wb);
+        nh.param<float>("accelerometer_random_walk", params.imu_noises.sigma_ab, params.imu_noises.sigma_ab);
 
         // Read in update parameters
-        nh.param<double>("up_msckf_sigma_px", params.msckf_options.sigma_pix, params.msckf_options.sigma_pix);
+        nh.param<float>("up_msckf_sigma_px", params.msckf_options.sigma_pix, params.msckf_options.sigma_pix);
         nh.param<int>("up_msckf_chi2_multipler", params.msckf_options.chi2_multipler, params.msckf_options.chi2_multipler);
-        nh.param<double>("up_slam_sigma_px", params.slam_options.sigma_pix, params.slam_options.sigma_pix);
+        nh.param<float>("up_slam_sigma_px", params.slam_options.sigma_pix, params.slam_options.sigma_pix);
         nh.param<int>("up_slam_chi2_multipler", params.slam_options.chi2_multipler, params.slam_options.chi2_multipler);
-        nh.param<double>("up_aruco_sigma_px", params.aruco_options.sigma_pix, params.aruco_options.sigma_pix);
+        nh.param<float>("up_aruco_sigma_px", params.aruco_options.sigma_pix, params.aruco_options.sigma_pix);
         nh.param<int>("up_aruco_chi2_multipler", params.aruco_options.chi2_multipler, params.aruco_options.chi2_multipler);
 
 
         // STATE ======================================================================
 
         // Timeoffset from camera to IMU
-        nh.param<double>("calib_camimu_dt", params.calib_camimu_dt, params.calib_camimu_dt);
+        nh.param<float>("calib_camimu_dt", params.calib_camimu_dt, params.calib_camimu_dt);
 
         // Global gravity
-        std::vector<double> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};
-        nh.param<std::vector<double>>("gravity", gravity, gravity);
+        std::vector<float> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};
+        nh.param<std::vector<float>>("gravity", gravity, gravity);
         assert(gravity.size()==3);
         params.gravity << gravity.at(0),gravity.at(1),gravity.at(2);
 
@@ -193,21 +193,21 @@ namespace ov_msckf {
         nh.param<int>("grid_x", params.grid_x, params.grid_x);
         nh.param<int>("grid_y", params.grid_y, params.grid_y);
         nh.param<int>("min_px_dist", params.min_px_dist, params.min_px_dist);
-        nh.param<double>("knn_ratio", params.knn_ratio, params.knn_ratio);
+        nh.param<float>("knn_ratio", params.knn_ratio, params.knn_ratio);
 
         // Feature initializer parameters
         nh.param<bool>("fi_triangulate_1d", params.featinit_options.triangulate_1d, params.featinit_options.triangulate_1d);
         nh.param<bool>("fi_refine_features", params.featinit_options.refine_features, params.featinit_options.refine_features);
         nh.param<int>("fi_max_runs", params.featinit_options.max_runs, params.featinit_options.max_runs);
-        nh.param<double>("fi_init_lamda", params.featinit_options.init_lamda, params.featinit_options.init_lamda);
-        nh.param<double>("fi_max_lamda", params.featinit_options.max_lamda, params.featinit_options.max_lamda);
-        nh.param<double>("fi_min_dx", params.featinit_options.min_dx, params.featinit_options.min_dx);
-        nh.param<double>("fi_min_dcost", params.featinit_options.min_dcost, params.featinit_options.min_dcost);
-        nh.param<double>("fi_lam_mult", params.featinit_options.lam_mult, params.featinit_options.lam_mult);
-        nh.param<double>("fi_min_dist", params.featinit_options.min_dist, params.featinit_options.min_dist);
-        nh.param<double>("fi_max_dist", params.featinit_options.max_dist, params.featinit_options.max_dist);
-        nh.param<double>("fi_max_baseline", params.featinit_options.max_baseline, params.featinit_options.max_baseline);
-        nh.param<double>("fi_max_cond_number", params.featinit_options.max_cond_number, params.featinit_options.max_cond_number);
+        nh.param<float>("fi_init_lamda", params.featinit_options.init_lamda, params.featinit_options.init_lamda);
+        nh.param<float>("fi_max_lamda", params.featinit_options.max_lamda, params.featinit_options.max_lamda);
+        nh.param<float>("fi_min_dx", params.featinit_options.min_dx, params.featinit_options.min_dx);
+        nh.param<float>("fi_min_dcost", params.featinit_options.min_dcost, params.featinit_options.min_dcost);
+        nh.param<float>("fi_lam_mult", params.featinit_options.lam_mult, params.featinit_options.lam_mult);
+        nh.param<float>("fi_min_dist", params.featinit_options.min_dist, params.featinit_options.min_dist);
+        nh.param<float>("fi_max_dist", params.featinit_options.max_dist, params.featinit_options.max_dist);
+        nh.param<float>("fi_max_baseline", params.featinit_options.max_baseline, params.featinit_options.max_baseline);
+        nh.param<float>("fi_max_cond_number", params.featinit_options.max_cond_number, params.featinit_options.max_cond_number);
 
 
 
@@ -215,12 +215,12 @@ namespace ov_msckf {
 
         // Load the groundtruth trajectory and its spline
         nh.param<std::string>("sim_traj_path", params.sim_traj_path, params.sim_traj_path);
-        nh.param<double>("sim_distance_threshold", params.sim_distance_threshold, params.sim_distance_threshold);
+        nh.param<float>("sim_distance_threshold", params.sim_distance_threshold, params.sim_distance_threshold);
         nh.param<bool>("sim_do_perturbation", params.sim_do_perturbation, params.sim_do_perturbation);
 
         // Read in sensor simulation frequencies
-        nh.param<double>("sim_freq_cam", params.sim_freq_cam, params.sim_freq_cam);
-        nh.param<double>("sim_freq_imu", params.sim_freq_imu, params.sim_freq_imu);
+        nh.param<float>("sim_freq_cam", params.sim_freq_cam, params.sim_freq_cam);
+        nh.param<float>("sim_freq_imu", params.sim_freq_imu, params.sim_freq_imu);
 
         // Load the seeds for the random number generators
         nh.param<int>("sim_seed_state_init", params.sim_seed_state_init, params.sim_seed_state_init);
@@ -249,12 +249,12 @@ namespace ov_msckf {
             std::pair<int,int> wh(matrix_wh.at(0),matrix_wh.at(1));
 
             // Camera intrinsic properties
-            Eigen::Matrix<double,8,1> cam_calib;
-            std::vector<double> matrix_k, matrix_d;
-            std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
-            std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-            nh.param<std::vector<double>>("cam"+std::to_string(i)+"_k", matrix_k, matrix_k_default);
-            nh.param<std::vector<double>>("cam"+std::to_string(i)+"_d", matrix_d, matrix_d_default);
+            Eigen::Matrix<float,8,1> cam_calib;
+            std::vector<float> matrix_k, matrix_d;
+            std::vector<float> matrix_k_default = {458.654,457.296,367.215,248.375};
+            std::vector<float> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
+            nh.param<std::vector<float>>("cam"+std::to_string(i)+"_k", matrix_k, matrix_k_default);
+            nh.param<std::vector<float>>("cam"+std::to_string(i)+"_d", matrix_d, matrix_d_default);
             matrix_k.at(0) /= (params.downsample_cameras) ? 2.0 : 1.0;
             matrix_k.at(1) /= (params.downsample_cameras) ? 2.0 : 1.0;
             matrix_k.at(2) /= (params.downsample_cameras) ? 2.0 : 1.0;
@@ -262,19 +262,19 @@ namespace ov_msckf {
             cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
 
             // Our camera extrinsics transform
-            Eigen::Matrix4d T_CtoI;
-            std::vector<double> matrix_TCtoI;
-            std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+            Eigen::Matrix4f T_CtoI;
+            std::vector<float> matrix_TCtoI;
+            std::vector<float> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
             // Read in from ROS, and save into our eigen mat
-            nh.param<std::vector<double>>("T_C"+std::to_string(i)+"toI", matrix_TCtoI, matrix_TtoI_default);
+            nh.param<std::vector<float>>("T_C"+std::to_string(i)+"toI", matrix_TCtoI, matrix_TtoI_default);
             T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
                     matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
                     matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
                     matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
 
             // Load these into our state
-            Eigen::Matrix<double,7,1> cam_eigen;
+            Eigen::Matrix<float,7,1> cam_eigen;
             cam_eigen.block(0,0,4,1) = rot_2_quat(T_CtoI.block(0,0,3,3).transpose());
             cam_eigen.block(4,0,3,1) = -T_CtoI.block(0,0,3,3).transpose()*T_CtoI.block(0,3,3,1);
 

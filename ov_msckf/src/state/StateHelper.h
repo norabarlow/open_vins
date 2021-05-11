@@ -76,7 +76,7 @@ namespace ov_msckf {
          */
         static void EKFPropagation(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &order_NEW,
                                    const std::vector<std::shared_ptr<Type>> &order_OLD,
-                                   const Eigen::MatrixXd &Phi, const Eigen::MatrixXd &Q);
+                                   const Eigen::MatrixXf &Phi, const Eigen::MatrixXf &Q);
 
         /**
          * @brief Performs EKF update of the state (see @ref linear-meas page)
@@ -87,12 +87,12 @@ namespace ov_msckf {
          * @param R updating measurement covariance
          */
         static void EKFUpdate(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &H_order,
-                              const Eigen::MatrixXd &H, const Eigen::VectorXd &res, const Eigen::MatrixXd &R);
+                              const Eigen::MatrixXf &H, const Eigen::VectorXf &res, const Eigen::MatrixXf &R);
 
         /**
-         * @brief This will fix the initial covariance matrix gauge freedoms (4dof, yaw and position).
+         * @brief This will fix the initial covariance matrix gauge freedoms (4fof, yaw and position).
          *
-         * A VIO system has 4dof unobservabile directions which can be arbitarily picked.
+         * A VIO system has 4fof unobservabile directions which can be arbitarily picked.
          * This means that on startup, we can fix the yaw and position to be 100 percent known.
          * Thus, after determining the global to current IMU orientation after initialization, we can propagate the global error
          * into the new IMU pose. In this case the position is directly equivilent, but the orientation needs to be propagated.
@@ -100,7 +100,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param q_GtoI Initial rotation from global frame to the first ever IMU orientation.
          */
-        static void fix_4dof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4d &q_GtoI);
+        static void fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4f &q_GtoI);
 
         /**
         * @brief For a given set of variables, this will this will calculate a smaller covariance.
@@ -113,7 +113,7 @@ namespace ov_msckf {
         * @param small_variables Vector of variables whose marginal covariance is desired
         * @return marginal covariance of the passed variables
         */
-        static Eigen::MatrixXd get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables);
+        static Eigen::MatrixXf get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables);
 
 
         /**
@@ -126,7 +126,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @return covariance of current state
          */
-        static Eigen::MatrixXd get_full_covariance(std::shared_ptr<State> state);
+        static Eigen::MatrixXf get_full_covariance(std::shared_ptr<State> state);
 
         /**
          * @brief Marginalizes a variable, properly modifying the ordering/covariances in the state
@@ -169,7 +169,7 @@ namespace ov_msckf {
          * @param chi_2_mult Value we should multiply the chi2 threshold by (larger means it will be accepted more measurements)
          */
         static bool initialize(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                               Eigen::MatrixXd &H_R, Eigen::MatrixXd &H_L, Eigen::MatrixXd &R, Eigen::VectorXd &res, double chi_2_mult);
+                               Eigen::MatrixXf &H_R, Eigen::MatrixXf &H_L, Eigen::MatrixXf &R, Eigen::VectorXf &res, float chi_2_mult);
 
 
         /**
@@ -187,7 +187,7 @@ namespace ov_msckf {
          * @param res Residual of initializing measurements
          */
         static void initialize_invertible(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                                          const Eigen::MatrixXd &H_R, const Eigen::MatrixXd &H_L, const Eigen::MatrixXd &R, const Eigen::VectorXd &res);
+                                          const Eigen::MatrixXf &H_R, const Eigen::MatrixXf &H_L, const Eigen::MatrixXf &R, const Eigen::VectorXf &res);
 
 
         /**
@@ -214,7 +214,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param last_w The estimated angular velocity at cloning time (used to estimate imu-cam time offset)
          */
-        static void augment_clone(std::shared_ptr<State> state, Eigen::Matrix<double, 3, 1> last_w);
+        static void augment_clone(std::shared_ptr<State> state, Eigen::Matrix<float, 3, 1> last_w);
 
 
         /**
@@ -228,7 +228,7 @@ namespace ov_msckf {
          */
         static void marginalize_old_clone(std::shared_ptr<State> state) {
             if ((int) state->_clones_IMU.size() > state->_options.max_clone_size) {
-                double marginal_time = state->margtimestep();
+                float marginal_time = state->margtimestep();
                 assert(marginal_time != INFINITY);
                 StateHelper::marginalize(state, state->_clones_IMU.at(marginal_time));
                 // Note that the marginalizer should have already deleted the clone

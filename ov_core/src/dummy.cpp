@@ -28,7 +28,7 @@
  * These algorithms are the foundation which is necessary before we can even write an estimator that can perform localization.
  * The key components of the ov_core codebase are the following:
  *
- * - 3d feature initialization (see @ref ov_core::FeatureInitializer)
+ * - 3f feature initialization (see @ref ov_core::FeatureInitializer)
  * - Inertial state initialization (see @ref ov_core::InertialInitializer)
  * - SE(3) b-spline (see @ref ov_core::BsplineSE3)
  * - KLT, descriptor, aruco, and simulation feature trackers
@@ -59,13 +59,13 @@ namespace ov_core { }
  * class Type {
  * protected:
  *   // Current best estimate
- *   Eigen::MatrixXd _value;
+ *   Eigen::MatrixXf _value;
  *   // Location of error state in covariance
  *   int _id = -1;
  *   // Dimension of error state
  *   int _size = -1;
  *   // Update eq. taking vector to their rep.
- *   void update(const Eigen::VectorXd dx);
+ *   void update(const Eigen::VectorXf dx);
  * };
  * @endcode
  *

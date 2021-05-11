@@ -82,7 +82,7 @@ namespace ov_msckf {
          * This will take the current state estimate and get the propagated pose to the desired time.
          * This can be used to get pose estimates on systems which require high frequency pose estimates.
          */
-        void visualize_odometry(double timestamp);
+        void visualize_odometry(float timestamp);
 
         /**
          * @brief After the run has ended, print results
@@ -130,10 +130,10 @@ namespace ov_msckf {
 
         // Groundtruth infomation
         ros::Publisher pub_pathgt, pub_posegt;
-        double summed_rmse_ori = 0.0;
-        double summed_rmse_pos = 0.0;
-        double summed_nees_ori = 0.0;
-        double summed_nees_pos = 0.0;
+        float summed_rmse_ori = 0.0;
+        float summed_rmse_pos = 0.0;
+        float summed_nees_ori = 0.0;
+        float summed_nees_pos = 0.0;
         size_t summed_number = 0;
 
         // Start and end timestamps
@@ -141,10 +141,10 @@ namespace ov_msckf {
         boost::posix_time::ptime rT1, rT2;
 
         // Last timestamp we visualized at
-        double last_visualization_timestamp = 0;
+        float last_visualization_timestamp = 0;
 
         // Our groundtruth states
-        std::map<double, Eigen::Matrix<double,17,1>> gt_states;
+        std::map<float, Eigen::Matrix<float,17,1>> gt_states;
 
         // For path viz
         unsigned int poses_seq_gt = 0;

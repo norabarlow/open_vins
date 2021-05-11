@@ -84,7 +84,7 @@ namespace ov_eval {
         void calculate_ate(Statistics &error_ori, Statistics &error_pos);
 
         /**
-         * @brief Computes the Absolute Trajectory Error (ATE) for this trajectory in the 2d x-y plane.
+         * @brief Computes the Absolute Trajectory Error (ATE) for this trajectory in the 2f x-y plane.
          *
          * This will first do our alignment of the two trajectories.
          * We just grab the yaw component of the orientation and the xy plane error.
@@ -96,7 +96,7 @@ namespace ov_eval {
          * @param error_ori Error values for the orientation (yaw error)
          * @param error_pos Error values for the position (xy error)
          */
-        void calculate_ate_2d(Statistics &error_ori, Statistics &error_pos);
+        void calculate_ate_2f(Statistics &error_ori, Statistics &error_pos);
 
         /**
          * @brief Computes the Relative Pose Error (RPE) for this trajectory
@@ -112,7 +112,7 @@ namespace ov_eval {
          * @param segment_lengths What segment lengths we want to calculate for
          * @param error_rpe Map of segment lengths => errors for that length (orientation and position)
          */
-        void calculate_rpe(const std::vector<double> &segment_lengths, std::map<double,std::pair<Statistics,Statistics>> &error_rpe);
+        void calculate_rpe(const std::vector<float> &segment_lengths, std::map<float,std::pair<Statistics,Statistics>> &error_rpe);
 
 
         /**
@@ -157,13 +157,13 @@ namespace ov_eval {
     protected:
 
         // Trajectory data (loaded from file and timestamp intersected)
-        std::vector<double> est_times, gt_times;
-        std::vector<Eigen::Matrix<double,7,1>> est_poses, gt_poses;
-        std::vector<Eigen::Matrix3d> est_covori, est_covpos, gt_covori, gt_covpos;
+        std::vector<float> est_times, gt_times;
+        std::vector<Eigen::Matrix<float,7,1>> est_poses, gt_poses;
+        std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
 
         // Aligned trajectories
-        std::vector<Eigen::Matrix<double,7,1>> est_poses_aignedtoGT;
-        std::vector<Eigen::Matrix<double,7,1>> gt_poses_aignedtoEST;
+        std::vector<Eigen::Matrix<float,7,1>> est_poses_aignedtoGT;
+        std::vector<Eigen::Matrix<float,7,1>> gt_poses_aignedtoEST;
 
         /**
          * @brief Gets the indices at the end of subtractories of a given length when starting at each index.
@@ -173,7 +173,7 @@ namespace ov_eval {
          * @param max_dist_diff Maximum error between current trajectory length and the desired
          * @return End indices for each subtrajectory
          */
-        std::vector<int> compute_comparison_indices_length(std::vector<double> &distances, double distance, double max_dist_diff) {
+        std::vector<int> compute_comparison_indices_length(std::vector<float> &distances, float distance, float max_dist_diff) {
 
             // Vector of end ids for our pose indexes
             std::vector<int> comparisons;
@@ -183,9 +183,9 @@ namespace ov_eval {
 
                 // Loop through and find the pose that minimized the difference between
                 // The desired trajectory distance and our current trajectory distance
-                double distance_startpose = distances.at(idx);
+                float distance_startpose = distances.at(idx);
                 int best_idx = -1;
-                double best_error = max_dist_diff;
+                float best_error = max_dist_diff;
                 for (size_t i = idx; i < distances.size(); i++) {
                     if (std::abs(distances.at(i) - (distance_startpose + distance)) < best_error) {
                         best_idx = i;

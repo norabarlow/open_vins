@@ -40,7 +40,7 @@
  * - Camera intrinsics and extrinsic online calibration
  * - Time offset between camera and imu calibration
  * - Standard MSCKF features with nullspace projection
- * - 3d SLAM feature support (with six different representations)
+ * - 3f SLAM feature support (with six different representations)
  * - Generic simulation of trajectories through and environment (see @ref ov_msckf::Simulator)
  *
  * We suggest those that are interested to first checkout the State and Propagator which should provide a nice introduction to the code.

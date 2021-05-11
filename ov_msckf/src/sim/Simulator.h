@@ -76,7 +76,7 @@ namespace ov_msckf {
          * @brief Gets the timestamp we have simulated up too
          * @return Timestamp
          */
-        double current_timestamp() {
+        float current_timestamp() {
             return timestamp;
         }
 
@@ -86,7 +86,7 @@ namespace ov_msckf {
          * @param imustate State in the MSCKF ordering: [time(sec),q_GtoI,p_IinG,v_IinG,b_gyro,b_accel]
          * @return True if we have a state
          */
-        bool get_state(double desired_time, Eigen::Matrix<double,17,1> &imustate);
+        bool get_state(float desired_time, Eigen::Matrix<float,17,1> &imustate);
 
         /**
          * @brief Gets the next inertial reading if we have one.
@@ -95,7 +95,7 @@ namespace ov_msckf {
          * @param am Linear velocity in the inertial frame
          * @return True if we have a measurement
          */
-        bool get_next_imu(double &time_imu, Eigen::Vector3d &wm, Eigen::Vector3d &am);
+        bool get_next_imu(float &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am);
 
 
         /**
@@ -105,11 +105,11 @@ namespace ov_msckf {
          * @param feats Noisy uv measurements and ids for the returned time
          * @return True if we have a measurement
          */
-        bool get_next_cam(double &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
+        bool get_next_cam(float &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
 
 
-        /// Returns the true 3d map of features
-        std::unordered_map<size_t,Eigen::Vector3d> get_map() {
+        /// Returns the true 3f map of features
+        std::unordered_map<size_t,Eigen::Vector3f> get_map() {
             return featmap;
         }
 
@@ -133,10 +133,10 @@ namespace ov_msckf {
          * @param R_GtoI Orientation of the IMU pose
          * @param p_IinG Position of the IMU pose
          * @param camid Camera id of the camera sensor we want to project into
-         * @param feats Our set of 3d features
+         * @param feats Our set of 3f features
          * @return True distorted raw image measurements and their ids for the specified camera
          */
-        std::vector<std::pair<size_t,Eigen::VectorXf>> project_pointcloud(const Eigen::Matrix3d &R_GtoI, const Eigen::Vector3d &p_IinG, int camid, const std::unordered_map<size_t,Eigen::Vector3d> &feats);
+        std::vector<std::pair<size_t,Eigen::VectorXf>> project_pointcloud(const Eigen::Matrix3f &R_GtoI, const Eigen::Vector3f &p_IinG, int camid, const std::unordered_map<size_t,Eigen::Vector3f> &feats);
 
 
         /**
@@ -147,7 +147,7 @@ namespace ov_msckf {
          * @param[out] feats Map we will append new features to
          * @param numpts Number of points we should generate
          */
-        void generate_points(const Eigen::Matrix3d &R_GtoI, const Eigen::Vector3d &p_IinG, int camid, std::unordered_map<size_t,Eigen::Vector3d> &feats, int numpts);
+        void generate_points(const Eigen::Matrix3f &R_GtoI, const Eigen::Vector3f &p_IinG, int camid, std::unordered_map<size_t,Eigen::Vector3f> &feats, int numpts);
 
         //===================================================================
         // Configuration variables
@@ -161,14 +161,14 @@ namespace ov_msckf {
         //===================================================================
 
         /// Our loaded trajectory data (timestamp(s), q_GtoI, p_IinG)
-        std::vector<Eigen::VectorXd> traj_data;
+        std::vector<Eigen::VectorXf> traj_data;
 
         /// Our b-spline trajectory
         BsplineSE3 spline;
 
-        /// Our map of 3d features
+        /// Our map of 3f features
         size_t id_map = 0;
-        std::unordered_map<size_t,Eigen::Vector3d> featmap;
+        std::unordered_map<size_t,Eigen::Vector3f> featmap;
 
         /// Mersenne twister PRNG for measurements (IMU)
         std::mt19937 gen_meas_imu;
@@ -190,24 +190,24 @@ namespace ov_msckf {
         //===================================================================
 
         /// Current timestamp of the system
-        double timestamp;
+        float timestamp;
 
         /// Last time we had an IMU reading
-        double timestamp_last_imu;
+        float timestamp_last_imu;
 
         /// Last time we had an CAMERA reading
-        double timestamp_last_cam;
+        float timestamp_last_cam;
 
         /// Our running acceleration bias
-        Eigen::Vector3d true_bias_accel = Eigen::Vector3d::Zero();
+        Eigen::Vector3f true_bias_accel = Eigen::Vector3f::Zero();
 
         /// Our running gyroscope bias
-        Eigen::Vector3d true_bias_gyro = Eigen::Vector3d::Zero();
+        Eigen::Vector3f true_bias_gyro = Eigen::Vector3f::Zero();
 
         // Our history of true biases
-        std::vector<double> hist_true_bias_time;
-        std::vector<Eigen::Vector3d> hist_true_bias_accel;
-        std::vector<Eigen::Vector3d> hist_true_bias_gyro;
+        std::vector<float> hist_true_bias_time;
+        std::vector<Eigen::Vector3f> hist_true_bias_accel;
+        std::vector<Eigen::Vector3f> hist_true_bias_gyro;
 
 
     };

@@ -112,7 +112,7 @@ namespace ov_msckf {
         app1.add_option("--calib_camimu_dt", params.calib_camimu_dt, "");
 
         // Global gravity
-        std::vector<double> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};
+        std::vector<float> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};
         app1.add_option("--gravity", gravity, "");
 
 
@@ -255,8 +255,8 @@ namespace ov_msckf {
 
         // Set the defaults
         std::vector<int> p_fish;
-        std::vector<std::vector<double>> p_intrinsic;
-        std::vector<std::vector<double>> p_extrinsic;
+        std::vector<std::vector<float>> p_intrinsic;
+        std::vector<std::vector<float>> p_extrinsic;
         std::vector<std::vector<int>> p_wh;
         for(int i=0; i<params.state_options.num_cameras; i++) {
             p_fish.push_back(false);
@@ -289,11 +289,11 @@ namespace ov_msckf {
 
             // Convert to Eigen
             assert(p_intrinsic.at(i).size()==8);
-            Eigen::Matrix<double,8,1> intrinsics;
+            Eigen::Matrix<float,8,1> intrinsics;
             intrinsics << p_intrinsic.at(i).at(0),p_intrinsic.at(i).at(1),p_intrinsic.at(i).at(2),p_intrinsic.at(i).at(3),
                     p_intrinsic.at(i).at(4),p_intrinsic.at(i).at(5),p_intrinsic.at(i).at(6),p_intrinsic.at(i).at(7);
             assert(p_extrinsic.at(i).size()==7);
-            Eigen::Matrix<double,7,1> extrinsics;
+            Eigen::Matrix<float,7,1> extrinsics;
             extrinsics << p_extrinsic.at(i).at(0),p_extrinsic.at(i).at(1),p_extrinsic.at(i).at(2),p_extrinsic.at(i).at(3),
                     p_extrinsic.at(i).at(4),p_extrinsic.at(i).at(5),p_extrinsic.at(i).at(6);
             assert(p_wh.at(i).size()==2);

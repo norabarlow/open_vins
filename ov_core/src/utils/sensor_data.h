@@ -35,13 +35,13 @@ namespace ov_core {
     struct ImuData {
 
         /// Timestamp of the reading
-        double timestamp;
+        float timestamp;
 
         /// Gyroscope reading, angular velocity (rad/s)
-        Eigen::Matrix<double, 3, 1> wm;
+        Eigen::Matrix<float, 3, 1> wm;
 
         /// Accelerometer reading, linear acceleration (m/s^2)
-        Eigen::Matrix<double, 3, 1> am;
+        Eigen::Matrix<float, 3, 1> am;
 
         /// Sort function to allow for using of STL containers
         bool operator<(const ImuData& other) const {
@@ -59,7 +59,7 @@ namespace ov_core {
     struct CameraData {
 
         /// Timestamp of the reading
-        double timestamp;
+        float timestamp;
 
         /// Camera ids for each of the images collected
         std::vector<int> sensor_ids;

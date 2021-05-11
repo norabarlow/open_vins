@@ -96,12 +96,12 @@ int main(int argc, char **argv) {
 
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
-    std::vector<double> times;
-    std::vector<Eigen::Matrix<double,7,1>> poses;
-    std::vector<Eigen::Matrix3d> cov_ori, cov_pos;
+    std::vector<float> times;
+    std::vector<Eigen::Matrix<float,7,1>> poses;
+    std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
     // Print its length and stats
-    double length = ov_eval::Loader::get_total_length(poses);
+    float length = ov_eval::Loader::get_total_length(poses);
     printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),length);
 
     // Create our trajectory object
@@ -130,8 +130,8 @@ int main(int argc, char **argv) {
     //===========================================================
 
     // Calculate
-    std::vector<double> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
-    std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
+    std::vector<float> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
+    std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
     traj.calculate_rpe(segments, error_rpe);
 
     // Print it
@@ -154,9 +154,9 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(800, 600);
 
     // Plot each RPE next to each other
-    double ct = 1;
-    double width = 0.50;
-    std::vector<double> xticks;
+    float ct = 1;
+    float width = 0.50;
+    std::vector<float> xticks;
     std::vector<std::string> labels;
     for(const auto &seg : error_rpe) {
         xticks.push_back(ct);
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
     }
 
     // Display to the user
-    matplotlibcpp::xlim(0.5,ct-0.5);
+    matplotlibcpp::xlim(0.5f,ct-0.5f);
     matplotlibcpp::xticks(xticks,labels);
     matplotlibcpp::title("Relative Orientation Error");
     matplotlibcpp::ylabel("orientation error (deg)");
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
     }
 
     // Display to the user
-    matplotlibcpp::xlim(0.5,ct-0.5);
+    matplotlibcpp::xlim(0.5f,ct-0.5f);
     matplotlibcpp::xticks(xticks,labels);
     matplotlibcpp::title("Relative Position Error");
     matplotlibcpp::ylabel("translation error (m)");
@@ -215,8 +215,8 @@ int main(int argc, char **argv) {
 
     if(!nees_ori.values.empty() && !nees_pos.values.empty()) {
         // Zero our time arrays
-        double starttime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
-        double endtime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
+        float starttime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
+        float endtime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
         for(size_t i=0; i<nees_ori.timestamps.size(); i++) {
             nees_ori.timestamps.at(i) -= starttime1;
             nees_pos.timestamps.at(i) -= starttime1;
@@ -240,12 +240,12 @@ int main(int argc, char **argv) {
         matplotlibcpp::title("Normalized Estimation Error Squared");
         matplotlibcpp::ylabel("NEES Orientation");
         matplotlibcpp::plot(nees_ori.timestamps, nees_ori.values, params_neeso);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(0.0f,endtime1-starttime1);
         matplotlibcpp::subplot(2,1,2);
         matplotlibcpp::ylabel("NEES Position");
         matplotlibcpp::xlabel("dataset time (s)");
         matplotlibcpp::plot(nees_pos.timestamps, nees_pos.values, params_neesp);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(0.0f,endtime1-starttime1);
 
         // Display to the user
         matplotlibcpp::tight_layout();
@@ -267,8 +267,8 @@ int main(int argc, char **argv) {
 
 
     // Zero our time arrays
-    double starttime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(0);
-    double endtime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(posx.timestamps.size()-1);
+    float starttime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(0);
+    float endtime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(posx.timestamps.size()-1);
     for(size_t i=0; i<posx.timestamps.size(); i++) {
         posx.timestamps.at(i) -= starttime2;
         posy.timestamps.at(i) -= starttime2;
@@ -292,14 +292,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("IMU Position Error");
     matplotlibcpp::ylabel("x-error (m)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("y-error (m)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("z-error (m)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();
@@ -314,14 +314,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("IMU Orientation Error");
     matplotlibcpp::ylabel("x-error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("y-error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("z-error (deg)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();
@@ -336,14 +336,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("Global Orientation RPY Error");
     matplotlibcpp::ylabel("roll error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("pitch error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("yaw error (deg)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(0.0f,endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();

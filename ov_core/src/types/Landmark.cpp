@@ -24,9 +24,9 @@
 using namespace ov_type;
 
 
-Eigen::Matrix<double,3,1> Landmark::get_xyz(bool getfej) const {
+Eigen::Matrix<float,3,1> Landmark::get_xyz(bool getfej) const {
 
-    /// CASE: Global 3d feature representation
+    /// CASE: Global 3f feature representation
     /// CASE: Anchored 3D feature representation
     if (_feat_representation == LandmarkRepresentation::Representation::GLOBAL_3D
         || _feat_representation == LandmarkRepresentation::Representation::ANCHORED_3D) {
@@ -37,8 +37,8 @@ Eigen::Matrix<double,3,1> Landmark::get_xyz(bool getfej) const {
     /// CASE: Anchored full inverse depth feature representation
     if (_feat_representation == LandmarkRepresentation::Representation::GLOBAL_FULL_INVERSE_DEPTH
         || _feat_representation == LandmarkRepresentation::Representation::ANCHORED_FULL_INVERSE_DEPTH) {
-        Eigen::Matrix<double, 3, 1> p_invFinG = (getfej) ? fej() : value();
-        Eigen::Matrix<double, 3, 1> p_FinG;
+        Eigen::Matrix<float, 3, 1> p_invFinG = (getfej) ? fej() : value();
+        Eigen::Matrix<float, 3, 1> p_FinG;
         p_FinG << (1 / p_invFinG(2)) * std::cos(p_invFinG(0)) * std::sin(p_invFinG(1)),
                 (1 / p_invFinG(2)) * std::sin(p_invFinG(0)) * std::sin(p_invFinG(1)),
                 (1 / p_invFinG(2)) * std::cos(p_invFinG(1));
@@ -47,8 +47,8 @@ Eigen::Matrix<double,3,1> Landmark::get_xyz(bool getfej) const {
 
     /// CASE: Anchored MSCKF inverse depth feature representation
     if (_feat_representation == LandmarkRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH) {
-        Eigen::Matrix<double, 3, 1> p_FinA;
-        Eigen::Matrix<double, 3, 1> p_invFinA = value();
+        Eigen::Matrix<float, 3, 1> p_FinA;
+        Eigen::Matrix<float, 3, 1> p_invFinA = value();
         p_FinA << (1 / p_invFinA(2)) * p_invFinA(0),
                 (1 / p_invFinA(2)) * p_invFinA(1),
                 1 / p_invFinA(2);
@@ -63,15 +63,15 @@ Eigen::Matrix<double,3,1> Landmark::get_xyz(bool getfej) const {
 
     // Failure
     assert(false);
-    return Eigen::Vector3d::Zero();
+    return Eigen::Vector3f::Zero();
 }
 
 
 
-void Landmark::set_from_xyz(Eigen::Matrix<double,3,1> p_FinG, bool isfej) {
+void Landmark::set_from_xyz(Eigen::Matrix<float,3,1> p_FinG, bool isfej) {
 
-    /// CASE: Global 3d feature representation
-    /// CASE: Anchored 3d feature representation
+    /// CASE: Global 3f feature representation
+    /// CASE: Anchored 3f feature representation
     if (_feat_representation == LandmarkRepresentation::Representation::GLOBAL_3D
         || _feat_representation == LandmarkRepresentation::Representation::ANCHORED_3D) {
         if(isfej) set_fej(p_FinG);
@@ -87,11 +87,11 @@ void Landmark::set_from_xyz(Eigen::Matrix<double,3,1> p_FinG, bool isfej) {
         // Feature inverse representation
         // NOTE: This is not the MSCKF inverse form, but the standard form
         // NOTE: Thus we go from p_FinG and convert it to this form
-        double g_rho = 1/p_FinG.norm();
-        double g_phi = std::acos(g_rho*p_FinG(2));
-        //double g_theta = std::asin(g_rho*p_FinG(1)/std::sin(g_phi));
-        double g_theta = std::atan2(p_FinG(1),p_FinG(0));
-        Eigen::Matrix<double,3,1> p_invFinG;
+        float g_rho = 1/p_FinG.norm();
+        float g_phi = std::acos(g_rho*p_FinG(2));
+        //float g_theta = std::asin(g_rho*p_FinG(1)/std::sin(g_phi));
+        float g_theta = std::atan2(p_FinG(1),p_FinG(0));
+        Eigen::Matrix<float,3,1> p_invFinG;
         p_invFinG(0) = g_theta;
         p_invFinG(1) = g_phi;
         p_invFinG(2) = g_rho;
@@ -106,7 +106,7 @@ void Landmark::set_from_xyz(Eigen::Matrix<double,3,1> p_FinG, bool isfej) {
     if (_feat_representation == LandmarkRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH) {
 
         // MSCKF representation
-        Eigen::Matrix<double,3,1> p_invFinA_MSCKF;
+        Eigen::Matrix<float,3,1> p_invFinA_MSCKF;
         p_invFinA_MSCKF(0) = p_FinG(0)/p_FinG(2);
         p_invFinA_MSCKF(1) = p_FinG(1)/p_FinG(2);
         p_invFinA_MSCKF(2) = 1/p_FinG(2);
@@ -121,7 +121,7 @@ void Landmark::set_from_xyz(Eigen::Matrix<double,3,1> p_FinG, bool isfej) {
     if (_feat_representation == LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) {
 
         // Get the inverse depth
-        Eigen::VectorXd temp;
+        Eigen::VectorXf temp;
         temp.resize(1,1);
         temp(0) = 1.0/p_FinG(2);
 

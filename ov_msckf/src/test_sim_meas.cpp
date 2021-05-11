@@ -69,15 +69,15 @@ int main(int argc, char** argv)
     while(sim.ok()) {
 
         // IMU: get the next simulated IMU measurement if we have it
-        double time_imu;
-        Eigen::Vector3d wm, am;
+        float time_imu;
+        Eigen::Vector3f wm, am;
         bool hasimu = sim.get_next_imu(time_imu, wm, am);
         if(hasimu) {
             cout << "new imu measurement = " << std::setprecision(15) << time_imu << std::setprecision(3) << " | w = " << wm.norm() << " | a = " << am.norm() << endl;
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        double time_cam;
+        float time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim.get_next_cam(time_cam, camids, feats);

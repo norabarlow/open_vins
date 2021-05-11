@@ -42,41 +42,41 @@ namespace ov_eval {
     public:
 
         /// Root mean squared for the given values
-        double rmse = 0.0;
+        float rmse = 0.0;
 
         /// Mean of the given values
-        double mean = 0.0;
+        float mean = 0.0;
 
         /// Median of the given values
-        double median = 0.0;
+        float median = 0.0;
 
         /// Standard deviation of given values
-        double std = 0.0;
+        float std = 0.0;
 
         /// Max of the given values
-        double max = 0.0;
+        float max = 0.0;
 
         /// Min of the given values
-        double min = 0.0;
+        float min = 0.0;
 
         /// 99th percentile
-        double ninetynine = 0.0;
+        float ninetynine = 0.0;
 
         /// Timestamp when these values occured at
-        std::vector<double> timestamps;
+        std::vector<float> timestamps;
 
         /// Values (e.g. error or nees at a given time)
-        std::vector<double> values;
+        std::vector<float> values;
 
         /// Bound of these values (e.g. our expected covariance bound)
-        std::vector<double> values_bound;
+        std::vector<float> values_bound;
 
 
         /// Will calculate all values from our vectors of information
         void calculate() {
 
             // Sort the data for easy finding of values
-            std::vector<double> values_sorted = values;
+            std::vector<float> values_sorted = values;
             std::sort(values_sorted.begin(), values_sorted.end());
 
             // If we don't have any data, just return :(

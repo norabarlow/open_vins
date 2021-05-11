@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     int grid_x = 5;
     int grid_y = 3;
     int min_px_dist = 10;
-    double knn_ratio = 0.85;
+    float knn_ratio = 0.85;
     bool do_downsizing = false;
 
     // Parameters for our extractor
@@ -89,12 +89,12 @@ int main(int argc, char** argv)
     printf("downsize aruco image: %d\n", do_downsizing);
 
     // Fake camera info (we don't need this, as we are not using the normalized coordinates for anything)
-    Eigen::Matrix<double,8,1> cam0_calib;
+    Eigen::Matrix<float,8,1> cam0_calib;
     cam0_calib << 1,1,0,0,0,0,0,0;
 
     // Create our n-camera vectors
     std::map<size_t,bool> camera_fisheye;
-    std::map<size_t,Eigen::VectorXd> camera_calibration;
+    std::map<size_t,Eigen::VectorXf> camera_calibration;
     camera_fisheye.insert({0,false});
     camera_calibration.insert({0,cam0_calib});
     camera_fisheye.insert({1,false});
@@ -123,8 +123,8 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Loop forever until we break out
-    double current_time = 0.0;
-    std::deque<double> clonetimes;
+    float current_time = 0.0;
+    std::deque<float> clonetimes;
     while(true) {
 
         // Get the next frame (and fake advance time forward)
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
         // Marginalized features if we have reached 5 frame tracks
         if((int)clonetimes.size() >= clone_states) {
             // Remove features that have reached their max track length
-            double margtime = clonetimes.at(0);
+            float margtime = clonetimes.at(0);
             clonetimes.pop_front();
             std::vector<std::shared_ptr<Feature>> feats_marg = database->features_containing(margtime);
             // Delete theses feature pointers

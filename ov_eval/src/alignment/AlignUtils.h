@@ -52,9 +52,9 @@ namespace ov_eval {
          * Equation (17)-(18) in [Zhang et al. 2018 IROS](http://rpg.ifi.uzh.ch/docs/IROS18_Zhang.pdf) paper.
          * @param C Data matrix
          */
-        static inline double get_best_yaw(const Eigen::Matrix<double, 3, 3> &C) {
-            double A = C(0, 1) - C(1, 0);
-            double B = C(0, 0) + C(1, 1);
+        static inline float get_best_yaw(const Eigen::Matrix<float, 3, 3> &C) {
+            float A = C(0, 1) - C(1, 0);
+            float B = C(0, 0) + C(1, 1);
             //return M_PI_2 - atan2(B, A);
             return atan2(A, B);
         }
@@ -64,8 +64,8 @@ namespace ov_eval {
          * @param data Vector of data
          * @return Mean value
          */
-        static inline Eigen::Matrix<double, 3, 1> get_mean(const std::vector<Eigen::Matrix<double, 3, 1>> &data) {
-            Eigen::Matrix<double, 3, 1> mean = Eigen::Matrix<double, 3, 1>::Zero();
+        static inline Eigen::Matrix<float, 3, 1> get_mean(const std::vector<Eigen::Matrix<float, 3, 1>> &data) {
+            Eigen::Matrix<float, 3, 1> mean = Eigen::Matrix<float, 3, 1>::Zero();
             for (size_t i = 0; i < data.size(); i++) {
                 mean.noalias() += data[i];
             }
@@ -85,30 +85,30 @@ namespace ov_eval {
          * @param known_scale Whether to fix scale
          * @param yaw_only Whether to only use yaw orientation (such as when frames are already gravity aligned)
          */
-        static void align_umeyama(const std::vector<Eigen::Matrix<double, 3, 1>> &data,
-                                  const std::vector<Eigen::Matrix<double, 3, 1>> &model,
-                                  Eigen::Matrix<double, 3, 3> &R, Eigen::Matrix<double, 3, 1> &t,
-                                  double &s, bool known_scale, bool yaw_only);
+        static void align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &data,
+                                  const std::vector<Eigen::Matrix<float, 3, 1>> &model,
+                                  Eigen::Matrix<float, 3, 3> &R, Eigen::Matrix<float, 3, 1> &t,
+                                  float &s, bool known_scale, bool yaw_only);
 
         /**
          * @brief Will intersect our loaded data so that we have common timestamps.
          * @param offset Time offset to append to our estimate
          * @param max_difference Biggest allowed difference between matched timesteps
          */
-        static void perform_association(double offset, double max_difference,
-                                        std::vector<double> &est_times, std::vector<double> &gt_times,
-                                        std::vector<Eigen::Matrix<double,7,1>> &est_poses, std::vector<Eigen::Matrix<double,7,1>> &gt_poses);
+        static void perform_association(float offset, float max_difference,
+                                        std::vector<float> &est_times, std::vector<float> &gt_times,
+                                        std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses);
 
         /**
          * @brief Will intersect our loaded data so that we have common timestamps.
          * @param offset Time offset to append to our estimate
          * @param max_difference Biggest allowed difference between matched timesteps
          */
-        static void perform_association(double offset, double max_difference,
-                                        std::vector<double> &est_times, std::vector<double> &gt_times,
-                                        std::vector<Eigen::Matrix<double,7,1>> &est_poses, std::vector<Eigen::Matrix<double,7,1>> &gt_poses,
-                                        std::vector<Eigen::Matrix3d> &est_covori, std::vector<Eigen::Matrix3d> &est_covpos,
-                                        std::vector<Eigen::Matrix3d> &gt_covori, std::vector<Eigen::Matrix3d> &gt_covpos);
+        static void perform_association(float offset, float max_difference,
+                                        std::vector<float> &est_times, std::vector<float> &gt_times,
+                                        std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
+                                        std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
+                                        std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos);
 
 
 

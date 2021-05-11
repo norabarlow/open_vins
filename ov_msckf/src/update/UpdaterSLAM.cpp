@@ -38,7 +38,7 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
     rT0 =  boost::posix_time::microsec_clock::local_time();
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<double> clonetimes;
+    std::vector<float> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -68,16 +68,16 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
     rT1 =  boost::posix_time::microsec_clock::local_time();
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<float, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<float, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose
-            Eigen::Matrix<double,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
-            Eigen::Matrix<double,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
+            Eigen::Matrix<float,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
+            Eigen::Matrix<float,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
 
             // Append to our map
             clones_cami.insert({clone_imu.first,FeatureInitializer::ClonePose(R_GtoCi,p_CioinG)});
@@ -149,9 +149,9 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
         }
 
         // Our return values (feature jacobian, state jacobian, residual, and order of state jacobian)
-        Eigen::MatrixXd H_f;
-        Eigen::MatrixXd H_x;
-        Eigen::VectorXd res;
+        Eigen::MatrixXf H_f;
+        Eigen::MatrixXf H_x;
+        Eigen::VectorXf res;
         std::vector<std::shared_ptr<Type>> Hx_order;
 
         // Get the Jacobian for this feature
@@ -163,7 +163,7 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
         if(feat_rep==LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) {
 
             // Append the Jacobian in respect to the depth of the feature
-            Eigen::MatrixXd H_xf = H_x;
+            Eigen::MatrixXf H_xf = H_x;
             H_xf.conservativeResize(H_x.rows(), H_x.cols()+1);
             H_xf.block(0, H_x.cols(), H_x.rows(), 1) = H_f.block(0,H_f.cols()-1,H_f.rows(),1);
             H_f.conservativeResize(H_f.rows(), H_f.cols()-1);
@@ -196,11 +196,11 @@ void UpdaterSLAM::delayed_init(std::shared_ptr<State> state, std::vector<std::sh
         }
 
         // Measurement noise matrix
-        double sigma_pix_sq = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.sigma_pix_sq : _options_slam.sigma_pix_sq;
-        Eigen::MatrixXd R = sigma_pix_sq*Eigen::MatrixXd::Identity(res.rows(), res.rows());
+        float sigma_pix_sq = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.sigma_pix_sq : _options_slam.sigma_pix_sq;
+        Eigen::MatrixXf R = sigma_pix_sq*Eigen::MatrixXf::Identity(res.rows(), res.rows());
 
         // Try to initialize, delete new pointer if we failed
-        double chi2_multipler = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.chi2_multipler : _options_slam.chi2_multipler;
+        float chi2_multipler = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.chi2_multipler : _options_slam.chi2_multipler;
         if (StateHelper::initialize(state, landmark, Hx_order, H_x, H_f, R, res, chi2_multipler)) {
             state->_features_SLAM.insert({(*it2)->featid, landmark});
             (*it2)->to_delete = true;
@@ -236,7 +236,7 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
     rT0 =  boost::posix_time::microsec_clock::local_time();
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<double> clonetimes;
+    std::vector<float> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -285,9 +285,9 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
     size_t max_hx_size = state->max_covariance_size();
 
     // Large Jacobian, residual, and measurement noise of *all* features for this update
-    Eigen::VectorXd res_big = Eigen::VectorXd::Zero(max_meas_size);
-    Eigen::MatrixXd Hx_big = Eigen::MatrixXd::Zero(max_meas_size, max_hx_size);
-    Eigen::MatrixXd R_big = Eigen::MatrixXd::Identity(max_meas_size,max_meas_size);
+    Eigen::VectorXf res_big = Eigen::VectorXf::Zero(max_meas_size);
+    Eigen::MatrixXf Hx_big = Eigen::MatrixXf::Zero(max_meas_size, max_hx_size);
+    Eigen::MatrixXf R_big = Eigen::MatrixXf::Identity(max_meas_size,max_meas_size);
     std::unordered_map<std::shared_ptr<Type>,size_t> Hx_mapping;
     std::vector<std::shared_ptr<Type>> Hx_order_big;
     size_t ct_jacob = 0;
@@ -329,16 +329,16 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
         }
 
         // Our return values (feature jacobian, state jacobian, residual, and order of state jacobian)
-        Eigen::MatrixXd H_f;
-        Eigen::MatrixXd H_x;
-        Eigen::VectorXd res;
+        Eigen::MatrixXf H_f;
+        Eigen::MatrixXf H_x;
+        Eigen::VectorXf res;
         std::vector<std::shared_ptr<Type>> Hx_order;
 
         // Get the Jacobian for this feature
         UpdaterHelper::get_feature_jacobian_full(state, feat, H_f, H_x, res, Hx_order);
 
         // Place Jacobians in one big Jacobian, since the landmark is already in our state vector
-        Eigen::MatrixXd H_xf = H_x;
+        Eigen::MatrixXf H_xf = H_x;
         if(landmark->_feat_representation==LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) {
 
             // Append the Jacobian in respect to the depth of the feature
@@ -364,14 +364,14 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
         Hxf_order.push_back(landmark);
 
         /// Chi2 distance check
-        Eigen::MatrixXd P_marg = StateHelper::get_marginal_covariance(state, Hxf_order);
-        Eigen::MatrixXd S = H_xf*P_marg*H_xf.transpose();
-        double sigma_pix_sq = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.sigma_pix_sq : _options_slam.sigma_pix_sq;
-        S.diagonal() += sigma_pix_sq*Eigen::VectorXd::Ones(S.rows());
-        double chi2 = res.dot(S.llt().solve(res));
+        Eigen::MatrixXf P_marg = StateHelper::get_marginal_covariance(state, Hxf_order);
+        Eigen::MatrixXf S = H_xf*P_marg*H_xf.transpose();
+        float sigma_pix_sq = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.sigma_pix_sq : _options_slam.sigma_pix_sq;
+        S.diagonal() += sigma_pix_sq*Eigen::VectorXf::Ones(S.rows());
+        float chi2 = res.dot(S.llt().solve(res));
 
         // Get our threshold (we precompute up to 500 but handle the case that it is more)
-        double chi2_check;
+        float chi2_check;
         if(res.rows() < 500) {
             chi2_check = chi_squared_table[res.rows()];
         } else {
@@ -381,7 +381,7 @@ void UpdaterSLAM::update(std::shared_ptr<State> state, std::vector<std::shared_p
         }
 
         // Check if we should delete or not
-        double chi2_multipler = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.chi2_multipler : _options_slam.chi2_multipler;
+        float chi2_multipler = ((int)feat.featid < state->_options.max_aruco_features)? _options_aruco.chi2_multipler : _options_slam.chi2_multipler;
         if(chi2 > chi2_multipler*chi2_check) {
             if((int)feat.featid < state->_options.max_aruco_features)
                 printf(YELLOW "[SLAM-UP]: rejecting aruco tag %d for chi2 thresh (%.3f > %.3f)\n" RESET,(int)feat.featid,chi2,chi2_multipler*chi2_check);
@@ -464,7 +464,7 @@ void UpdaterSLAM::change_anchors(std::shared_ptr<State> state) {
     // Get the marginalization timestep, and change the anchor for any feature seen from it
     // NOTE: for now we have anchor the feature in the same camera as it is before
     // NOTE: this also does not change the representation of the feature at all right now
-    double marg_timestep = state->margtimestep();
+    float marg_timestep = state->margtimestep();
     for (auto &f : state->_features_SLAM) {
         // Skip any features that are in the global frame
         if(f.second->_feat_representation == LandmarkRepresentation::Representation::GLOBAL_3D
@@ -482,7 +482,7 @@ void UpdaterSLAM::change_anchors(std::shared_ptr<State> state) {
 
 
 
-void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, double new_anchor_timestamp, size_t new_cam_id) {
+void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, float new_anchor_timestamp, size_t new_cam_id) {
 
     // Assert that this is an anchored representation
     assert(LandmarkRepresentation::is_relative_representation(landmark->_feat_representation));
@@ -498,8 +498,8 @@ void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::share
     old_feat.p_FinA_fej = landmark->get_xyz(true);
 
     // Get Jacobians of p_FinG wrt old representation
-    Eigen::MatrixXd H_f_old;
-    std::vector<Eigen::MatrixXd> H_x_old;
+    Eigen::MatrixXf H_f_old;
+    std::vector<Eigen::MatrixXf> H_x_old;
     std::vector<std::shared_ptr<Type>> x_order_old;
     UpdaterHelper::get_feature_jacobian_representation(state, old_feat, H_f_old, H_x_old, x_order_old);
 
@@ -514,41 +514,41 @@ void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::share
     //==========================================================================
 
     // OLD: anchor camera position and orientation
-    Eigen::Matrix<double,3,3> R_GtoIOLD = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->Rot();
-    Eigen::Matrix<double,3,3> R_GtoOLD = state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->Rot()*R_GtoIOLD;
-    Eigen::Matrix<double,3,1> p_OLDinG = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->pos()-R_GtoOLD.transpose()*state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->pos();
+    Eigen::Matrix<float,3,3> R_GtoIOLD = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->Rot();
+    Eigen::Matrix<float,3,3> R_GtoOLD = state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->Rot()*R_GtoIOLD;
+    Eigen::Matrix<float,3,1> p_OLDinG = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->pos()-R_GtoOLD.transpose()*state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->pos();
 
     // NEW: anchor camera position and orientation
-    Eigen::Matrix<double,3,3> R_GtoINEW = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->Rot();
-    Eigen::Matrix<double,3,3> R_GtoNEW = state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->Rot()*R_GtoINEW;
-    Eigen::Matrix<double,3,1> p_NEWinG = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->pos()-R_GtoNEW.transpose()*state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->pos();
+    Eigen::Matrix<float,3,3> R_GtoINEW = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->Rot();
+    Eigen::Matrix<float,3,3> R_GtoNEW = state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->Rot()*R_GtoINEW;
+    Eigen::Matrix<float,3,1> p_NEWinG = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->pos()-R_GtoNEW.transpose()*state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->pos();
 
     // Calculate transform between the old anchor and new one
-    Eigen::Matrix<double,3,3> R_OLDtoNEW = R_GtoNEW*R_GtoOLD.transpose();
-    Eigen::Matrix<double,3,1> p_OLDinNEW = R_GtoNEW*(p_OLDinG-p_NEWinG);
+    Eigen::Matrix<float,3,3> R_OLDtoNEW = R_GtoNEW*R_GtoOLD.transpose();
+    Eigen::Matrix<float,3,1> p_OLDinNEW = R_GtoNEW*(p_OLDinG-p_NEWinG);
     new_feat.p_FinA = R_OLDtoNEW*landmark->get_xyz(false)+p_OLDinNEW;
 
     //==========================================================================
     //==========================================================================
 
     // OLD: anchor camera position and orientation
-    Eigen::Matrix<double,3,3> R_GtoIOLD_fej = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->Rot_fej();
-    Eigen::Matrix<double,3,3> R_GtoOLD_fej = state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->Rot()*R_GtoIOLD_fej;
-    Eigen::Matrix<double,3,1> p_OLDinG_fej = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->pos_fej()-R_GtoOLD_fej.transpose()*state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->pos();
+    Eigen::Matrix<float,3,3> R_GtoIOLD_fej = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->Rot_fej();
+    Eigen::Matrix<float,3,3> R_GtoOLD_fej = state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->Rot()*R_GtoIOLD_fej;
+    Eigen::Matrix<float,3,1> p_OLDinG_fej = state->_clones_IMU.at(old_feat.anchor_clone_timestamp)->pos_fej()-R_GtoOLD_fej.transpose()*state->_calib_IMUtoCAM.at(old_feat.anchor_cam_id)->pos();
 
     // NEW: anchor camera position and orientation
-    Eigen::Matrix<double,3,3> R_GtoINEW_fej = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->Rot_fej();
-    Eigen::Matrix<double,3,3> R_GtoNEW_fej = state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->Rot()*R_GtoINEW_fej;
-    Eigen::Matrix<double,3,1> p_NEWinG_fej = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->pos_fej()-R_GtoNEW_fej.transpose()*state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->pos();
+    Eigen::Matrix<float,3,3> R_GtoINEW_fej = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->Rot_fej();
+    Eigen::Matrix<float,3,3> R_GtoNEW_fej = state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->Rot()*R_GtoINEW_fej;
+    Eigen::Matrix<float,3,1> p_NEWinG_fej = state->_clones_IMU.at(new_feat.anchor_clone_timestamp)->pos_fej()-R_GtoNEW_fej.transpose()*state->_calib_IMUtoCAM.at(new_feat.anchor_cam_id)->pos();
 
     // Calculate transform between the old anchor and new one
-    Eigen::Matrix<double,3,3> R_OLDtoNEW_fej = R_GtoNEW_fej*R_GtoOLD_fej.transpose();
-    Eigen::Matrix<double,3,1> p_OLDinNEW_fej = R_GtoNEW_fej*(p_OLDinG_fej-p_NEWinG_fej);
+    Eigen::Matrix<float,3,3> R_OLDtoNEW_fej = R_GtoNEW_fej*R_GtoOLD_fej.transpose();
+    Eigen::Matrix<float,3,1> p_OLDinNEW_fej = R_GtoNEW_fej*(p_OLDinG_fej-p_NEWinG_fej);
     new_feat.p_FinA_fej = R_OLDtoNEW_fej*landmark->get_xyz(true)+p_OLDinNEW_fej;
 
     // Get Jacobians of p_FinG wrt new representation
-    Eigen::MatrixXd H_f_new;
-    std::vector<Eigen::MatrixXd> H_x_new;
+    Eigen::MatrixXf H_f_new;
+    std::vector<Eigen::MatrixXf> H_x_new;
     std::vector<std::shared_ptr<Type>> x_order_new;
     UpdaterHelper::get_feature_jacobian_representation(state, new_feat, H_f_new, H_x_new, x_order_new);
 
@@ -583,16 +583,16 @@ void UpdaterSLAM::perform_anchor_change(std::shared_ptr<State> state, std::share
 
     // Anchor change Jacobian
     int phisize = (new_feat.feat_representation!=LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) ? 3 : 1;
-    Eigen::MatrixXd Phi = Eigen::MatrixXd::Zero(phisize, current_it);
-    Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(phisize, phisize);
+    Eigen::MatrixXf Phi = Eigen::MatrixXf::Zero(phisize, current_it);
+    Eigen::MatrixXf Q = Eigen::MatrixXf::Zero(phisize, phisize);
 
     // Inverse of our new representation
     // pf_new_error = Hfnew^{-1}*(Hfold*pf_olderror+Hxold*x_olderror-Hxnew*x_newerror)
-    Eigen::MatrixXd H_f_new_inv;
+    Eigen::MatrixXf H_f_new_inv;
     if(phisize==1) {
         H_f_new_inv = 1.0/H_f_new.squaredNorm()*H_f_new.transpose();
     } else {
-        H_f_new_inv = H_f_new.colPivHouseholderQr().solve(Eigen::Matrix<double,3,3>::Identity());
+        H_f_new_inv = H_f_new.colPivHouseholderQr().solve(Eigen::Matrix<float,3,3>::Identity());
     }
 
     // Place Jacobians for old anchor

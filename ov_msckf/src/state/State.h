@@ -66,8 +66,8 @@ namespace ov_msckf {
          * But if you wanted to do a keyframe system, you could selectively marginalize clones.
          * @return timestep of clone we will marginalize
          */
-        double margtimestep() {
-            double time = INFINITY;
+        float margtimestep() {
+            float time = INFINITY;
             for (const auto &clone_imu : _clones_IMU) {
                 if (clone_imu.first < time) {
                     time = clone_imu.first;
@@ -86,7 +86,7 @@ namespace ov_msckf {
 
 
         /// Current timestamp (should be the last update time!)
-        double _timestamp;
+        float _timestamp;
 
         /// Struct containing filter options
         StateOptions _options;
@@ -95,9 +95,9 @@ namespace ov_msckf {
         std::shared_ptr<IMU> _imu;
 
         /// Map between imaging times and clone poses (q_GtoIi, p_IiinG)
-        std::map<double, std::shared_ptr<PoseJPL>> _clones_IMU;
+        std::map<float, std::shared_ptr<PoseJPL>> _clones_IMU;
 
-        /// Our current set of SLAM features (3d positions)
+        /// Our current set of SLAM features (3f positions)
         std::unordered_map<size_t, std::shared_ptr<Landmark>> _features_SLAM;
 
         /// Time offset base IMU to camera (t_imu = t_cam + t_off)
@@ -121,7 +121,7 @@ namespace ov_msckf {
         friend class StateHelper;
 
         /// Covariance of all active variables
-        Eigen::MatrixXd _Cov;
+        Eigen::MatrixXf _Cov;
 
         /// Vector of variables
         std::vector<std::shared_ptr<Type>> _variables;

@@ -25,8 +25,8 @@ using namespace ov_eval;
 
 
 void Loader::load_data(std::string path_traj,
-                       std::vector<double> &times, std::vector<Eigen::Matrix<double,7,1>> &poses,
-                       std::vector<Eigen::Matrix3d> &cov_ori, std::vector<Eigen::Matrix3d> &cov_pos) {
+                       std::vector<float> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
+                       std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos) {
 
     // Try to open our trajectory file
     std::ifstream file(path_traj);
@@ -48,7 +48,7 @@ void Loader::load_data(std::string path_traj,
         int i = 0;
         std::istringstream s(current_line);
         std::string field;
-        Eigen::Matrix<double,20,1> data;
+        Eigen::Matrix<float,20,1> data;
 
         // Loop through this line (timestamp(s) tx ty tz qx qy qz qw Pr11 Pr12 Pr13 Pr22 Pr23 Pr33 Pt11 Pt12 Pt13 Pt22 Pt23 Pt33)
         while(std::getline(s,field,' ')) {
@@ -66,7 +66,7 @@ void Loader::load_data(std::string path_traj,
             times.push_back(data(0));
             poses.push_back(data.block(1,0,7,1));
             // covariance values
-            Eigen::Matrix3d c_ori, c_pos;
+            Eigen::Matrix3f c_ori, c_pos;
             c_ori << data(8),data(9),data(10),
                     data(9),data(11),data(12),
                     data(10),data(12),data(13);
@@ -116,7 +116,7 @@ void Loader::load_data(std::string path_traj,
 
 
 
-void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXd> &values) {
+void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXf> &values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -137,7 +137,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXd> &val
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<double> vec;
+        std::vector<float> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,' ')) {
@@ -149,7 +149,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXd> &val
         }
 
         // Create eigen vector
-        Eigen::VectorXd temp(vec.size());
+        Eigen::VectorXf temp(vec.size());
         for(size_t i=0; i<vec.size(); i++) {
             temp(i) = vec.at(i);
         }
@@ -181,7 +181,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXd> &val
 
 
 void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &names,
-                                    std::vector<double> &times, std::vector<Eigen::VectorXd> &timing_values) {
+                                    std::vector<float> &times, std::vector<Eigen::VectorXf> &timing_values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -219,7 +219,7 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<double> vec;
+        std::vector<float> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,',')) {
@@ -231,7 +231,7 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
         }
 
         // Create eigen vector
-        Eigen::VectorXd temp(vec.size()-1);
+        Eigen::VectorXf temp(vec.size()-1);
         for(size_t i=1; i<vec.size(); i++) {
             temp(i-1) = vec.at(i);
         }
@@ -263,8 +263,8 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
 }
 
 
-void Loader::load_timing_percent(std::string path, std::vector<double> &times,
-                                 std::vector<Eigen::Vector3d> &summed_values, std::vector<Eigen::VectorXd> &node_values) {
+void Loader::load_timing_percent(std::string path, std::vector<float> &times,
+                                 std::vector<Eigen::Vector3f> &summed_values, std::vector<Eigen::VectorXf> &node_values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -285,7 +285,7 @@ void Loader::load_timing_percent(std::string path, std::vector<double> &times,
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<double> vec;
+        std::vector<float> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,' ')) {
@@ -297,7 +297,7 @@ void Loader::load_timing_percent(std::string path, std::vector<double> &times,
         }
 
         // Create eigen vector
-        Eigen::VectorXd temp(vec.size());
+        Eigen::VectorXf temp(vec.size());
         for(size_t i=0; i<vec.size(); i++) {
             temp(i) = vec.at(i);
         }
@@ -335,10 +335,10 @@ void Loader::load_timing_percent(std::string path, std::vector<double> &times,
 
 
 
-double Loader::get_total_length(const std::vector<Eigen::Matrix<double,7,1>> &poses) {
+float Loader::get_total_length(const std::vector<Eigen::Matrix<float,7,1>> &poses) {
 
     // Loop through every pose and append its segment
-    double distance = 0.0;
+    float distance = 0.0;
     for (size_t i=1; i<poses.size(); i++) {
         distance += (poses[i].block(0,0,3,1) - poses[i-1].block(0,0,3,1)).norm();
     }

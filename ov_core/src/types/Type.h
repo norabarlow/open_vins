@@ -82,19 +82,19 @@ namespace ov_type {
          *
          * @param dx Perturbation used to update the variable through a defined "boxplus" operation
          */
-        virtual void update(const Eigen::VectorXd& dx) = 0;
+        virtual void update(const Eigen::VectorXf& dx) = 0;
 
         /**
          * @brief Access variable's estimate
          */
-        virtual const Eigen::MatrixXd& value() const {
+        virtual const Eigen::MatrixXf& value() const {
             return _value;
         }
 
         /**
          * @brief Access variable's first-estimate
          */
-        virtual const Eigen::MatrixXd& fej() const {
+        virtual const Eigen::MatrixXf& fej() const {
             return _fej;
         }
 
@@ -102,7 +102,7 @@ namespace ov_type {
          * @brief Overwrite value of state's estimate
          * @param new_value New value that will overwrite state's value
          */
-        virtual void set_value(const Eigen::MatrixXd& new_value) {
+        virtual void set_value(const Eigen::MatrixXf& new_value) {
             assert(_value.rows()==new_value.rows());
             assert(_value.cols()==new_value.cols());
             _value = new_value;
@@ -112,7 +112,7 @@ namespace ov_type {
          * @brief Overwrite value of first-estimate
          * @param new_value New value that will overwrite state's fej
          */
-        virtual void set_fej(const Eigen::MatrixXd& new_value) {
+        virtual void set_fej(const Eigen::MatrixXf& new_value) {
             assert(_fej.rows()==new_value.rows());
             assert(_fej.cols()==new_value.cols());
             _fej = new_value;
@@ -139,10 +139,10 @@ namespace ov_type {
     protected:
 
         /// First-estimate
-        Eigen::MatrixXd _fej;
+        Eigen::MatrixXf _fej;
 
         /// Current best estimate
-        Eigen::MatrixXd _value;
+        Eigen::MatrixXf _value;
 
         /// Location of error state in covariance
         int _id = -1;

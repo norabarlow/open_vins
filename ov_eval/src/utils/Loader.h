@@ -51,15 +51,15 @@ namespace ov_eval {
          * @param cov_pos Vector of position covariances at each timestep (empty if we can't load)
          */
         static void load_data(std::string path_traj,
-                              std::vector<double> &times, std::vector<Eigen::Matrix<double,7,1>> &poses,
-                              std::vector<Eigen::Matrix3d> &cov_ori, std::vector<Eigen::Matrix3d> &cov_pos);
+                              std::vector<float> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
+                              std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos);
 
         /**
          * @brief Load an arbitrary sized row of *space* separated values, used for our simulation
          * @param path Path to our text file to load
          * @param values Each row of values
          */
-        static void load_simulation(std::string path, std::vector<Eigen::VectorXd> &values);
+        static void load_simulation(std::string path, std::vector<Eigen::VectorXf> &values);
 
         /**
          * @brief Load *comma* separated timing file from pid_ros.py file
@@ -69,7 +69,7 @@ namespace ov_eval {
          * @param timing_values Component timing values for the given timestamp
          */
         static void load_timing_flamegraph(std::string path, std::vector<std::string> &names,
-                                           std::vector<double> &times, std::vector<Eigen::VectorXd> &timing_values);
+                                           std::vector<float> &times, std::vector<Eigen::VectorXf> &timing_values);
 
         /**
          * @brief Load space separated timing file from pid_ros.py file
@@ -78,15 +78,15 @@ namespace ov_eval {
          * @param summed_values Summed node values [%cpu,%mem,num_threads]
          * @param node_values Values for each separate node [%cpu,%mem,num_threads]
          */
-        static void load_timing_percent(std::string path, std::vector<double> &times,
-                                        std::vector<Eigen::Vector3d> &summed_values, std::vector<Eigen::VectorXd> &node_values);
+        static void load_timing_percent(std::string path, std::vector<float> &times,
+                                        std::vector<Eigen::Vector3f> &summed_values, std::vector<Eigen::VectorXf> &node_values);
 
         /**
          * @brief Will calculate the total trajectory distance
          * @param poses Pose at every timestep [pos,quat]
          * @return Distance travels (meters)
          */
-        static double get_total_length(const std::vector<Eigen::Matrix<double,7,1>> &poses);
+        static float get_total_length(const std::vector<Eigen::Matrix<float,7,1>> &poses);
 
     private:
 

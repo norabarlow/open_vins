@@ -67,7 +67,7 @@ namespace ov_core {
          * @param img new cv:Mat grayscale image
          * @param cam_id the camera id that this new image corresponds too
          */
-        void feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) override;
+        void feed_monocular(float timestamp, cv::Mat &img, size_t cam_id) override;
 
         /**
          * @brief Process new stereo pair of images
@@ -77,7 +77,7 @@ namespace ov_core {
          * @param cam_id_left first image camera id
          * @param cam_id_right second image camera id
          */
-        void feed_stereo(double timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override;
+        void feed_stereo(float timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override;
 
         /**
          * @brief We override the display equation so we can show the tags we extract.

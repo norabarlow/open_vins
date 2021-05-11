@@ -30,7 +30,7 @@ namespace ov_core {
      */
     struct FeatureInitializerOptions {
 
-        /// If we should perform 1d triangulation instead of 3d
+        /// If we should perform 1d triangulation instead of 3f
         bool triangulate_1d = false;
 
         /// If we should perform Levenberg-Marquardt refinment
@@ -40,31 +40,31 @@ namespace ov_core {
         int max_runs = 5;
 
         /// Init lambda for Levenberg-Marquardt optimization
-        double init_lamda = 1e-3;
+        float init_lamda = 1e-3;
 
         /// Max lambda for Levenberg-Marquardt optimization
-        double max_lamda = 1e10;
+        float max_lamda = 1e10;
 
         /// Cutoff for dx increment to consider as converged
-        double min_dx = 1e-6;
+        float min_dx = 1e-6;
 
         /// Cutoff for cost decrement to consider as converged
-        double min_dcost = 1e-6;
+        float min_dcost = 1e-6;
 
         /// Multiplier to increase/decrease lambda
-        double lam_mult = 10;
+        float lam_mult = 10;
 
         /// Minimum distance to accept triangulated features
-        double min_dist = 0.10;
+        float min_dist = 0.10;
 
         /// Minimum distance to accept triangulated features
-        double max_dist = 60;
+        float max_dist = 60;
 
         /// Max baseline ratio to accept triangulated features
-        double max_baseline = 40;
+        float max_baseline = 40;
 
         /// Max condition number of linear triangulation matrix accept triangulated features
-        double max_cond_number = 10000;
+        float max_cond_number = 10000;
 
         /// Nice print function of what parameters we have loaded
         void print() {
