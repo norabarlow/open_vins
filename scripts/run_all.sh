@@ -21,7 +21,7 @@ for res in 512; do
             roslaunch ov_msckf pgeneva_ros_tum_${RES}_modified.launch && \
             mv $HOME/traj_estimate.txt $HOME/traj_estimate_${RES}_${LOC}_${RATE}.txt && \
             mv $HOME/traj_timing.txt $HOME/traj_timing_${RES}_${LOC}_${RATE}.txt && \
-	    ./display.sh
+    	    ./display.sh
         done
     done
 done
