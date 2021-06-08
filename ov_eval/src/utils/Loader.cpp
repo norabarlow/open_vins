@@ -25,7 +25,7 @@ using namespace ov_eval;
 
 
 void Loader::load_data(std::string path_traj,
-                       std::vector<double> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
+                       std::vector<f_ts> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
                        std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos) {
 
     // Try to open our trajectory file
@@ -49,7 +49,7 @@ void Loader::load_data(std::string path_traj,
         std::istringstream s(current_line);
         std::string field;
         Eigen::Matrix<float,20,1> data;
-        Eigen::Matrix<double,20,1> ddata;
+        Eigen::Matrix<f_ts,20,1> ddata;
 
         // Loop through this line (timestamp(s) tx ty tz qx qy qz qw Pr11 Pr12 Pr13 Pr22 Pr23 Pr33 Pt11 Pt12 Pt13 Pt22 Pt23 Pt33)
         while(std::getline(s,field,' ')) {
@@ -183,7 +183,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXf> &val
 
 
 void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &names,
-                                    std::vector<double> &times, std::vector<Eigen::VectorXd> &timing_values) {
+                                    std::vector<f_ts> &times, std::vector<Eigen::Matrix<f_ts, Eigen::Dynamic, 1>> &timing_values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -221,7 +221,7 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<double> vec;
+        std::vector<f_ts> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,',')) {
@@ -229,11 +229,11 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
             if(field.empty())
                 continue;
             // save the data to our vector
-            vec.push_back(std::atof(field.c_str()));
+            vec.push_back(f_ts(std::atof(field.c_str())));
         }
 
         // Create eigen vector
-        Eigen::VectorXd temp(vec.size()-1);
+        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(vec.size()-1);
         for(size_t i=1; i<vec.size(); i++) {
             temp(i-1) = vec.at(i);
         }
@@ -265,8 +265,8 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
 }
 
 
-void Loader::load_timing_percent(std::string path, std::vector<double> &times,
-                                 std::vector<Eigen::Vector3d> &summed_values, std::vector<Eigen::VectorXd> &node_values) {
+void Loader::load_timing_percent(std::string path, std::vector<f_ts> &times,
+                                 std::vector<Eigen::Matrix<f_ts, 3, 1>> &summed_values, std::vector<Eigen::Matrix<f_ts, Eigen::Dynamic, 1>> &node_values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -287,7 +287,7 @@ void Loader::load_timing_percent(std::string path, std::vector<double> &times,
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<double> vec;
+        std::vector<f_ts> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,' ')) {
@@ -299,7 +299,7 @@ void Loader::load_timing_percent(std::string path, std::vector<double> &times,
         }
 
         // Create eigen vector
-        Eigen::VectorXd temp(vec.size());
+        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(vec.size());
         for(size_t i=0; i<vec.size(); i++) {
             temp(i) = vec.at(i);
         }

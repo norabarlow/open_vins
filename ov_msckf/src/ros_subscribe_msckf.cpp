@@ -39,6 +39,7 @@
 #include "utils/parse_ros.h"
 #include "utils/sensor_data.h"
 
+#include "types.h"
 
 using namespace ov_msckf;
 

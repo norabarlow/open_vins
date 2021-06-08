@@ -174,7 +174,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 
     // Loop through our queue and see if we are able to process any of our camera measurements
     // We are able to process if we have at least one IMU measurement greater then the camera time
-    double timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts timestamp_inC = message.timestamp - state->_calib_dt_CAMtoIMU->value()(0);
     while (!camera_queue.empty() && camera_queue.at(0).timestamp < timestamp_inC) {
         track_image_and_update(camera_queue.at(0));
         camera_queue.pop_front();
@@ -183,7 +183,7 @@ void VioManager::feed_measurement_imu(const ov_core::ImuData &message) {
 }
 
 
-void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+void VioManager::feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -388,7 +388,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
     // Return if the camera measurement is out of order
     if(state->_timestamp > message.timestamp) {
-        printf(YELLOW "image received out of order, unable to do anything (prop dt = %3f)\n" RESET,(message.timestamp-state->_timestamp));
+        printf(YELLOW "image received out of order, unable to do anything (prop dt = %3f)\n" RESET,double(message.timestamp-state->_timestamp));
         return;
     }
 
@@ -412,7 +412,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     // Return if we where unable to propagate
     if(state->_timestamp != message.timestamp) {
         printf(RED "[PROP]: Propagator unable to propagate the state forward in time!\n" RESET);
-        printf(RED "[PROP]: It has been %.3f since last time we propagated\n" RESET,message.timestamp-state->_timestamp);
+        printf(RED "[PROP]: It has been %.3f since last time we propagated\n" RESET,double(message.timestamp-state->_timestamp));
         return;
     }
 
@@ -679,24 +679,24 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
 
     // Get timing statitics information
-    double time_track = (rT2-rT1).total_microseconds() * 1e-6;
-    double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
-    double time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
-    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
-    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
-    double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
-    double time_total = (rT7-rT1).total_microseconds() * 1e-6;
+    f_ts time_track = (rT2-rT1).total_microseconds() * 1e-6;
+    f_ts time_prop = (rT3-rT2).total_microseconds() * 1e-6;
+    f_ts time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
+    f_ts time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
+    f_ts time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
+    f_ts time_marg = (rT7-rT6).total_microseconds() * 1e-6;
+    f_ts time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
     // Timing information
-    printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
-    printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
-    printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d feats)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
+    printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, double(time_track));
+    printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, double(time_prop));
+    printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d feats)\n" RESET, double(time_msckf), (int)featsup_MSCKF.size());
     if(state->_options.max_slam_features > 0) {
-        printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, time_slam_update, (int)state->_features_SLAM.size());
-        printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
+        printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, double(time_slam_update), (int)state->_features_SLAM.size());
+        printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, double(time_slam_delay), (int)feats_slam_DELAYED.size());
     }
-    printf(BLUE "[TIME]: %.4f seconds for re-tri & marg (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
-    printf(BLUE "[TIME]: %.4f seconds for total (camera" RESET, time_total);
+    printf(BLUE "[TIME]: %.4f seconds for re-tri & marg (%d clones in state)\n" RESET, double(time_marg), (int)state->_clones_IMU.size());
+    printf(BLUE "[TIME]: %.4f seconds for total (camera" RESET, double(time_total));
     for(const auto &id : message.sensor_ids) {
         printf(BLUE " %d",id);
     }
@@ -706,8 +706,8 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     if(params.record_timing_information && of_statistics.is_open()) {
         // We want to publish in the IMU clock frame
         // The timestamp in the state will be the last camera time
-        double t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
-        double timestamp_inI = state->_timestamp + t_ItoC;
+        f_ts t_ItoC = state->_calib_dt_CAMtoIMU->value()(0);
+        f_ts timestamp_inI = state->_timestamp + t_ItoC;
         // Append to the file
         of_statistics << std::fixed << std::setprecision(15)
                       << timestamp_inI << ","
@@ -768,7 +768,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 bool VioManager::try_to_initialize() {
 
     // Returns from our initializer
-    double time0;
+    f_ts time0;
     Eigen::Matrix<float, 4, 1> q_GtoI0;
     Eigen::Matrix<float, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
 
@@ -836,7 +836,7 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
     std::vector<std::shared_ptr<Feature>> active_features = trackDATABASE->features_containing_older(state->_timestamp);
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<double> clonetimes;
+    std::vector<f_ts> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -876,11 +876,11 @@ void VioManager::retriangulate_active_tracks(const ov_core::CameraData &message)
         return;
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<f_ts, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<f_ts, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose

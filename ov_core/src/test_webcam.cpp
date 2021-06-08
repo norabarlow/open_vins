@@ -37,6 +37,8 @@
 #include "track/TrackAruco.h"
 #include "utils/CLI11.hpp"
 
+#include "types.h"
+
 using namespace ov_core;
 
 // Our feature extractor
@@ -123,8 +125,8 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Loop forever until we break out
-    double current_time = 0.0;
-    std::deque<double> clonetimes;
+    f_ts current_time = 0.0;
+    std::deque<f_ts> clonetimes;
     while(true) {
 
         // Get the next frame (and fake advance time forward)
@@ -178,7 +180,7 @@ int main(int argc, char** argv)
         // Marginalized features if we have reached 5 frame tracks
         if((int)clonetimes.size() >= clone_states) {
             // Remove features that have reached their max track length
-            double margtime = clonetimes.at(0);
+            f_ts margtime = clonetimes.at(0);
             clonetimes.pop_front();
             std::vector<std::shared_ptr<Feature>> feats_marg = database->features_containing(margtime);
             // Delete theses feature pointers

@@ -33,6 +33,8 @@
 #include "types/Landmark.h"
 #include "StateOptions.h"
 
+#include "types.h"
+
 using namespace ov_core;
 using namespace ov_type;
 
@@ -66,8 +68,8 @@ namespace ov_msckf {
          * But if you wanted to do a keyframe system, you could selectively marginalize clones.
          * @return timestep of clone we will marginalize
          */
-        double margtimestep() {
-            double time = INFINITY;
+        f_ts margtimestep() {
+            f_ts time = INFINITY;
             for (const auto &clone_imu : _clones_IMU) {
                 if (clone_imu.first < time) {
                     time = clone_imu.first;
@@ -86,7 +88,7 @@ namespace ov_msckf {
 
 
         /// Current timestamp (should be the last update time!)
-        double _timestamp;
+        f_ts _timestamp;
 
         /// Struct containing filter options
         StateOptions _options;
@@ -95,7 +97,7 @@ namespace ov_msckf {
         std::shared_ptr<IMU> _imu;
 
         /// Map between imaging times and clone poses (q_GtoIi, p_IiinG)
-        std::map<double, std::shared_ptr<PoseJPL>> _clones_IMU;
+        std::map<f_ts, std::shared_ptr<PoseJPL>> _clones_IMU;
 
         /// Our current set of SLAM features (3f positions)
         std::unordered_map<size_t, std::shared_ptr<Landmark>> _features_SLAM;

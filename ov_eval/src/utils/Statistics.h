@@ -27,6 +27,7 @@
 #include <fstream>
 #include <Eigen/Eigen>
 
+#include "types.h"
 
 namespace ov_eval {
 
@@ -63,7 +64,7 @@ namespace ov_eval {
         float ninetynine = 0.0;
 
         /// Timestamp when these values occured at
-        std::vector<double> timestamps;
+        std::vector<f_ts> timestamps;
 
         /// Values (e.g. error or nees at a given time)
         std::vector<float> values;

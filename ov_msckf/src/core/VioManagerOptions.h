@@ -33,6 +33,7 @@
 #include "utils/colors.h"
 #include "utils/quat_ops.h"
 
+#include "types.h"
 
 using namespace std;
 using namespace ov_core;
@@ -58,10 +59,10 @@ namespace ov_msckf {
         StateOptions state_options;
 
         /// Delay, in seconds, that we should wait from init before we start estimating SLAM features
-        double dt_slam_delay = 2.0;
+        f_ts dt_slam_delay = 2.0;
 
         /// Amount of time we will initialize over (seconds)
-        double init_window_time = 1.0;
+        f_ts init_window_time = 1.0;
 
         ///  Variance threshold on our acceleration to be classified as moving
         float init_imu_thresh = 1.0;
@@ -88,8 +89,8 @@ namespace ov_msckf {
         void print_estimator() {
             printf("ESTIMATOR PARAMETERS:\n");
             state_options.print();
-            printf("\t- dt_slam_delay: %.1f\n", dt_slam_delay);
-            printf("\t- init_window_time: %.2f\n", init_window_time);
+            printf("\t- dt_slam_delay: %.1f\n", double(dt_slam_delay));
+            printf("\t- init_window_time: %.2f\n", double(init_window_time));
             printf("\t- init_imu_thresh: %.2f\n", init_imu_thresh);
             printf("\t- zero_velocity_update: %d\n", try_zupt);
             printf("\t- zupt_max_velocity: %.2f\n", zupt_max_velocity);
@@ -138,7 +139,7 @@ namespace ov_msckf {
         Eigen::Vector3f gravity = {0.0, 0.0, 9.81};
 
         /// Time offset between camera and IMU.
-        double calib_camimu_dt = 0.0;
+        f_ts calib_camimu_dt = 0.0;
 
         /// Map between camid and camera model (true=fisheye, false=radtan)
         std::map<size_t,bool> camera_fisheye;
@@ -159,7 +160,7 @@ namespace ov_msckf {
         void print_state() {
             printf("STATE PARAMETERS:\n");
             printf("\t- gravity: %.3f, %.3f, %.3f\n", gravity(0), gravity(1), gravity(2));
-            printf("\t- calib_camimu_dt: %.4f\n", calib_camimu_dt);
+            printf("\t- calib_camimu_dt: %.4f\n", double(calib_camimu_dt));
             assert(state_options.num_cameras==(int)camera_fisheye.size());
             for(int n=0; n<state_options.num_cameras; n++) {
                 std::cout << "cam_" << n << "_fisheye:" << camera_fisheye.at(n) << std::endl;

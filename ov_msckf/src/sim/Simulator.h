@@ -34,6 +34,7 @@
 #include "sim/BsplineSE3.h"
 #include "utils/colors.h"
 
+#include "types.h"
 
 using namespace ov_core;
 
@@ -76,7 +77,7 @@ namespace ov_msckf {
          * @brief Gets the timestamp we have simulated up too
          * @return Timestamp
          */
-        double current_timestamp() {
+        f_ts current_timestamp() {
             return timestamp;
         }
 
@@ -86,7 +87,7 @@ namespace ov_msckf {
          * @param imustate State in the MSCKF ordering: [time(sec),q_GtoI,p_IinG,v_IinG,b_gyro,b_accel]
          * @return True if we have a state
          */
-        bool get_state(double desired_time, Eigen::Matrix<float,17,1> &imustate);
+        bool get_state(f_ts desired_time, Eigen::Matrix<float,17,1> &imustate);
 
         /**
          * @brief Gets the next inertial reading if we have one.
@@ -95,7 +96,7 @@ namespace ov_msckf {
          * @param am Linear velocity in the inertial frame
          * @return True if we have a measurement
          */
-        bool get_next_imu(double &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am);
+        bool get_next_imu(f_ts &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am);
 
 
         /**
@@ -105,7 +106,7 @@ namespace ov_msckf {
          * @param feats Noisy uv measurements and ids for the returned time
          * @return True if we have a measurement
          */
-        bool get_next_cam(double &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
+        bool get_next_cam(f_ts &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
 
 
         /// Returns the true 3f map of features
@@ -190,13 +191,13 @@ namespace ov_msckf {
         //===================================================================
 
         /// Current timestamp of the system
-        double timestamp;
+        f_ts timestamp;
 
         /// Last time we had an IMU reading
-        double timestamp_last_imu;
+        f_ts timestamp_last_imu;
 
         /// Last time we had an CAMERA reading
-        double timestamp_last_cam;
+        f_ts timestamp_last_cam;
 
         /// Our running acceleration bias
         Eigen::Vector3f true_bias_accel = Eigen::Vector3f::Zero();
@@ -205,7 +206,7 @@ namespace ov_msckf {
         Eigen::Vector3f true_bias_gyro = Eigen::Vector3f::Zero();
 
         // Our history of true biases
-        std::vector<double> hist_true_bias_time;
+        std::vector<f_ts> hist_true_bias_time;
         std::vector<Eigen::Vector3f> hist_true_bias_accel;
         std::vector<Eigen::Vector3f> hist_true_bias_gyro;
 

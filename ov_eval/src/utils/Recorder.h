@@ -35,6 +35,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include "types.h"
 
 namespace ov_eval {
 
@@ -185,7 +186,7 @@ namespace ov_eval {
 
         // Temp storage objects for our pose and its certainty
         bool has_covariance = false;
-        double timestamp;
+        f_ts timestamp;
         Eigen::Vector4f q_ItoG;
         Eigen::Vector3f p_IinG;
         Eigen::Matrix<float,3,3> cov_rot;

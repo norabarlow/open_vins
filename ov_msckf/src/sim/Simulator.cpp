@@ -100,7 +100,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
         }
 
     }
-    printf("[SIM]: moved %.3f seconds into the dataset where it starts moving\n",timestamp-spline.get_start_time());
+    printf("[SIM]: moved %.3f seconds into the dataset where it starts moving\n",double(timestamp-spline.get_start_time()));
 
     // Append the current true bias to our history
     hist_true_bias_time.push_back(timestamp_last_imu-1.0/params.sim_freq_imu);
@@ -177,7 +177,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
 
     // We will create synthetic camera frames and ensure that each has enough features
     //float dt = 0.25/freq_cam;
-    double dt = 0.25;
+    f_ts dt = 0.25;
     size_t mapsize = featmap.size();
     printf("[SIM]: Generating map features at %d rate\n",(int)(1.0/dt));
 
@@ -187,7 +187,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
     for(int i=0; i<params.state_options.num_cameras; i++) {
 
         // Reset the start time
-        double time_synth = spline.get_start_time();
+        f_ts time_synth = spline.get_start_time();
 
         // Loop through each pose and generate our feature map in them!!!!
         while(true) {
@@ -227,7 +227,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
 
 
 
-bool Simulator::get_state(double desired_time, Eigen::Matrix<float,17,1> &imustate) {
+bool Simulator::get_state(f_ts desired_time, Eigen::Matrix<float,17,1> &imustate) {
 
     // Set to default state
     imustate.setZero();
@@ -257,7 +257,7 @@ bool Simulator::get_state(double desired_time, Eigen::Matrix<float,17,1> &imusta
     }
 
     // Interpolate our biases (they will be at every IMU timestep)
-    double lambda = (desired_time-hist_true_bias_time.at(id_loc))/(hist_true_bias_time.at(id_loc+1)-hist_true_bias_time.at(id_loc));
+    float lambda = float((desired_time-hist_true_bias_time.at(id_loc))/(hist_true_bias_time.at(id_loc+1)-hist_true_bias_time.at(id_loc)));
     Eigen::Vector3f true_bg_interp = (1-lambda)*hist_true_bias_gyro.at(id_loc) + lambda*hist_true_bias_gyro.at(id_loc+1);
     Eigen::Vector3f true_ba_interp = (1-lambda)*hist_true_bias_accel.at(id_loc) + lambda*hist_true_bias_accel.at(id_loc+1);
 
@@ -275,7 +275,7 @@ bool Simulator::get_state(double desired_time, Eigen::Matrix<float,17,1> &imusta
 
 
 
-bool Simulator::get_next_imu(double &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am) {
+bool Simulator::get_next_imu(f_ts &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am) {
 
     // Return if the camera measurement should go before us
     if(timestamp_last_cam+1.0/params.sim_freq_cam < timestamp_last_imu+1.0/params.sim_freq_imu)
@@ -308,22 +308,22 @@ bool Simulator::get_next_imu(double &time_imu, Eigen::Vector3f &wm, Eigen::Vecto
     Eigen::Vector3f accel_inI = R_GtoI*(a_IinG+params.gravity);
 
     // Now add noise to these measurements
-    double dt = 1.0/params.sim_freq_imu;
+    f_ts dt = 1.0/params.sim_freq_imu;
     std::normal_distribution<float> w(0,1);
-    wm(0) = omega_inI(0) + true_bias_gyro(0) + params.imu_noises.sigma_w/std::sqrt(dt)*w(gen_meas_imu);
-    wm(1) = omega_inI(1) + true_bias_gyro(1) + params.imu_noises.sigma_w/std::sqrt(dt)*w(gen_meas_imu);
-    wm(2) = omega_inI(2) + true_bias_gyro(2) + params.imu_noises.sigma_w/std::sqrt(dt)*w(gen_meas_imu);
-    am(0) = accel_inI(0) + true_bias_accel(0) + params.imu_noises.sigma_a/std::sqrt(dt)*w(gen_meas_imu);
-    am(1) = accel_inI(1) + true_bias_accel(1) + params.imu_noises.sigma_a/std::sqrt(dt)*w(gen_meas_imu);
-    am(2) = accel_inI(2) + true_bias_accel(2) + params.imu_noises.sigma_a/std::sqrt(dt)*w(gen_meas_imu);
+    wm(0) = omega_inI(0) + true_bias_gyro(0) + params.imu_noises.sigma_w/flx::sqrt(dt)*w(gen_meas_imu);
+    wm(1) = omega_inI(1) + true_bias_gyro(1) + params.imu_noises.sigma_w/flx::sqrt(dt)*w(gen_meas_imu);
+    wm(2) = omega_inI(2) + true_bias_gyro(2) + params.imu_noises.sigma_w/flx::sqrt(dt)*w(gen_meas_imu);
+    am(0) = accel_inI(0) + true_bias_accel(0) + params.imu_noises.sigma_a/flx::sqrt(dt)*w(gen_meas_imu);
+    am(1) = accel_inI(1) + true_bias_accel(1) + params.imu_noises.sigma_a/flx::sqrt(dt)*w(gen_meas_imu);
+    am(2) = accel_inI(2) + true_bias_accel(2) + params.imu_noises.sigma_a/flx::sqrt(dt)*w(gen_meas_imu);
 
     // Move the biases forward in time
-    true_bias_gyro(0) += params.imu_noises.sigma_wb*std::sqrt(dt)*w(gen_meas_imu);
-    true_bias_gyro(1) += params.imu_noises.sigma_wb*std::sqrt(dt)*w(gen_meas_imu);
-    true_bias_gyro(2) += params.imu_noises.sigma_wb*std::sqrt(dt)*w(gen_meas_imu);
-    true_bias_accel(0) += params.imu_noises.sigma_ab*std::sqrt(dt)*w(gen_meas_imu);
-    true_bias_accel(1) += params.imu_noises.sigma_ab*std::sqrt(dt)*w(gen_meas_imu);
-    true_bias_accel(2) += params.imu_noises.sigma_ab*std::sqrt(dt)*w(gen_meas_imu);
+    true_bias_gyro(0) += params.imu_noises.sigma_wb*flx::sqrt(dt)*w(gen_meas_imu);
+    true_bias_gyro(1) += params.imu_noises.sigma_wb*flx::sqrt(dt)*w(gen_meas_imu);
+    true_bias_gyro(2) += params.imu_noises.sigma_wb*flx::sqrt(dt)*w(gen_meas_imu);
+    true_bias_accel(0) += params.imu_noises.sigma_ab*flx::sqrt(dt)*w(gen_meas_imu);
+    true_bias_accel(1) += params.imu_noises.sigma_ab*flx::sqrt(dt)*w(gen_meas_imu);
+    true_bias_accel(2) += params.imu_noises.sigma_ab*flx::sqrt(dt)*w(gen_meas_imu);
 
     // Append the current true bias to our history
     hist_true_bias_time.push_back(timestamp_last_imu);
@@ -337,7 +337,7 @@ bool Simulator::get_next_imu(double &time_imu, Eigen::Vector3f &wm, Eigen::Vecto
 
 
 
-bool Simulator::get_next_cam(double &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+bool Simulator::get_next_cam(f_ts &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
     // Return if the imu measurement should go before us
     if(timestamp_last_imu+1.0/params.sim_freq_imu < timestamp_last_cam+1.0/params.sim_freq_cam)

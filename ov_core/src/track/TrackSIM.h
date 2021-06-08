@@ -24,6 +24,7 @@
 
 #include "TrackBase.h"
 
+#include "types.h"
 
 namespace ov_core {
 
@@ -53,14 +54,14 @@ namespace ov_core {
         }
 
         /// @warning This function should not be used!! Use @ref feed_measurement_simulation() instead.
-        void feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) override {
+        void feed_monocular(f_ts timestamp, cv::Mat &img, size_t cam_id) override {
             printf(RED "[SIM]: SIM TRACKER FEED MONOCULAR CALLED!!!\n" RESET);
             printf(RED "[SIM]: THIS SHOULD NEVER HAPPEN!\n" RESET);
             std::exit(EXIT_FAILURE);
         }
 
         /// @warning This function should not be used!! Use @ref feed_measurement_simulation() instead.
-        void feed_stereo(double timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override {
+        void feed_stereo(f_ts timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) override {
             printf(RED "[SIM]: SIM TRACKER FEED STEREO CALLED!!!\n" RESET);
             printf(RED "[SIM]: THIS SHOULD NEVER HAPPEN!\n" RESET);
             std::exit(EXIT_FAILURE);
@@ -72,7 +73,7 @@ namespace ov_core {
          * @param camids Camera ids that we have simulated measurements for
          * @param feats Raw uv simulated measurements
          */
-        void feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
+        void feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
 
 
     protected:

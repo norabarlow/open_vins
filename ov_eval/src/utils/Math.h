@@ -28,6 +28,7 @@
 #include <iostream>
 #include <Eigen/Eigen>
 
+#include "types.h"
 
 using namespace std;
 

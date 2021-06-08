@@ -30,6 +30,8 @@
 #include <Eigen/Dense>
 #include "utils/quat_ops.h"
 
+#include "types.h"
+
 /**
  * @namespace ov_core
  * @brief Core algorithms for Open VINS
@@ -113,7 +115,7 @@ namespace ov_core {
          * This new IMU messages and will precompound our measurements, jacobians, and measurement covariance.
          * Please see both CpiV1 and CpiV2 classes for implementation details on how this works.
          */
-        virtual void feed_IMU(double t_0, double t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
+        virtual void feed_IMU(f_ts t_0, f_ts t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
                               Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
                               Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) = 0;
 
@@ -125,7 +127,7 @@ namespace ov_core {
 
 
         // Measurement Means
-        double DT = 0; ///< measurement integration time
+        f_ts DT = 0; ///< measurement integration time
         Eigen::Matrix<float, 3, 1> alpha_tau = Eigen::Matrix<float, 3, 1>::Zero(); ///< alpha measurement mean
         Eigen::Matrix<float, 3, 1> beta_tau = Eigen::Matrix<float, 3, 1>::Zero(); ///< beta measurement mean
         Eigen::Matrix<float, 4, 1> q_k2tau; ///< orientation measurement mean

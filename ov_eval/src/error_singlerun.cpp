@@ -48,43 +48,43 @@ void plot_3errors(ov_eval::Statistics sx, ov_eval::Statistics sy, ov_eval::Stati
 
     // Plot our error value
     matplotlibcpp::subplot(3,1,1);
-    std::vector<double> dxvalues(sx.values.begin(), sx.values.end());
+    std::vector<f_ts> dxvalues(sx.values.begin(), sx.values.end());
     matplotlibcpp::plot(sx.timestamps, dxvalues, params_value);
     if(!sx.values_bound.empty()) {
-        std::vector<double> dxvaluesbound(sx.values_bound.begin(), sx.values_bound.end());
+        std::vector<f_ts> dxvaluesbound(sx.values_bound.begin(), sx.values_bound.end());
         matplotlibcpp::plot(sx.timestamps, dxvaluesbound, params_bound);
         for(size_t i=0; i<sx.timestamps.size(); i++) {
             sx.values_bound.at(i) *= -1;
         }
-        std::vector<double> dxvaluesbound2(sx.values_bound.begin(), sx.values_bound.end());
+        std::vector<f_ts> dxvaluesbound2(sx.values_bound.begin(), sx.values_bound.end());
         matplotlibcpp::plot(sx.timestamps, dxvaluesbound2, "r--");
     }
 
     // Plot our error value
     matplotlibcpp::subplot(3,1,2);
-    std::vector<double> dyvalues(sy.values.begin(), sy.values.end());
+    std::vector<f_ts> dyvalues(sy.values.begin(), sy.values.end());
     matplotlibcpp::plot(sy.timestamps, dyvalues, params_value);
     if(!sy.values_bound.empty()) {
-        std::vector<double> dyvaluesbound(sy.values_bound.begin(), sy.values_bound.end());
+        std::vector<f_ts> dyvaluesbound(sy.values_bound.begin(), sy.values_bound.end());
         matplotlibcpp::plot(sy.timestamps, dyvaluesbound, params_bound);
         for(size_t i=0; i<sy.timestamps.size(); i++) {
             sy.values_bound.at(i) *= -1;
         }
-        std::vector<double> dyvaluesbound2(sy.values_bound.begin(), sy.values_bound.end());
+        std::vector<f_ts> dyvaluesbound2(sy.values_bound.begin(), sy.values_bound.end());
         matplotlibcpp::plot(sy.timestamps, dyvaluesbound2, "r--");
     }
 
     // Plot our error value
     matplotlibcpp::subplot(3,1,3);
-    std::vector<double> dzvalues(sz.values.begin(), sz.values.end());
+    std::vector<f_ts> dzvalues(sz.values.begin(), sz.values.end());
     matplotlibcpp::plot(sz.timestamps, dzvalues, params_value);
     if(!sz.values_bound.empty()) {
-        std::vector<double> dzvaluesbound(sz.values_bound.begin(), sz.values_bound.end());
+        std::vector<f_ts> dzvaluesbound(sz.values_bound.begin(), sz.values_bound.end());
         matplotlibcpp::plot(sz.timestamps, dzvaluesbound, params_bound);
         for(size_t i=0; i<sz.timestamps.size(); i++) {
             sz.values_bound.at(i) *= -1;
         }
-        std::vector<double> dzvaluesbound2(sz.values_bound.begin(), sz.values_bound.end());
+        std::vector<f_ts> dzvaluesbound2(sz.values_bound.begin(), sz.values_bound.end());
         matplotlibcpp::plot(sz.timestamps, dzvaluesbound2, "r--");
     }
 
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
-    std::vector<double> times;
+    std::vector<f_ts> times;
     std::vector<Eigen::Matrix<float,7,1>> poses;
     std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
@@ -224,8 +224,8 @@ int main(int argc, char **argv) {
 
     if(!nees_ori.values.empty() && !nees_pos.values.empty()) {
         // Zero our time arrays
-        double starttime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
-        double endtime1 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
+        f_ts starttime1 = (nees_ori.timestamps.empty())? f_ts(0) : nees_ori.timestamps.at(0);
+        f_ts endtime1 = (nees_ori.timestamps.empty())? f_ts(0) : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
         for(size_t i=0; i<nees_ori.timestamps.size(); i++) {
             nees_ori.timestamps.at(i) -= starttime1;
             nees_pos.timestamps.at(i) -= starttime1;
@@ -248,15 +248,15 @@ int main(int argc, char **argv) {
         matplotlibcpp::subplot(2,1,1);
         matplotlibcpp::title("Normalized Estimation Error Squared");
         matplotlibcpp::ylabel("NEES Orientation");
-        std::vector<double> dori(nees_ori.values.begin(), nees_ori.values.end());
+        std::vector<f_ts> dori(nees_ori.values.begin(), nees_ori.values.end());
         matplotlibcpp::plot(nees_ori.timestamps, dori, params_neeso);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(f_ts(0.0),endtime1-starttime1);
         matplotlibcpp::subplot(2,1,2);
         matplotlibcpp::ylabel("NEES Position");
         matplotlibcpp::xlabel("dataset time (s)");
-        std::vector<double> dpos(nees_pos.values.begin(), nees_pos.values.end());
+        std::vector<f_ts> dpos(nees_pos.values.begin(), nees_pos.values.end());
         matplotlibcpp::plot(nees_pos.timestamps, dpos, params_neesp);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(f_ts(0.0),endtime1-starttime1);
 
         // Display to the user
         matplotlibcpp::tight_layout();
@@ -278,8 +278,8 @@ int main(int argc, char **argv) {
 
 
     // Zero our time arrays
-    double starttime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(0);
-    double endtime2 = (posx.timestamps.empty())? 0 : posx.timestamps.at(posx.timestamps.size()-1);
+    f_ts starttime2 = (posx.timestamps.empty())? f_ts(0) : posx.timestamps.at(0);
+    f_ts endtime2 = (posx.timestamps.empty())? f_ts(0) : posx.timestamps.at(posx.timestamps.size()-1);
     for(size_t i=0; i<posx.timestamps.size(); i++) {
         posx.timestamps.at(i) -= starttime2;
         posy.timestamps.at(i) -= starttime2;
@@ -303,14 +303,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("IMU Position Error");
     matplotlibcpp::ylabel("x-error (m)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("y-error (m)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("z-error (m)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();
@@ -325,14 +325,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("IMU Orientation Error");
     matplotlibcpp::ylabel("x-error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("y-error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("z-error (deg)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();
@@ -347,14 +347,14 @@ int main(int argc, char **argv) {
     matplotlibcpp::subplot(3,1,1);
     matplotlibcpp::title("Global Orientation RPY Error");
     matplotlibcpp::ylabel("roll error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,2);
     matplotlibcpp::ylabel("pitch error (deg)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
     matplotlibcpp::subplot(3,1,3);
     matplotlibcpp::ylabel("yaw error (deg)");
     matplotlibcpp::xlabel("dataset time (s)");
-    matplotlibcpp::xlim(0.0,endtime2-starttime2);
+    matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
 
     // Display to the user
     matplotlibcpp::tight_layout();

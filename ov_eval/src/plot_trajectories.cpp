@@ -64,7 +64,7 @@ void plot_xy_positions(const std::string &name, const std::string &color, const 
 }
 
 // Will plot the z 3f position of the pose trajectories
-void plot_z_positions(const std::string &name, const std::string &color, const std::vector<double> &times, const std::vector<Eigen::Matrix<float,7,1>> &poses) {
+void plot_z_positions(const std::string &name, const std::string &color, const std::vector<f_ts> &times, const std::vector<Eigen::Matrix<float,7,1>> &poses) {
 
     // Paramters for our line
     std::map<std::string, std::string> params;
@@ -100,12 +100,12 @@ int main(int argc, char **argv) {
 
     // Read in all our trajectories from file
     std::vector<std::string> names;
-    std::vector<std::vector<double>> times;
+    std::vector<std::vector<f_ts>> times;
     std::vector<std::vector<Eigen::Matrix<float,7,1>>> poses;
     for(int i=2; i<argc; i++) {
 
         // Read in trajectory data
-        std::vector<double> times_temp;
+        std::vector<f_ts> times_temp;
         std::vector<Eigen::Matrix<float,7,1>> poses_temp;
         std::vector<Eigen::Matrix3f> cov_ori_temp, cov_pos_temp;
         ov_eval::Loader::load_data(argv[i], times_temp, poses_temp, cov_ori_temp, cov_pos_temp);
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
         if(i>2) {
 
             // Intersect timestamps
-            std::vector<double> gt_times_temp(times.at(0));
+            std::vector<f_ts> gt_times_temp(times.at(0));
             std::vector<Eigen::Matrix<float,7,1>> gt_poses_temp(poses.at(0));
             ov_eval::AlignUtils::perform_association(0, 0.02, times_temp, gt_times_temp, poses_temp, gt_poses_temp);
 
@@ -188,8 +188,8 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1000, 350);
 
     // Zero our time arrays
-    double starttime = (times.at(0).empty())? 0 : times.at(0).at(0);
-    double endtime = (times.at(0).empty())? 0 : times.at(0).at(times.at(0).size()-1);
+    f_ts starttime = (times.at(0).empty())? f_ts(0) : times.at(0).at(0);
+    f_ts endtime = (times.at(0).empty())? f_ts(0) : times.at(0).at(times.at(0).size()-1);
     for(size_t i=0; i<times.size(); i++) {
         for(size_t j=0; j<times.at(i).size(); j++) {
             times.at(i).at(j) -= starttime;
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     // Display to the user
     matplotlibcpp::xlabel("timestamp (sec)");
     matplotlibcpp::ylabel("z-axis (m)");
-    matplotlibcpp::xlim(0.0,endtime-starttime);
+    matplotlibcpp::xlim(f_ts(0.0),endtime-starttime);
     matplotlibcpp::legend();
     matplotlibcpp::show(true);
 

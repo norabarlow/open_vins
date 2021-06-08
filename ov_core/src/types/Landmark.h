@@ -26,6 +26,7 @@
 #include "LandmarkRepresentation.h"
 #include "utils/colors.h"
 
+#include "types.h"
 
 namespace ov_type {
 
@@ -54,7 +55,7 @@ namespace ov_type {
         int _anchor_cam_id = -1;
 
         /// Timestamp of anchor clone
-        double _anchor_clone_timestamp = -1;
+        f_ts _anchor_clone_timestamp = -1;
 
         /// Boolean if this landmark has had at least one anchor change
         bool has_had_anchor_change = false;

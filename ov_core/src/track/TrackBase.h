@@ -38,6 +38,7 @@
 #include "feat/FeatureDatabase.h"
 #include "utils/colors.h"
 
+#include "types.h"
 
 namespace ov_core {
 
@@ -211,7 +212,7 @@ namespace ov_core {
          * @param img new cv:Mat grayscale image
          * @param cam_id the camera id that this new image corresponds too
          */
-        virtual void feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) = 0;
+        virtual void feed_monocular(f_ts timestamp, cv::Mat &img, size_t cam_id) = 0;
 
         /**
          * @brief Process new stereo pair of images
@@ -221,7 +222,7 @@ namespace ov_core {
          * @param cam_id_left first image camera id
          * @param cam_id_right second image camera id
          */
-        virtual void feed_stereo(double timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) = 0;
+        virtual void feed_stereo(f_ts timestamp, cv::Mat &img_left, cv::Mat &img_right, size_t cam_id_left, size_t cam_id_right) = 0;
 
         /**
          * @brief Shows features extracted in the last image

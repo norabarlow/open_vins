@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.8)
 project(ov_eval)
 
 # Find catkin (the ROS build system)
-find_package(catkin QUIET COMPONENTS roscpp rospy geometry_msgs nav_msgs sensor_msgs)
+find_package(catkin QUIET COMPONENTS roscpp rospy geometry_msgs nav_msgs sensor_msgs floatx)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
@@ -28,7 +28,7 @@ endif()
 if (catkin_FOUND)
     add_definitions(-DROS_AVAILABLE=1)
     catkin_package(
-            CATKIN_DEPENDS roscpp rospy geometry_msgs nav_msgs sensor_msgs
+            CATKIN_DEPENDS roscpp rospy geometry_msgs nav_msgs sensor_msgs floatx
             INCLUDE_DIRS src
             LIBRARIES ov_eval_lib
     )
@@ -72,6 +72,15 @@ list(APPEND thirdparty_libraries
         ${PYTHON_LIBRARIES}
         ${catkin_LIBRARIES}
 )
+
+# If we are not building with ROS then we need to manually link to its headers
+# This isn't that elegant of a way, but this at least allows for building without ROS
+# See this stackoverflow answer: https://stackoverflow.com/a/11217008/7718197
+if (NOT catkin_FOUND)
+    message(WARNING "MANUALLY LINKING TO FLOATX LIBRARY....")
+    include_directories(${floatx_SOURCE_DIR}/src/)
+    list(APPEND thirdparty_libraries floatx_lib)
+endif()
 
 ##################################################
 # Make the core library

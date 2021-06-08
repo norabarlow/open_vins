@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+    <!-- Package Information -->
+    <name>floatx</name>
+    <version>1.0.0</version>
+    <description>
+        Header-only C++ library for low precision floating point type emulation.
+    </description>
+
+    <!-- Code Authors -->
+    <author email="temp@temp.edu">Goran Flegar</author>
+    <maintainer email="temp@temp.edu">Goran Flegar</maintainer>
+
+    <!-- Licensing -->
+    <license>GNU General Public License v3.0</license>
+
+    <!-- Dependencies which this package needs to build itself. -->
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <!-- Dependencies needed after this package is compiled. -->
+
+</package>

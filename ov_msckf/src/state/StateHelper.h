@@ -28,6 +28,8 @@
 
 #include <boost/math/distributions/chi_squared.hpp>
 
+#include "types.h"
+
 using namespace ov_core;
 
 namespace ov_msckf {
@@ -228,7 +230,7 @@ namespace ov_msckf {
          */
         static void marginalize_old_clone(std::shared_ptr<State> state) {
             if ((int) state->_clones_IMU.size() > state->_options.max_clone_size) {
-                double marginal_time = state->margtimestep();
+                f_ts marginal_time = state->margtimestep();
                 assert(marginal_time != INFINITY);
                 StateHelper::marginalize(state, state->_clones_IMU.at(marginal_time));
                 // Note that the marginalizer should have already deleted the clone

@@ -40,7 +40,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     rT0 =  boost::posix_time::microsec_clock::local_time();
 
     // 0. Get all timestamps our clones are at (and thus valid measurement times)
-    std::vector<double> clonetimes;
+    std::vector<f_ts> clonetimes;
     for(const auto& clone_imu : state->_clones_IMU) {
         clonetimes.emplace_back(clone_imu.first);
     }
@@ -70,11 +70,11 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     rT1 =  boost::posix_time::microsec_clock::local_time();
 
     // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
-    std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
+    std::unordered_map<size_t, std::unordered_map<f_ts, FeatureInitializer::ClonePose>> clones_cam;
     for(const auto &clone_calib : state->_calib_IMUtoCAM) {
 
         // For this camera, create the vector of camera poses
-        std::unordered_map<double, FeatureInitializer::ClonePose> clones_cami;
+        std::unordered_map<f_ts, FeatureInitializer::ClonePose> clones_cami;
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose

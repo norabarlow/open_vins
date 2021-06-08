@@ -24,6 +24,7 @@
 #include "core/VioManagerOptions.h"
 #include "utils/CLI11.hpp"
 
+#include "types.h"
 
 namespace ov_msckf {
 

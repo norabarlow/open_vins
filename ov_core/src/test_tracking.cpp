@@ -42,6 +42,8 @@
 #include "track/TrackDescriptor.h"
 #include "track/TrackAruco.h"
 
+#include "types.h"
+
 using namespace ov_core;
 
 // Our feature extractor
@@ -54,11 +56,11 @@ int num_lostfeats = 0;
 int num_margfeats = 0;
 int featslengths = 0;
 int clone_states = 10;
-std::deque<double> clonetimes;
+std::deque<f_ts> clonetimes;
 ros::Time time_start;
 
 // Our master function for tracking
-void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool use_stereo);
+void handle_stereo(f_ts time0, f_ts time1, cv::Mat img0, cv::Mat img1, bool use_stereo);
 
 
 // Main function
@@ -172,8 +174,8 @@ int main(int argc, char** argv)
     bool has_left = false;
     bool has_right = false;
     cv::Mat img0, img1;
-    double time0 = time_init.toSec();
-    double time1 = time_init.toSec();
+    f_ts time0 = time_init.toSec();
+    f_ts time1 = time_init.toSec();
 
     // Step through the rosbag
     for (const rosbag::MessageInstance& m : view) {
@@ -240,7 +242,7 @@ int main(int argc, char** argv)
 /**
  * This function will process the new stereo pair with the extractor!
  */
-void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool use_stereo) {
+void handle_stereo(f_ts time0, f_ts time1, cv::Mat img0, cv::Mat img1, bool use_stereo) {
 
     // Process this new image
     if(use_stereo) {
@@ -284,7 +286,7 @@ void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool 
     // Marginalized features if we have reached 5 frame tracks
     if((int)clonetimes.size() >= clone_states) {
         // Remove features that have reached their max track length
-        double margtime = clonetimes.at(0);
+        f_ts margtime = clonetimes.at(0);
         clonetimes.pop_front();
         std::vector<std::shared_ptr<Feature>> feats_marg = database->features_containing(margtime);
         num_margfeats += feats_marg.size();
@@ -303,12 +305,12 @@ void handle_stereo(double time0, double time1, cv::Mat img0, cv::Mat img1, bool 
     //if (time_curr.toSec()-time_start.toSec() > 2) {
     if (frames > 60) {
         // Calculate the FPS
-        double fps = (double) frames / (time_curr.toSec()-time_start.toSec());
+        f_ts fps = (f_ts) frames / (time_curr.toSec()-time_start.toSec());
         float lpf = (float) num_lostfeats / frames;
         float fpf = (float) featslengths / num_lostfeats;
         float mpf = (float) num_margfeats / frames;
         // DEBUG PRINT OUT
-        printf("fps = %.2f | lost_feats/frame = %.2f | track_length/lost_feat = %.2f | marg_tracks/frame = %.2f\n",fps,lpf,fpf,mpf);
+        printf("fps = %.2f | lost_feats/frame = %.2f | track_length/lost_feat = %.2f | marg_tracks/frame = %.2f\n",float(fps),lpf,fpf,mpf);
         // Reset variables
         frames = 0;
         time_start = time_curr;

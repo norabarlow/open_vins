@@ -37,6 +37,7 @@
 #include "utils/parse_cmd.h"
 #include "utils/parse_ros.h"
 
+#include "types.h"
 
 using namespace ov_msckf;
 
@@ -69,8 +70,8 @@ int main(int argc, char** argv)
     Simulator sim1(params1);
 
     // Vector of stored measurements
-    std::vector<double> vec_imutime;
-    std::vector<double> vec_camtime;
+    std::vector<f_ts> vec_imutime;
+    std::vector<f_ts> vec_camtime;
     std::vector<Eigen::Vector3f> vec_am;
     std::vector<Eigen::Vector3f> vec_wm;
     std::vector<std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>>> vec_feats;
@@ -79,7 +80,7 @@ int main(int argc, char** argv)
     while(sim1.ok()) {
 
         // IMU: get the next simulated IMU measurement if we have it
-        double time_imu;
+        f_ts time_imu;
         Eigen::Vector3f wm, am;
         bool hasimu = sim1.get_next_imu(time_imu, wm, am);
         if(hasimu) {
@@ -89,7 +90,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        double time_cam;
+        f_ts time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim1.get_next_cam(time_cam, camids, feats);
@@ -121,7 +122,7 @@ int main(int argc, char** argv)
     while(sim2.ok()) {
 
         // IMU: get the next simulated IMU measurement if we have it
-        double time_imu;
+        f_ts time_imu;
         Eigen::Vector3f wm, am;
         bool hasimu = sim2.get_next_imu(time_imu, wm, am);
         if(hasimu) {
@@ -136,7 +137,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        double time_cam;
+        f_ts time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim2.get_next_cam(time_cam, camids, feats);

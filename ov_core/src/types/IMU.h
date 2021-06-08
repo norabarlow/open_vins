@@ -25,6 +25,7 @@
 #include "PoseJPL.h"
 #include "utils/quat_ops.h"
 
+#include "types.h"
 
 namespace ov_type {
 

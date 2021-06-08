@@ -41,7 +41,7 @@ void InertialInitializer::feed_imu(const ImuData &message) {
 
 
 
-bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<float,4,1> &q_GtoI0, Eigen::Matrix<float,3,1> &b_w0,
+bool InertialInitializer::initialize_with_imu(f_ts &time0, Eigen::Matrix<float,4,1> &q_GtoI0, Eigen::Matrix<float,3,1> &b_w0,
                                               Eigen::Matrix<float,3,1> &v_I0inG, Eigen::Matrix<float,3,1> &b_a0, Eigen::Matrix<float,3,1> &p_I0inG, bool wait_for_jerk) {
 
     // Return if we don't have any measurements
@@ -50,7 +50,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<float
     }
 
     // Newest imu timestamp
-    double newesttime = imu_data.at(imu_data.size()-1).timestamp;
+    f_ts newesttime = imu_data.at(imu_data.size()-1).timestamp;
 
     // First lets collect a window of IMU readings from the newest measurement to the oldest
     std::vector<ImuData> window_newest, window_secondnew;

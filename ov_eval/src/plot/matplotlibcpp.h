@@ -12,6 +12,8 @@
 
 #include <Python.h>
 
+#include "types.h"
+
 #define WITHOUT_NUMPY
 
 #ifndef WITHOUT_NUMPY

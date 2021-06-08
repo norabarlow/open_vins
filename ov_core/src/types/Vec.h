@@ -24,6 +24,7 @@
 
 #include "Type.h"
 
+#include "types.h"
 
 namespace ov_type {
 

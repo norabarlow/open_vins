@@ -31,6 +31,7 @@
 #include "utils/Math.h"
 #include "utils/Colors.h"
 
+#include "types.h"
 
 namespace ov_eval {
 
@@ -96,7 +97,7 @@ namespace ov_eval {
          * @param max_difference Biggest allowed difference between matched timesteps
          */
         static void perform_association(float offset, float max_difference,
-                                        std::vector<double> &est_times, std::vector<double> &gt_times,
+                                        std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
                                         std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses);
 
         /**
@@ -105,7 +106,7 @@ namespace ov_eval {
          * @param max_difference Biggest allowed difference between matched timesteps
          */
         static void perform_association(float offset, float max_difference,
-                                        std::vector<double> &est_times, std::vector<double> &gt_times,
+                                        std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
                                         std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
                                         std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
                                         std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos);

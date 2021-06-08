@@ -31,6 +31,8 @@
 
 #include "colors.h"
 
+#include "types.h"
+
 
 using namespace std;
 
@@ -63,7 +65,7 @@ namespace ov_core {
          * If we can't open the file, or it is in the wrong format we will error and exit the program.
          * See get_gt_state() for a way to get the groundtruth state at a given timestep
          */
-        static void load_gt_file(std::string path, std::map<double, Eigen::Matrix<double,17,1>>& gt_states) {
+        static void load_gt_file(std::string path, std::map<f_ts, Eigen::Matrix<f_ts,17,1>>& gt_states) {
 
             // Clear any old data
             gt_states.clear();
@@ -89,7 +91,7 @@ namespace ov_core {
                 int i = 0;
                 std::istringstream s(line);
                 std::string field;
-                Eigen::Matrix<double, 17, 1> temp = Eigen::Matrix<double, 17, 1>::Zero();
+                Eigen::Matrix<f_ts, 17, 1> temp = Eigen::Matrix<f_ts, 17, 1>::Zero();
                 // Loop through this line
                 while (getline(s, field, ',')) {
                     // Ensure we are in the range
@@ -103,7 +105,7 @@ namespace ov_core {
                     i++;
                 }
                 // Append to our groundtruth map
-                gt_states.insert({1e-9 * temp(0, 0), temp});
+                gt_states.insert({f_ts(1e-9) * temp(0, 0), temp});
             }
             file.close();
         }
@@ -116,7 +118,7 @@ namespace ov_core {
          * @param gt_states Should be loaded with groundtruth states, see load_gt_file() for details
          * @return true if we found the state, false otherwise
          */
-        static bool get_gt_state(double timestep, Eigen::Matrix<float,17,1> &imustate, std::map<double, Eigen::Matrix<double,17,1>>& gt_states) {
+        static bool get_gt_state(f_ts timestep, Eigen::Matrix<float,17,1> &imustate, std::map<f_ts, Eigen::Matrix<f_ts,17,1>>& gt_states) {
 
             // Check that we even have groundtruth loaded
             if (gt_states.empty()) {
@@ -125,17 +127,17 @@ namespace ov_core {
             }
 
             // Loop through gt states and find the closest time stamp
-            double closest_time = INFINITY;
+            f_ts closest_time = INFINITY;
             auto it0 = gt_states.begin();
             while(it0 != gt_states.end()) {
-                if(std::abs(it0->first-timestep) < std::abs(closest_time-timestep)) {
+                if(flx::abs(it0->first-timestep) < flx::abs(closest_time-timestep)) {
                     closest_time = it0->first;
                 }
                 it0++;
             }
 
             // If close to this timestamp, then use it
-            if(std::abs(closest_time-timestep) < 0.10) {
+            if(flx::abs(closest_time-timestep) < 0.10) {
                 //printf("init DT = %.4f\n", std::abs(closest_time-timestep));
                 //printf("timestamp = %.15f\n", closest_time);
                 timestep = closest_time;
@@ -143,12 +145,12 @@ namespace ov_core {
 
             // Check that we have the timestamp in our GT file
             if(gt_states.find(timestep) == gt_states.end()) {
-                printf(YELLOW "Unable to find %.6f timestamp in GT file, wrong GT file loaded???\n" RESET,timestep);
+                printf(YELLOW "Unable to find %.6f timestamp in GT file, wrong GT file loaded???\n" RESET,double(timestep));
                 return false;
             }
 
             // Get the GT state vector
-            Eigen::Matrix<double, 17, 1> state = gt_states[timestep];
+            Eigen::Matrix<f_ts, 17, 1> state = gt_states[timestep];
 
             // Our "fixed" state vector from the ETH GT format [q,p,v,bg,ba]
             imustate(0, 0) = timestep; //time

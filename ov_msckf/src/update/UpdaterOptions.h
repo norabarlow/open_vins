@@ -21,6 +21,7 @@
 #ifndef OV_MSCKF_UPDATER_OPTIONS_H
 #define OV_MSCKF_UPDATER_OPTIONS_H
 
+#include "types.h"
 
 namespace ov_msckf {
 

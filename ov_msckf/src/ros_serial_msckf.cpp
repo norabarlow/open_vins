@@ -36,6 +36,7 @@
 #include "utils/parse_ros.h"
 #include "utils/sensor_data.h"
 
+#include "types.h"
 
 using namespace ov_msckf;
 
@@ -98,7 +99,7 @@ int main(int argc, char** argv)
     ROS_INFO("ros bag path is: %s", path_to_bag.c_str());
 
     // Load groundtruth if we have it
-    std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
+    std::map<f_ts, Eigen::Matrix<f_ts, 17, 1>> gt_states;
     if (nh.hasParam("path_gt")) {
         std::string path_to_gt;
         nh.param<std::string>("path_gt", path_to_gt, "");
@@ -108,11 +109,14 @@ int main(int argc, char** argv)
 
     // Get our start location and how much of the bag we want to play
     // Make the bag duration < 0 to just process to the end of the bag
-    double bag_start, bag_durr;
-    nh.param<double>("bag_start", bag_start, 0);
-    nh.param<double>("bag_durr", bag_durr, -1);
-    ROS_INFO("bag start: %.1f",bag_start);
-    ROS_INFO("bag duration: %.1f",bag_durr);
+    double bag_start_d, bag_durr_d;
+    f_ts bag_start, bag_durr;
+    nh.param<double>("bag_start", bag_start_d, 0);
+    nh.param<double>("bag_durr", bag_durr_d, -1);
+    bag_start = f_ts(bag_start_d);
+    bag_durr = f_ts(bag_durr_d);
+    ROS_INFO("bag start: %.1f",double(bag_start));
+    ROS_INFO("bag duration: %.1f",double(bag_durr));
 
     // Read in what mode we should be processing in (1=mono, 2=stereo)
     int max_cameras;
@@ -137,8 +141,8 @@ int main(int argc, char** argv)
     // If we have a negative duration then use the full bag length
     view_full.addQuery(bag);
     ros::Time time_init = view_full.getBeginTime();
-    time_init += ros::Duration(bag_start);
-    ros::Time time_finish = (bag_durr < 0)? view_full.getEndTime() : time_init + ros::Duration(bag_durr);
+    time_init += ros::Duration(double(bag_start));
+    ros::Time time_finish = (bag_durr < 0)? view_full.getEndTime() : time_init + ros::Duration(double(bag_durr));
     ROS_INFO("time start = %.6f", time_init.toSec());
     ROS_INFO("time end   = %.6f", time_finish.toSec());
     view.addQuery(bag, time_init, time_finish);

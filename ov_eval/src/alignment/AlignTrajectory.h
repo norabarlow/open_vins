@@ -30,6 +30,7 @@
 #include "AlignUtils.h"
 #include "utils/Colors.h"
 
+#include "types.h"
 
 namespace ov_eval {
 

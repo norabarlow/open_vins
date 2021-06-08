@@ -23,6 +23,8 @@
 
 #include "types/LandmarkRepresentation.h"
 
+#include "types.h"
+
 using namespace ov_type;
 
 namespace ov_msckf {

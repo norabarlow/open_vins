@@ -66,6 +66,7 @@
 #include <iostream>
 #include <Eigen/Eigen>
 
+#include "types.h"
 
 namespace ov_core {
 

@@ -24,7 +24,7 @@
 using namespace ov_core;
 
 
-void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t cam_id) {
+void TrackDescriptor::feed_monocular(f_ts timestamp, cv::Mat &imgin, size_t cam_id) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -139,7 +139,7 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
 
 }
 
-void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
+void TrackDescriptor::feed_stereo(f_ts timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();

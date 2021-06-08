@@ -26,6 +26,7 @@
 
 #include "core/VioManagerOptions.h"
 
+#include "types.h"
 
 namespace ov_msckf {
 
@@ -57,7 +58,9 @@ namespace ov_msckf {
         nh.param<int>("max_msckf_in_update", params.state_options.max_msckf_in_update, params.state_options.max_msckf_in_update);
         nh.param<int>("max_aruco", params.state_options.max_aruco_features, params.state_options.max_aruco_features);
         nh.param<int>("max_cameras", params.state_options.num_cameras, params.state_options.num_cameras);
-        nh.param<double>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
+        double dt_slam_delay;
+        nh.param<double>("dt_slam_delay", dt_slam_delay, double(params.dt_slam_delay));
+        params.dt_slam_delay = f_ts(dt_slam_delay);
 
         // Enforce that we have enough cameras to run
         if(params.state_options.num_cameras < 1) {
@@ -134,7 +137,9 @@ namespace ov_msckf {
         }
 
         // Filter initialization
-        nh.param<double>("init_window_time", params.init_window_time, params.init_window_time);
+        double init_window_time;
+        nh.param<double>("init_window_time", init_window_time, double(params.init_window_time));
+        params.init_window_time = init_window_time;
         nh.param<float>("init_imu_thresh", params.init_imu_thresh, params.init_imu_thresh);
 
         // Zero velocity update
@@ -168,7 +173,9 @@ namespace ov_msckf {
         // STATE ======================================================================
 
         // Timeoffset from camera to IMU
-        nh.param<double>("calib_camimu_dt", params.calib_camimu_dt, params.calib_camimu_dt);
+        double calib_camimu_dt;
+        nh.param<double>("calib_camimu_dt", calib_camimu_dt, double(params.calib_camimu_dt));
+        params.calib_camimu_dt = calib_camimu_dt;
 
         // Global gravity
         std::vector<float> gravity = {params.gravity(0), params.gravity(1), params.gravity(2)};

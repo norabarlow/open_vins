@@ -38,6 +38,7 @@
 #include "utils/parse_ros.h"
 #endif
 
+#include "types.h"
 
 using namespace ov_msckf;
 
@@ -101,7 +102,7 @@ int main(int argc, char** argv)
     //===================================================================================
 
     // Buffer our camera image
-    double buffer_timecam = -1;
+    f_ts buffer_timecam = -1;
     std::vector<int> buffer_camids;
     std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> buffer_feats;
 
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
         }
 
         // CAM: get the next simulated camera uv measurements if we have them
-        double time_cam;
+        f_ts time_cam;
         std::vector<int> camids;
         std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
         bool hascam = sim->get_next_cam(time_cam, camids, feats);

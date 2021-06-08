@@ -26,7 +26,7 @@ using namespace ov_core;
 
 
 
-void Feature::clean_old_measurements(std::vector<double> valid_times) {
+void Feature::clean_old_measurements(std::vector<f_ts> valid_times) {
 
 
     // Loop through each of the cameras we have
@@ -57,7 +57,7 @@ void Feature::clean_old_measurements(std::vector<double> valid_times) {
 
 }
 
-void Feature::clean_older_measurements(double timestamp) {
+void Feature::clean_older_measurements(f_ts timestamp) {
 
 
     // Loop through each of the cameras we have

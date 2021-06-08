@@ -25,6 +25,7 @@
 #include <memory>
 #include <Eigen/Eigen>
 
+#include "types.h"
 
 namespace ov_type {
 

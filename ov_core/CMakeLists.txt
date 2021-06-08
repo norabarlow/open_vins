@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.8)
 project(ov_core)
 
 # Find catkin (the ROS build system)
-find_package(catkin QUIET COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge)
+find_package(catkin QUIET COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge floatx)
 
 # Include libraries (if we don't have opencv 4, then fallback to opencv 3)
 find_package(Eigen3 REQUIRED)
@@ -23,7 +23,7 @@ message(WARNING "BOOST VERSION: " ${Boost_VERSION})
 if (catkin_FOUND)
     add_definitions(-DROS_AVAILABLE=1)
     catkin_package(
-            CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge
+            CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge floatx
             INCLUDE_DIRS src
             LIBRARIES ov_core_lib
     )
@@ -65,6 +65,16 @@ list(APPEND thirdparty_libraries
         ${OpenCV_LIBRARIES}
         ${catkin_LIBRARIES}
 )
+
+# If we are not building with ROS then we need to manually link to its headers
+# This isn't that elegant of a way, but this at least allows for building without ROS
+# See this stackoverflow answer: https://stackoverflow.com/a/11217008/7718197
+if (NOT catkin_FOUND)
+    message(WARNING "MANUALLY LINKING TO FLOATX LIBRARY....")
+    include_directories(${floatx_SOURCE_DIR}/src/)
+    list(APPEND thirdparty_libraries floatx_lib)
+endif()
+
 
 ##################################################
 # Make the core library

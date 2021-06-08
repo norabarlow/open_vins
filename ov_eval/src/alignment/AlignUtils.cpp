@@ -95,7 +95,7 @@ void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &da
 
 
 void AlignUtils::perform_association(float offset, float max_difference,
-                                     std::vector<double> &est_times, std::vector<double> &gt_times,
+                                     std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
                                      std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses) {
     std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
     AlignUtils::perform_association(offset, max_difference, est_times, gt_times, est_poses, gt_poses, est_covori, est_covpos, gt_covori, gt_covpos);
@@ -103,13 +103,13 @@ void AlignUtils::perform_association(float offset, float max_difference,
 
 
 void AlignUtils::perform_association(float offset, float max_difference,
-                                    std::vector<double> &est_times, std::vector<double> &gt_times,
+                                    std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
                                     std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
                                     std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
                                     std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos) {
 
     // Temp results which keeps only the matches
-    std::vector<double> est_times_temp, gt_times_temp;
+    std::vector<f_ts> est_times_temp, gt_times_temp;
     std::vector<Eigen::Matrix<float,7,1>> est_poses_temp, gt_poses_temp;
     std::vector<Eigen::Matrix3f> est_covori_temp, est_covpos_temp, gt_covori_temp, gt_covpos_temp;
 
@@ -126,18 +126,18 @@ void AlignUtils::perform_association(float offset, float max_difference,
         // Increment while too small and is not within our difference threshold
         while (gt_pointer < gt_times.size()
                && gt_times.at(gt_pointer) < (est_times.at(i)+offset)
-               && std::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) > max_difference) {
+               && flx::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) > max_difference) {
             gt_pointer++;
         }
 
         // If we are closer than max difference, see if we can do any better
-        while (gt_pointer < gt_times.size() && std::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) <= max_difference) {
+        while (gt_pointer < gt_times.size() && flx::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) <= max_difference) {
             // Break if we found a good match but are getting worse, we are done
-            if (std::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) >= best_diff) {
+            if (flx::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset)) >= best_diff) {
                 break;
             }
             // We have a closer match, save it and move on
-            best_diff = std::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset));
+            best_diff = flx::abs(gt_times.at(gt_pointer)-(est_times.at(i)+offset));
             best_gt_idx = gt_pointer;
             gt_pointer++;
         }

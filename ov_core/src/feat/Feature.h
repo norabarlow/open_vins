@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <Eigen/Eigen>
 
+#include "types.h"
+
 namespace ov_core {
 
     /**
@@ -53,13 +55,13 @@ namespace ov_core {
         std::unordered_map<size_t, std::vector<Eigen::VectorXf>> uvs_norm;
 
         /// Timestamps of each UV measurement (mapped by camera ID)
-        std::unordered_map<size_t, std::vector<double>> timestamps;
+        std::unordered_map<size_t, std::vector<f_ts>> timestamps;
 
         /// What camera ID our pose is anchored in!! By default the first measurement is the anchor.
         int anchor_cam_id = -1;
 
         /// Timestamp of anchor clone
-        double anchor_clone_timestamp;
+        f_ts anchor_clone_timestamp;
 
         /// Triangulated position of this feature, in the anchor frame
         Eigen::Vector3f p_FinA;
@@ -76,7 +78,7 @@ namespace ov_core {
          *
          * @param valid_times Vector of timestamps that our measurements must occur at
          */
-        void clean_old_measurements(std::vector<double> valid_times);
+        void clean_old_measurements(std::vector<f_ts> valid_times);
 
         /**
          * @brief Remove measurements that are older then the specified timestamp.
@@ -85,7 +87,7 @@ namespace ov_core {
          *
          * @param timestamp Timestamps that our measurements must occur after
          */
-        void clean_older_measurements(double timestamp);
+        void clean_older_measurements(f_ts timestamp);
 
     };
 

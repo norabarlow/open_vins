@@ -27,6 +27,8 @@
 #include "FeatureInitializerOptions.h"
 #include "utils/quat_ops.h"
 
+#include "types.h"
+
 namespace ov_core {
 
     /**
@@ -103,7 +105,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to triangulate (based on the thresholds)
          */
-        bool single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_triangulation(Feature* feat, std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM);
 
         /**
          * @brief Uses a linear triangulation to get initial estimate for the feature, treating the anchor observation as a true bearing.
@@ -115,7 +117,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to triangulate (based on the thresholds)
          */
-        bool single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_triangulation_1d(Feature* feat, std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM);
 
         /**
          * @brief Uses a nonlinear triangulation to refine initial linear estimate of the feature
@@ -123,7 +125,7 @@ namespace ov_core {
          * @param clonesCAM Map between camera ID to map of timestamp to camera pose estimate (rotation from global to camera, position of camera in global frame)
          * @return Returns false if it fails to be optimize (based on the thresholds)
          */
-        bool single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM);
+        bool single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM);
 
         /**
          * @brief Gets the current configuration of the feature initializer
@@ -147,7 +149,7 @@ namespace ov_core {
          * @param beta y/z in anchor
          * @param rho 1/z inverse depth
          */
-        float compute_error(std::unordered_map<size_t,std::unordered_map<double,ClonePose>> &clonesCAM,Feature* feat,float alpha,float beta,float rho);
+        float compute_error(std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM,Feature* feat,float alpha,float beta,float rho);
 
     };
 

@@ -31,6 +31,7 @@
 #include "CpiBase.h"
 #include "utils/quat_ops.h"
 
+#include "types.h"
 
 namespace ov_core {
 
@@ -80,13 +81,13 @@ namespace ov_core {
          * We will first analytically integrate our meansurements and Jacobians.
          * Then we perform numerical integration for our measurement covariance.
          */
-        void feed_IMU(double t_0, double t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
+        void feed_IMU(f_ts t_0, f_ts t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
                       Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
                       Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) {
 
 
             // Get time difference
-            double delta_t = t_1 - t_0;
+            f_ts delta_t = t_1 - t_0;
             DT += delta_t;
 
             //If no time has passed do nothing
@@ -122,7 +123,7 @@ namespace ov_core {
             bool small_w = (mag_w < 0.008726646);
 
             // Get some of the variables used in the preintegration equations
-            double dt_2 = pow(delta_t, 2);
+            f_ts dt_2 = pow(delta_t, 2);
             float cos_wt = cos(w_dt);
             float sin_wt = sin(w_dt);
 

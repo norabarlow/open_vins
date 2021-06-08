@@ -34,6 +34,7 @@
 #include <boost/math/distributions/chi_squared.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "types.h"
 
 namespace ov_msckf {
 
@@ -116,7 +117,7 @@ namespace ov_msckf {
          * @param timestamp Next camera timestamp we want to see if we should propagate to.
          * @return True if the system is currently at zero velocity
          */
-        bool try_update(std::shared_ptr<State> state, double timestamp);
+        bool try_update(std::shared_ptr<State> state, f_ts timestamp);
 
 
 
@@ -145,7 +146,7 @@ namespace ov_msckf {
         std::vector<ov_core::ImuData> imu_data;
 
         /// Estimate for time offset at last propagation time
-        double last_prop_time_offset = 0.0;
+        f_ts last_prop_time_offset = 0.0;
         bool have_last_prop_time_offset = false;
 
 

@@ -29,6 +29,7 @@
 
 #include "Feature.h"
 
+#include "types.h"
 
 namespace ov_core {
 
@@ -91,7 +92,7 @@ namespace ov_core {
          * This will update a given feature based on the passed ID it has.
          * It will create a new feature, if it is an ID that we have not seen before.
          */
-        void update_feature(size_t id, double timestamp, size_t cam_id,
+        void update_feature(size_t id, f_ts timestamp, size_t cam_id,
                             float u, float v, float u_n, float v_n) {
 
             // Find this feature using the ID lookup
@@ -128,7 +129,7 @@ namespace ov_core {
          * For example this could be used to get features that have not been successfully tracked into the newest frame.
          * All features returned will not have any measurements occurring at a time greater then the specified.
          */
-        std::vector<std::shared_ptr<Feature>> features_not_containing_newer(double timestamp, bool remove=false, bool skip_deleted=false) {
+        std::vector<std::shared_ptr<Feature>> features_not_containing_newer(f_ts timestamp, bool remove=false, bool skip_deleted=false) {
 
             // Our vector of features that do not have measurements after the specified time
             std::vector<std::shared_ptr<Feature>> feats_old;
@@ -175,7 +176,7 @@ namespace ov_core {
          * This will collect all features that have measurements occurring before the specified timestamp.
          * For example, we would want to remove all features older then the last clone/state in our sliding window.
          */
-        std::vector<std::shared_ptr<Feature>> features_containing_older(double timestamp, bool remove=false, bool skip_deleted=false) {
+        std::vector<std::shared_ptr<Feature>> features_containing_older(f_ts timestamp, bool remove=false, bool skip_deleted=false) {
 
             // Our vector of old features
             std::vector<std::shared_ptr<Feature>> feats_old;
@@ -220,7 +221,7 @@ namespace ov_core {
          * This function will return all features that have the specified time in them.
          * This would be used to get all features that occurred at a specific clone/state.
          */
-        std::vector<std::shared_ptr<Feature>> features_containing(double timestamp, bool remove=false, bool skip_deleted=false) {
+        std::vector<std::shared_ptr<Feature>> features_containing(f_ts timestamp, bool remove=false, bool skip_deleted=false) {
 
             // Our vector of old features
             std::vector<std::shared_ptr<Feature>> feats_has_timestamp;
@@ -294,7 +295,7 @@ namespace ov_core {
         /**
          * @brief This function will delete all feature measurements that are older then the specified timestamp
          */
-        void cleanup_measurements(double timestamp) {
+        void cleanup_measurements(f_ts timestamp) {
             std::unique_lock<std::mutex> lck(mtx);
             for (auto it = features_idlookup.begin(); it != features_idlookup.end();) {
                 // Remove the older measurements
@@ -358,7 +359,7 @@ namespace ov_core {
                         } else {
                             auto temp_times = temp->timestamps.at(cam_id);
                             for(size_t i=0; i<feat.second->timestamps.at(cam_id).size(); i++) {
-                                double time_to_find = feat.second->timestamps.at(cam_id).at(i);
+                                f_ts time_to_find = feat.second->timestamps.at(cam_id).at(i);
                                 if(std::find(temp_times.begin(),temp_times.end(),time_to_find)==temp_times.end()) {
                                     temp->timestamps.at(cam_id).push_back(feat.second->timestamps.at(cam_id).at(i));
                                     temp->uvs.at(cam_id).push_back(feat.second->uvs.at(cam_id).at(i));

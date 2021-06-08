@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
-    std::vector<double> times;
+    std::vector<f_ts> times;
     std::vector<Eigen::Matrix<float,7,1>> poses;
     std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
@@ -115,9 +115,9 @@ int main(int argc, char **argv) {
         for(const auto& len : segments) {
             rpe_dataset.insert({len,{ov_eval::Statistics(),ov_eval::Statistics()}});
         }
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_dataset;
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_2f_dataset;
-        std::map<double,std::pair<ov_eval::Statistics,ov_eval::Statistics>> nees_dataset;
+        std::map<f_ts,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_dataset;
+        std::map<f_ts,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rmse_2f_dataset;
+        std::map<f_ts,std::pair<ov_eval::Statistics,ov_eval::Statistics>> nees_dataset;
 
         // Loop though the different runs for this dataset
         std::vector<std::string> file_paths;
@@ -260,8 +260,8 @@ int main(int argc, char **argv) {
         matplotlibcpp::figure_size(1000, 600);
 
         // Zero our time arrays
-        double starttime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(0);
-        double endtime1 = (rmse_ori.timestamps.empty())? 0 : rmse_ori.timestamps.at(rmse_ori.timestamps.size()-1);
+        f_ts starttime1 = (rmse_ori.timestamps.empty())? f_ts(0) : rmse_ori.timestamps.at(0);
+        f_ts endtime1 = (rmse_ori.timestamps.empty())? f_ts(0) : rmse_ori.timestamps.at(rmse_ori.timestamps.size()-1);
         for(size_t j=0; j<rmse_ori.timestamps.size(); j++) {
             rmse_ori.timestamps.at(j) -= starttime1;
             rmse_pos.timestamps.at(j) -= starttime1;
@@ -272,12 +272,12 @@ int main(int argc, char **argv) {
         matplotlibcpp::title("Root Mean Squared Error - "+path_algorithms.at(i).filename().string());
         matplotlibcpp::ylabel("Error Orientation (deg)");
         matplotlibcpp::plot(rmse_ori.timestamps, rmse_ori.values);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(f_ts(0.0),endtime1-starttime1);
         matplotlibcpp::subplot(2,1,2);
         matplotlibcpp::ylabel("Error Position (m)");
         matplotlibcpp::xlabel("dataset time (s)");
         matplotlibcpp::plot(rmse_pos.timestamps, rmse_pos.values);
-        matplotlibcpp::xlim(0.0,endtime1-starttime1);
+        matplotlibcpp::xlim(f_ts(0.0),endtime1-starttime1);
 
         // Display to the user
         matplotlibcpp::tight_layout();
@@ -290,8 +290,8 @@ int main(int argc, char **argv) {
             matplotlibcpp::figure_size(1000, 600);
 
             // Zero our time arrays
-            double starttime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(0);
-            double endtime2 = (nees_ori.timestamps.empty())? 0 : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
+            f_ts starttime2 = (nees_ori.timestamps.empty())? f_ts(0) : nees_ori.timestamps.at(0);
+            f_ts endtime2 = (nees_ori.timestamps.empty())? f_ts(0) : nees_ori.timestamps.at(nees_ori.timestamps.size()-1);
             for(size_t j=0; j<nees_ori.timestamps.size(); j++) {
                 nees_ori.timestamps.at(j) -= starttime2;
                 nees_pos.timestamps.at(j) -= starttime2;
@@ -302,12 +302,12 @@ int main(int argc, char **argv) {
             matplotlibcpp::title("Normalized Estimation Error Squared - "+path_algorithms.at(i).filename().string());
             matplotlibcpp::ylabel("NEES Orientation");
             matplotlibcpp::plot(nees_ori.timestamps, nees_ori.values);
-            matplotlibcpp::xlim(0.0,endtime2-starttime2);
+            matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
             matplotlibcpp::subplot(2,1,2);
             matplotlibcpp::ylabel("NEES Position");
             matplotlibcpp::xlabel("dataset time (s)");
             matplotlibcpp::plot(nees_pos.timestamps, nees_pos.values);
-            matplotlibcpp::xlim(0.0,endtime2-starttime2);
+            matplotlibcpp::xlim(f_ts(0.0),endtime2-starttime2);
 
             // Display to the user
             matplotlibcpp::tight_layout();

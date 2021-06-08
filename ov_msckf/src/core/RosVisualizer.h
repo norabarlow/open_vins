@@ -45,6 +45,7 @@
 #include "sim/Simulator.h"
 #include "utils/dataset_reader.h"
 
+#include "types.h"
 
 namespace ov_msckf {
 
@@ -82,7 +83,7 @@ namespace ov_msckf {
          * This will take the current state estimate and get the propagated pose to the desired time.
          * This can be used to get pose estimates on systems which require high frequency pose estimates.
          */
-        void visualize_odometry(double timestamp);
+        void visualize_odometry(f_ts timestamp);
 
         /**
          * @brief After the run has ended, print results
@@ -141,10 +142,10 @@ namespace ov_msckf {
         boost::posix_time::ptime rT1, rT2;
 
         // Last timestamp we visualized at
-        double last_visualization_timestamp = 0;
+        f_ts last_visualization_timestamp = 0;
 
         // Our groundtruth states
-        std::map<double, Eigen::Matrix<double,17,1>> gt_states;
+        std::map<f_ts, Eigen::Matrix<f_ts,17,1>> gt_states;
 
         // For path viz
         unsigned int poses_seq_gt = 0;

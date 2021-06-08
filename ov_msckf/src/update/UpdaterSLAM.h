@@ -39,6 +39,7 @@
 #include <boost/math/distributions/chi_squared.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "types.h"
 
 namespace ov_msckf {
 
@@ -123,7 +124,7 @@ namespace ov_msckf {
          * @param new_anchor_timestamp Clone timestamp we want to move to
          * @param new_cam_id Which camera frame we want to move to
          */
-        void perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, double new_anchor_timestamp, size_t new_cam_id);
+        void perform_anchor_change(std::shared_ptr<State> state, std::shared_ptr<Landmark> landmark, f_ts new_anchor_timestamp, size_t new_cam_id);
 
 
         /// Options used during update for slam features

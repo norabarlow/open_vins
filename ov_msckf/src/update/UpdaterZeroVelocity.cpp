@@ -24,7 +24,7 @@ using namespace ov_msckf;
 
 
 
-bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timestamp) {
+bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, f_ts timestamp) {
 
     // Return if we don't have any imu data yet
     if(imu_data.empty())
@@ -44,12 +44,12 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     //assert(timestamp > state->_timestamp);
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    //double time0 = state->_timestamp+t_off_new;
-    double time0 = state->_timestamp+last_prop_time_offset;
-    double time1 = timestamp+t_off_new;
+    //f_ts time0 = state->_timestamp+t_off_new;
+    f_ts time0 = state->_timestamp+last_prop_time_offset;
+    f_ts time1 = timestamp+t_off_new;
 
     // Select bounding inertial measurements
     std::vector<ov_core::ImuData> imu_recent = Propagator::select_imu_readings(imu_data, time0, time1);
@@ -88,11 +88,11 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
     // w_true = w_m - bw - nw
     // a_true = a_m - ba - R*g - na
     // v_true = v_k - g*dt + R^T*(a_m - ba - na)*dt
-    double dt_summed = 0;
+    f_ts dt_summed = 0;
     for(size_t i=0; i<imu_recent.size()-1; i++) {
 
         // Precomputed values
-        double dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
+        f_ts dt = imu_recent.at(i+1).timestamp - imu_recent.at(i).timestamp;
         Eigen::Vector3f a_hat = imu_recent.at(i).am - state->_imu->bias_a();
 
         // Measurement residual (true value is zero)
@@ -100,7 +100,7 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
         if(!integrated_accel_constraint) {
             res.block(6*i+3,0,3,1) = -(a_hat - state->_imu->Rot()*_gravity);
         } else {
-            res.block(6*i+3,0,3,1) = -(state->_imu->vel() - _gravity*dt + state->_imu->Rot().transpose()*a_hat*dt);
+            res.block(6*i+3,0,3,1) = -(state->_imu->vel() - _gravity*float(dt) + state->_imu->Rot().transpose()*a_hat*float(dt));
         }
 
         // Measurement Jacobian
@@ -110,8 +110,8 @@ bool UpdaterZeroVelocity::try_update(std::shared_ptr<State> state, double timest
             H.block(6*i+3,0,3,3) = -skew_x(R_GtoI_jacob*_gravity);
             H.block(6*i+3,6,3,3) = -Eigen::Matrix<float,3,3>::Identity();
         } else {
-            H.block(6*i+3,0,3,3) = -R_GtoI_jacob.transpose()*skew_x(a_hat)*dt;
-            H.block(6*i+3,6,3,3) = -R_GtoI_jacob.transpose()*dt;
+            H.block(6*i+3,0,3,3) = -R_GtoI_jacob.transpose()*skew_x(a_hat)*float(dt);
+            H.block(6*i+3,6,3,3) = -R_GtoI_jacob.transpose()*float(dt);
             H.block(6*i+3,9,3,3) = Eigen::Matrix<float,3,3>::Identity();
         }
 

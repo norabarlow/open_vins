@@ -37,6 +37,7 @@
 #include "utils/Loader.h"
 #include "utils/Colors.h"
 
+#include "types.h"
 
 namespace ov_eval {
 
@@ -157,7 +158,7 @@ namespace ov_eval {
     protected:
 
         // Trajectory data (loaded from file and timestamp intersected)
-        std::vector<double> est_times, gt_times;
+        std::vector<f_ts> est_times, gt_times;
         std::vector<Eigen::Matrix<float,7,1>> est_poses, gt_poses;
         std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
 

@@ -28,7 +28,7 @@ using namespace ov_msckf;
 
 
 
-void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timestamp) {
+void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestamp) {
 
     // If the difference between the current update time and state is zero
     // We should crash, as this means we would have two clones at the same time!!!!
@@ -40,7 +40,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timest
     // We should crash if we are trying to propagate backwards
     if(state->_timestamp > timestamp) {
         printf(RED "Propagator::propagate_and_clone(): Propagation called trying to propagate backwards in time!!!!\n" RESET);
-        printf(RED "Propagator::propagate_and_clone(): desired propagation = %.4f\n" RESET, (timestamp-state->_timestamp));
+        printf(RED "Propagator::propagate_and_clone(): desired propagation = %.4f\n" RESET, double(timestamp-state->_timestamp));
         std::exit(EXIT_FAILURE);
     }
 
@@ -55,11 +55,11 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timest
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    double time0 = state->_timestamp+last_prop_time_offset;
-    double time1 = timestamp+t_off_new;
+    f_ts time0 = state->_timestamp+last_prop_time_offset;
+    f_ts time1 = timestamp+t_off_new;
     std::vector<ov_core::ImuData> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // We are going to sum up all the state transition matrices, so we can do a single large multiplication at the end
@@ -69,7 +69,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timest
     // We will then add the noise to the IMU portion of the state
     Eigen::Matrix<float,15,15> Phi_summed = Eigen::Matrix<float,15,15>::Identity();
     Eigen::Matrix<float,15,15> Qd_summed = Eigen::Matrix<float,15,15>::Zero();
-    double dt_summed = 0;
+    f_ts dt_summed = 0;
 
     // Loop through all IMU messages, and use them to move the state forward in time
     // This uses the zero'th order quat, and then constant acceleration discrete
@@ -116,7 +116,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, double timest
 
 
 
-void Propagator::fast_state_propagate(std::shared_ptr<State> state, double timestamp, Eigen::Matrix<float,13,1> &state_plus) {
+void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timestamp, Eigen::Matrix<float,13,1> &state_plus) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
@@ -125,11 +125,11 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, double times
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    double t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
 
     // First lets construct an IMU vector of measurements we need
-    double time0 = state->_timestamp+last_prop_time_offset;
-    double time1 = timestamp+t_off_new;
+    f_ts time0 = state->_timestamp+last_prop_time_offset;
+    f_ts time1 = timestamp+t_off_new;
     std::vector<ov_core::ImuData> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // Save the original IMU state
@@ -142,7 +142,7 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, double times
         for(size_t i=0; i<prop_data.size()-1; i++) {
 
             // Time elapsed over interval
-            double dt = prop_data.at(i+1).timestamp-prop_data.at(i).timestamp;
+            f_ts dt = prop_data.at(i+1).timestamp-prop_data.at(i).timestamp;
             //assert(data_plus.timestamp>data_minus.timestamp);
 
             // Corrected imu measurements
@@ -185,7 +185,7 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, double times
 
 
 
-std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, double time0, double time1) {
+std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<ov_core::ImuData>& imu_data, f_ts time0, f_ts time1) {
 
     // Our vector imu readings
     std::vector<ov_core::ImuData> prop_data;
@@ -270,7 +270,7 @@ std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<
     // Loop through and ensure we do not have an zero dt values
     // This would cause the noise covariance to be Infinity
     for (size_t i=0; i < prop_data.size()-1; i++) {
-        if (std::abs(prop_data.at(i+1).timestamp-prop_data.at(i).timestamp) < 1e-12) {
+        if (flx::abs(prop_data.at(i+1).timestamp-prop_data.at(i).timestamp) < 1e-12) {
             printf(YELLOW "Propagator::select_imu_readings(): Zero DT between IMU reading %d and %d, removing it!\n" RESET, (int)i, (int)(i+1));
             prop_data.erase(prop_data.begin()+i);
             i--;
@@ -297,7 +297,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
     Qd.setZero();
 
     // Time elapsed over interval
-    double dt = data_plus.timestamp-data_minus.timestamp;
+    float dt = float(data_plus.timestamp-data_minus.timestamp);
     //assert(data_plus.timestamp>data_minus.timestamp);
 
     // Corrected imu measurements
@@ -402,7 +402,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
 }
 
 
-void Propagator::predict_mean_discrete(std::shared_ptr<State> state, double dt,
+void Propagator::predict_mean_discrete(std::shared_ptr<State> state, f_ts dt,
                                         const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                                         const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                                         Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {
@@ -423,24 +423,24 @@ void Propagator::predict_mean_discrete(std::shared_ptr<State> state, double dt,
     // Orientation: Equation (101) and (103) and of Trawny indirect TR
     Eigen::Matrix<float,4,4> bigO;
     if(w_norm > 1e-20) {
-        bigO = cos(0.5*w_norm*dt)*I_4x4 + 1/w_norm*sin(0.5*w_norm*dt)*Omega(w_hat);
+        bigO = std::cos(0.5*w_norm*float(dt))*I_4x4 + 1/w_norm*std::sin(0.5*w_norm*float(dt))*Omega(w_hat);
     } else {
-        bigO = I_4x4 + 0.5*dt*Omega(w_hat);
+        bigO = I_4x4 + 0.5*float(dt)*Omega(w_hat);
     }
     new_q = quatnorm(bigO*state->_imu->quat());
     //new_q = rot_2_quat(exp_so3(-w_hat*dt)*R_Gtoi);
 
     // Velocity: just the acceleration in the local frame, minus global gravity
-    new_v = state->_imu->vel() + R_Gtoi.transpose()*a_hat*dt - _gravity*dt;
+    new_v = state->_imu->vel() + R_Gtoi.transpose()*a_hat*float(dt) - _gravity*float(dt);
 
     // Position: just velocity times dt, with the acceleration integrated twice
-    new_p = state->_imu->pos() + state->_imu->vel()*dt + 0.5*R_Gtoi.transpose()*a_hat*dt*dt - 0.5*_gravity*dt*dt;
+    new_p = state->_imu->pos() + state->_imu->vel()*float(dt) + 0.5*R_Gtoi.transpose()*a_hat*float(dt*dt) - 0.5*_gravity*float(dt*dt);
 
 }
 
 
 
-void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
+void Propagator::predict_mean_rk4(std::shared_ptr<State> state, f_ts dt,
                                   const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
                                   const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
                                   Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {
@@ -448,8 +448,8 @@ void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
     // Pre-compute things
     Eigen::Vector3f w_hat = w_hat1;
     Eigen::Vector3f a_hat = a_hat1;
-    Eigen::Vector3f w_alpha = (w_hat2-w_hat1)/dt;
-    Eigen::Vector3f a_jerk = (a_hat2-a_hat1)/dt;
+    Eigen::Vector3f w_alpha = (w_hat2-w_hat1)/float(dt);
+    Eigen::Vector3f a_jerk = (a_hat2-a_hat1)/float(dt);
 
     // y0 ================
     Eigen::Vector4f q_0 = state->_imu->quat();
@@ -463,13 +463,13 @@ void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
     Eigen::Matrix3f R_Gto0 = quat_2_Rot(quat_multiply(dq_0,q_0));
     Eigen::Vector3f v0_dot = R_Gto0.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k1_q = q0_dot*dt;
-    Eigen::Vector3f k1_p = p0_dot*dt;
-    Eigen::Vector3f k1_v = v0_dot*dt;
+    Eigen::Vector4f k1_q = q0_dot*float(dt);
+    Eigen::Vector3f k1_p = p0_dot*float(dt);
+    Eigen::Vector3f k1_v = v0_dot*float(dt);
 
     // k2 ================
-    w_hat += 0.5*w_alpha*dt;
-    a_hat += 0.5*a_jerk*dt;
+    w_hat += 0.5*w_alpha*float(dt);
+    a_hat += 0.5*a_jerk*float(dt);
 
     Eigen::Vector4f dq_1 = quatnorm(dq_0+0.5*k1_q);
     //Eigen::Vector3f p_1 = p_0+0.5*k1_p;
@@ -480,9 +480,9 @@ void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
     Eigen::Matrix3f R_Gto1 = quat_2_Rot(quat_multiply(dq_1,q_0));
     Eigen::Vector3f v1_dot = R_Gto1.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k2_q = q1_dot*dt;
-    Eigen::Vector3f k2_p = p1_dot*dt;
-    Eigen::Vector3f k2_v = v1_dot*dt;
+    Eigen::Vector4f k2_q = q1_dot*float(dt);
+    Eigen::Vector3f k2_p = p1_dot*float(dt);
+    Eigen::Vector3f k2_v = v1_dot*float(dt);
 
     // k3 ================
     Eigen::Vector4f dq_2 = quatnorm(dq_0+0.5*k2_q);
@@ -494,13 +494,13 @@ void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
     Eigen::Matrix3f R_Gto2 = quat_2_Rot(quat_multiply(dq_2,q_0));
     Eigen::Vector3f v2_dot = R_Gto2.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k3_q = q2_dot*dt;
-    Eigen::Vector3f k3_p = p2_dot*dt;
-    Eigen::Vector3f k3_v = v2_dot*dt;
+    Eigen::Vector4f k3_q = q2_dot*float(dt);
+    Eigen::Vector3f k3_p = p2_dot*float(dt);
+    Eigen::Vector3f k3_v = v2_dot*float(dt);
 
     // k4 ================
-    w_hat += 0.5*w_alpha*dt;
-    a_hat += 0.5*a_jerk*dt;
+    w_hat += 0.5*w_alpha*float(dt);
+    a_hat += 0.5*a_jerk*float(dt);
 
     Eigen::Vector4f dq_3 = quatnorm(dq_0+k3_q);
     //Eigen::Vector3f p_3 = p_0+k3_p;
@@ -511,9 +511,9 @@ void Propagator::predict_mean_rk4(std::shared_ptr<State> state, double dt,
     Eigen::Matrix3f R_Gto3 = quat_2_Rot(quat_multiply(dq_3,q_0));
     Eigen::Vector3f v3_dot = R_Gto3.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k4_q = q3_dot*dt;
-    Eigen::Vector3f k4_p = p3_dot*dt;
-    Eigen::Vector3f k4_v = v3_dot*dt;
+    Eigen::Vector4f k4_q = q3_dot*float(dt);
+    Eigen::Vector3f k4_p = p3_dot*float(dt);
+    Eigen::Vector3f k4_v = v3_dot*float(dt);
 
     // y+dt ================
     Eigen::Vector4f dq = quatnorm(dq_0+(1.0/6.0)*k1_q+(1.0/3.0)*k2_q+(1.0/3.0)*k3_q+(1.0/6.0)*k4_q);
