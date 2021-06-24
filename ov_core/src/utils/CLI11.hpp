@@ -1164,9 +1164,9 @@ enum class object_category : int {
     unsigned_integral = 4,
     enumeration = 6,
     boolean_value = 8,
-    floating_point = 10,
+    f_ekfing_point = 10,
     number_constructible = 12,
-    float_constructible = 14,
+    f_ekf_constructible = 14,
     integer_constructible = 16,
     vector_value = 30,
     tuple_value = 35,
@@ -1205,7 +1205,7 @@ template <typename T> struct classify_object<T, typename std::enable_if<is_bool<
 
 /// Floats
 template <typename T> struct classify_object<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
-    static constexpr object_category value{object_category::floating_point};
+    static constexpr object_category value{object_category::f_ekfing_point};
 };
 
 /// String and similar direct assignment
@@ -1232,7 +1232,7 @@ template <typename T> struct classify_object<T, typename std::enable_if<std::is_
     static constexpr object_category value{object_category::enumeration};
 };
 
-/// Handy helper to contain a bunch of checks that rule out many common types (integers, string like, floating point,
+/// Handy helper to contain a bunch of checks that rule out many common types (integers, string like, f_ekfing point,
 /// vectors, and enumerations
 template <typename T> struct uncommon_type {
     using type = typename std::conditional<!std::is_floating_point<T>::value && !std::is_integral<T>::value &&
@@ -1244,11 +1244,11 @@ template <typename T> struct uncommon_type {
     static constexpr bool value = type::value;
 };
 
-/// Assignable from float or int
+/// Assignable from f_ekf or int
 template <typename T>
 struct classify_object<T,
                        typename std::enable_if<uncommon_type<T>::value && type_count<T>::value == 1 &&
-                                               is_direct_constructible<T, float>::value &&
+                                               is_direct_constructible<T, f_ekf>::value &&
                                                is_direct_constructible<T, int>::value>::type> {
     static constexpr object_category value{object_category::number_constructible};
 };
@@ -1257,18 +1257,18 @@ struct classify_object<T,
 template <typename T>
 struct classify_object<T,
                        typename std::enable_if<uncommon_type<T>::value && type_count<T>::value == 1 &&
-                                               !is_direct_constructible<T, float>::value &&
+                                               !is_direct_constructible<T, f_ekf>::value &&
                                                is_direct_constructible<T, int>::value>::type> {
     static constexpr object_category value{object_category::integer_constructible};
 };
 
-/// Assignable from float
+/// Assignable from f_ekf
 template <typename T>
 struct classify_object<T,
                        typename std::enable_if<uncommon_type<T>::value && type_count<T>::value == 1 &&
-                                               is_direct_constructible<T, float>::value &&
+                                               is_direct_constructible<T, f_ekf>::value &&
                                                !is_direct_constructible<T, int>::value>::type> {
-    static constexpr object_category value{object_category::float_constructible};
+    static constexpr object_category value{object_category::f_ekf_constructible};
 };
 
 /// Tuple type
@@ -1276,7 +1276,7 @@ template <typename T>
 struct classify_object<T,
                        typename std::enable_if<(type_count<T>::value >= 2 && !is_vector<T>::value) ||
                                                (is_tuple_like<T>::value && uncommon_type<T>::value &&
-                                                !is_direct_constructible<T, float>::value &&
+                                                !is_direct_constructible<T, f_ekf>::value &&
                                                 !is_direct_constructible<T, int>::value)>::type> {
     static constexpr object_category value{object_category::tuple_value};
 };
@@ -1307,9 +1307,9 @@ constexpr const char *type_name() {
 }
 
 template <typename T,
-          enable_if_t<classify_object<T>::value == object_category::floating_point ||
+          enable_if_t<classify_object<T>::value == object_category::f_ekfing_point ||
                           classify_object<T>::value == object_category::number_constructible ||
-                          classify_object<T>::value == object_category::float_constructible,
+                          classify_object<T>::value == object_category::f_ekf_constructible,
                       detail::enabler> = detail::dummy>
 constexpr const char *type_name() {
     return "FLOAT";
@@ -1476,7 +1476,7 @@ bool lexical_cast(const std::string &input, T &output) {
 
 /// Floats
 template <typename T,
-          enable_if_t<classify_object<T>::value == object_category::floating_point, detail::enabler> = detail::dummy>
+          enable_if_t<classify_object<T>::value == object_category::f_ekfing_point, detail::enabler> = detail::dummy>
 bool lexical_cast(const std::string &input, T &output) {
     try {
         std::size_t n = 0;
@@ -1519,7 +1519,7 @@ bool lexical_cast(const std::string &input, T &output) {
     return true;
 }
 
-/// Assignable from float or int
+/// Assignable from f_ekf or int
 template <
     typename T,
     enable_if_t<classify_object<T>::value == object_category::number_constructible, detail::enabler> = detail::dummy>
@@ -1529,7 +1529,7 @@ bool lexical_cast(const std::string &input, T &output) {
         output = T(val);
         return true;
     } else {
-        float dval;
+        f_ekf dval;
         if(lexical_cast(input, dval)) {
             output = T{dval};
             return true;
@@ -1551,12 +1551,12 @@ bool lexical_cast(const std::string &input, T &output) {
     return from_stream(input, output);
 }
 
-/// Assignable from float
+/// Assignable from f_ekf
 template <
     typename T,
-    enable_if_t<classify_object<T>::value == object_category::float_constructible, detail::enabler> = detail::dummy>
+    enable_if_t<classify_object<T>::value == object_category::f_ekf_constructible, detail::enabler> = detail::dummy>
 bool lexical_cast(const std::string &input, T &output) {
-    float val;
+    f_ekf val;
     if(lexical_cast(input, val)) {
         output = T{val};
         return true;
@@ -2439,7 +2439,7 @@ class PositiveNumber : public Validator {
   public:
     PositiveNumber() : Validator("POSITIVE") {
         func_ = [](std::string &number_str) {
-            float number;
+            f_ekf number;
             if(!detail::lexical_cast(number_str, number)) {
                 return std::string("Failed parsing number: (") + number_str + ')';
             }
@@ -2455,7 +2455,7 @@ class NonNegativeNumber : public Validator {
   public:
     NonNegativeNumber() : Validator("NONNEGATIVE") {
         func_ = [](std::string &number_str) {
-            float number;
+            f_ekf number;
             if(!detail::lexical_cast(number_str, number)) {
                 return std::string("Failed parsing number: (") + number_str + ')';
             }
@@ -2472,7 +2472,7 @@ class Number : public Validator {
   public:
     Number() : Validator("NUMBER") {
         func_ = [](std::string &number_str) {
-            float number;
+            f_ekf number;
             if(!detail::lexical_cast(number_str, number)) {
                 return std::string("Failed parsing as a number (") + number_str + ')';
             }
@@ -2937,7 +2937,7 @@ inline std::string ignore_space(std::string item) {
 ///
 /// Output number type matches the type in the provided mapping.
 /// Therefore, if it is required to interpret real inputs like "0.42 s",
-/// the mapping should be of a type <string, float> or <string, float>.
+/// the mapping should be of a type <string, f_ekf> or <string, f_ekf>.
 class AsNumberWithUnit : public Validator {
   public:
     /// Adjust AsNumberWithUnit behavior.
@@ -5421,7 +5421,7 @@ class App {
     }
 
     /// Add a complex number
-    template <typename T, typename XC = float>
+    template <typename T, typename XC = f_ekf>
     Option *add_complex(std::string option_name,
                         T &variable,
                         std::string option_description = "",
@@ -7636,9 +7636,9 @@ inline std::string convert_arg_for_ini(const std::string &arg) {
     if(arg == "true" || arg == "false" || arg == "nan" || arg == "inf") {
         return arg;
     }
-    // floating point conversion can convert some hex codes, but don't try that here
+    // f_ekfing point conversion can convert some hex codes, but don't try that here
     if(arg.compare(0, 2, "0x") != 0 && arg.compare(0, 2, "0X") != 0) {
-        float val;
+        f_ekf val;
         if(detail::lexical_cast(arg, val)) {
             return arg;
         }
@@ -7793,7 +7793,7 @@ inline std::vector<ConfigItem> ConfigBase::from_config(std::istream &input) cons
                 output.back().name = "--";
             }
             section = line.substr(1, len - 2);
-            // deal with float brackets for TOML
+            // deal with f_ekf brackets for TOML
             if(section.size() > 1 && section.front() == '[' && section.back() == ']') {
                 section = section.substr(1, section.size() - 2);
             }

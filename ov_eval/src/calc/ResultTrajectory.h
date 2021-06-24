@@ -113,7 +113,7 @@ namespace ov_eval {
          * @param segment_lengths What segment lengths we want to calculate for
          * @param error_rpe Map of segment lengths => errors for that length (orientation and position)
          */
-        void calculate_rpe(const std::vector<float> &segment_lengths, std::map<float,std::pair<Statistics,Statistics>> &error_rpe);
+        void calculate_rpe(const std::vector<f_ekf> &segment_lengths, std::map<f_ekf,std::pair<Statistics,Statistics>> &error_rpe);
 
 
         /**
@@ -159,12 +159,12 @@ namespace ov_eval {
 
         // Trajectory data (loaded from file and timestamp intersected)
         std::vector<f_ts> est_times, gt_times;
-        std::vector<Eigen::Matrix<float,7,1>> est_poses, gt_poses;
-        std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
+        std::vector<Eigen::Matrix<f_ekf,7,1>> est_poses, gt_poses;
+        std::vector<Eigen::Matrix<f_ekf,3,3>> est_covori, est_covpos, gt_covori, gt_covpos;
 
         // Aligned trajectories
-        std::vector<Eigen::Matrix<float,7,1>> est_poses_aignedtoGT;
-        std::vector<Eigen::Matrix<float,7,1>> gt_poses_aignedtoEST;
+        std::vector<Eigen::Matrix<f_ekf,7,1>> est_poses_aignedtoGT;
+        std::vector<Eigen::Matrix<f_ekf,7,1>> gt_poses_aignedtoEST;
 
         /**
          * @brief Gets the indices at the end of subtractories of a given length when starting at each index.
@@ -174,7 +174,7 @@ namespace ov_eval {
          * @param max_dist_diff Maximum error between current trajectory length and the desired
          * @return End indices for each subtrajectory
          */
-        std::vector<int> compute_comparison_indices_length(std::vector<float> &distances, float distance, float max_dist_diff) {
+        std::vector<int> compute_comparison_indices_length(std::vector<f_ekf> &distances, f_ekf distance, f_ekf max_dist_diff) {
 
             // Vector of end ids for our pose indexes
             std::vector<int> comparisons;
@@ -184,13 +184,13 @@ namespace ov_eval {
 
                 // Loop through and find the pose that minimized the difference between
                 // The desired trajectory distance and our current trajectory distance
-                float distance_startpose = distances.at(idx);
+                f_ekf distance_startpose = distances.at(idx);
                 int best_idx = -1;
-                float best_error = max_dist_diff;
+                f_ekf best_error = max_dist_diff;
                 for (size_t i = idx; i < distances.size(); i++) {
-                    if (std::abs(distances.at(i) - (distance_startpose + distance)) < best_error) {
+                    if (flx::abs(distances.at(i) - (distance_startpose + distance)) < best_error) {
                         best_idx = i;
-                        best_error = std::abs(distances.at(i) - (distance_startpose + distance));
+                        best_error = flx::abs(distances.at(i) - (distance_startpose + distance));
                     }
                 }
 

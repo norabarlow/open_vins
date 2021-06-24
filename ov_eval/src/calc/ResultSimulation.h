@@ -103,8 +103,8 @@ namespace ov_eval {
     protected:
 
         // Trajectory data (loaded from file and timestamp intersected)
-        std::vector<Eigen::VectorXf> est_state, gt_state;
-        std::vector<Eigen::VectorXf> state_cov;
+        std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> est_state, gt_state;
+        std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> state_cov;
 
 
 #ifdef HAVE_PYTHONLIBS

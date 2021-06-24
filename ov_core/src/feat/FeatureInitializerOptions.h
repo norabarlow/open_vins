@@ -40,46 +40,46 @@ namespace ov_core {
         int max_runs = 5;
 
         /// Init lambda for Levenberg-Marquardt optimization
-        float init_lamda = 1e-3;
+        f_ekf init_lamda = 1e-3;
 
         /// Max lambda for Levenberg-Marquardt optimization
-        float max_lamda = 1e10;
+        f_ekf max_lamda = 1e10;
 
         /// Cutoff for dx increment to consider as converged
-        float min_dx = 1e-6;
+        f_ekf min_dx = 1e-6;
 
         /// Cutoff for cost decrement to consider as converged
-        float min_dcost = 1e-6;
+        f_ekf min_dcost = 1e-6;
 
         /// Multiplier to increase/decrease lambda
-        float lam_mult = 10;
+        f_ekf lam_mult = 10;
 
         /// Minimum distance to accept triangulated features
-        float min_dist = 0.10;
+        f_ekf min_dist = 0.10;
 
         /// Minimum distance to accept triangulated features
-        float max_dist = 60;
+        f_ekf max_dist = 60;
 
         /// Max baseline ratio to accept triangulated features
-        float max_baseline = 40;
+        f_ekf max_baseline = 40;
 
         /// Max condition number of linear triangulation matrix accept triangulated features
-        float max_cond_number = 10000;
+        f_ekf max_cond_number = 10000;
 
         /// Nice print function of what parameters we have loaded
         void print() {
             printf("\t- triangulate_1d: %d\n", triangulate_1d);
             printf("\t- refine_features: %d\n", refine_features);
             printf("\t- max_runs: %d\n", max_runs);
-            printf("\t- init_lamda: %.3f\n", init_lamda);
-            printf("\t- max_lamda: %.3f\n", max_lamda);
-            printf("\t- min_dx: %.7f\n", min_dx);
-            printf("\t- min_dcost: %.7f\n", min_dcost);
-            printf("\t- lam_mult: %.3f\n", lam_mult);
-            printf("\t- min_dist: %.3f\n", min_dist);
-            printf("\t- max_dist: %.3f\n", max_dist);
-            printf("\t- max_baseline: %.3f\n", max_baseline);
-            printf("\t- max_cond_number: %.3f\n", max_cond_number);
+            printf("\t- init_lamda: %.3f\n", double(init_lamda));
+            printf("\t- max_lamda: %.3f\n", double(max_lamda));
+            printf("\t- min_dx: %.7f\n", double(min_dx));
+            printf("\t- min_dcost: %.7f\n", double(min_dcost));
+            printf("\t- lam_mult: %.3f\n", double(lam_mult));
+            printf("\t- min_dist: %.3f\n", double(min_dist));
+            printf("\t- max_dist: %.3f\n", double(max_dist));
+            printf("\t- max_baseline: %.3f\n", double(max_baseline));
+            printf("\t- max_cond_number: %.3f\n", double(max_cond_number));
         }
 
     };

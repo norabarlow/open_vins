@@ -35,15 +35,15 @@ namespace ov_msckf {
         int chi2_multipler = 5;
 
         /// Noise sigma for our raw pixel measurements
-        float sigma_pix = 1;
+        f_ekf sigma_pix = 1;
 
         /// Covariance for our raw pixel measurements
-        float sigma_pix_sq = 1;
+        f_ekf sigma_pix_sq = 1;
 
         /// Nice print function of what parameters we have loaded
         void print() {
             printf("\t- chi2_multipler: %d\n", chi2_multipler);
-            printf("\t- sigma_pix: %.2f\n", sigma_pix);
+            printf("\t- sigma_pix: %.2f\n", double(sigma_pix));
         }
 
     };

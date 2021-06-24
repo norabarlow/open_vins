@@ -87,7 +87,7 @@ namespace ov_msckf {
          * @param imustate State in the MSCKF ordering: [time(sec),q_GtoI,p_IinG,v_IinG,b_gyro,b_accel]
          * @return True if we have a state
          */
-        bool get_state(f_ts desired_time, Eigen::Matrix<float,17,1> &imustate);
+        bool get_state(f_ts desired_time, Eigen::Matrix<f_ekf,17,1> &imustate);
 
         /**
          * @brief Gets the next inertial reading if we have one.
@@ -96,7 +96,7 @@ namespace ov_msckf {
          * @param am Linear velocity in the inertial frame
          * @return True if we have a measurement
          */
-        bool get_next_imu(f_ts &time_imu, Eigen::Vector3f &wm, Eigen::Vector3f &am);
+        bool get_next_imu(f_ts &time_imu, Eigen::Matrix<f_ekf,3,1> &wm, Eigen::Matrix<f_ekf,3,1> &am);
 
 
         /**
@@ -106,11 +106,11 @@ namespace ov_msckf {
          * @param feats Noisy uv measurements and ids for the returned time
          * @return True if we have a measurement
          */
-        bool get_next_cam(f_ts &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
+        bool get_next_cam(f_ts &time_cam, std::vector<int> &camids, std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> &feats);
 
 
         /// Returns the true 3f map of features
-        std::unordered_map<size_t,Eigen::Vector3f> get_map() {
+        std::unordered_map<size_t,Eigen::Matrix<f_ekf,3,1>> get_map() {
             return featmap;
         }
 
@@ -137,7 +137,7 @@ namespace ov_msckf {
          * @param feats Our set of 3f features
          * @return True distorted raw image measurements and their ids for the specified camera
          */
-        std::vector<std::pair<size_t,Eigen::VectorXf>> project_pointcloud(const Eigen::Matrix3f &R_GtoI, const Eigen::Vector3f &p_IinG, int camid, const std::unordered_map<size_t,Eigen::Vector3f> &feats);
+        std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>> project_pointcloud(const Eigen::Matrix<f_ekf,3,3> &R_GtoI, const Eigen::Matrix<f_ekf,3,1> &p_IinG, int camid, const std::unordered_map<size_t,Eigen::Matrix<f_ekf,3,1>> &feats);
 
 
         /**
@@ -148,7 +148,7 @@ namespace ov_msckf {
          * @param[out] feats Map we will append new features to
          * @param numpts Number of points we should generate
          */
-        void generate_points(const Eigen::Matrix3f &R_GtoI, const Eigen::Vector3f &p_IinG, int camid, std::unordered_map<size_t,Eigen::Vector3f> &feats, int numpts);
+        void generate_points(const Eigen::Matrix<f_ekf,3,3> &R_GtoI, const Eigen::Matrix<f_ekf,3,1> &p_IinG, int camid, std::unordered_map<size_t,Eigen::Matrix<f_ekf,3,1>> &feats, int numpts);
 
         //===================================================================
         // Configuration variables
@@ -162,14 +162,14 @@ namespace ov_msckf {
         //===================================================================
 
         /// Our loaded trajectory data (timestamp(s), q_GtoI, p_IinG)
-        std::vector<Eigen::VectorXf> traj_data;
+        std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> traj_data;
 
         /// Our b-spline trajectory
         BsplineSE3 spline;
 
         /// Our map of 3f features
         size_t id_map = 0;
-        std::unordered_map<size_t,Eigen::Vector3f> featmap;
+        std::unordered_map<size_t,Eigen::Matrix<f_ekf,3,1>> featmap;
 
         /// Mersenne twister PRNG for measurements (IMU)
         std::mt19937 gen_meas_imu;
@@ -200,15 +200,15 @@ namespace ov_msckf {
         f_ts timestamp_last_cam;
 
         /// Our running acceleration bias
-        Eigen::Vector3f true_bias_accel = Eigen::Vector3f::Zero();
+        Eigen::Matrix<f_ekf,3,1> true_bias_accel = Eigen::Matrix<f_ekf,3,1>::Zero();
 
         /// Our running gyroscope bias
-        Eigen::Vector3f true_bias_gyro = Eigen::Vector3f::Zero();
+        Eigen::Matrix<f_ekf,3,1> true_bias_gyro = Eigen::Matrix<f_ekf,3,1>::Zero();
 
         // Our history of true biases
         std::vector<f_ts> hist_true_bias_time;
-        std::vector<Eigen::Vector3f> hist_true_bias_accel;
-        std::vector<Eigen::Vector3f> hist_true_bias_gyro;
+        std::vector<Eigen::Matrix<f_ekf,3,1>> hist_true_bias_accel;
+        std::vector<Eigen::Matrix<f_ekf,3,1>> hist_true_bias_gyro;
 
 
     };

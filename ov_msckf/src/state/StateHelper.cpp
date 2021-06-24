@@ -28,7 +28,7 @@ using namespace ov_msckf;
 
 void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &order_NEW,
                                  const std::vector<std::shared_ptr<Type>> &order_OLD,
-                                 const Eigen::MatrixXf &Phi, const Eigen::MatrixXf &Q) {
+                                 const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &Phi, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &Q) {
 
     // We need at least one old and new variable
     if (order_NEW.empty() || order_OLD.empty()) {
@@ -69,7 +69,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
 
     // Loop through all our old states and get the state transition times it
     // Cov_PhiT = [ Pxx ] [ Phi' ]'
-    Eigen::MatrixXf Cov_PhiT = Eigen::MatrixXf::Zero(state->_Cov.rows(), Phi.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Cov_PhiT = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(state->_Cov.rows(), Phi.rows());
     for (size_t i=0; i<order_OLD.size(); i++) {
         std::shared_ptr<Type> var = order_OLD.at(i);
         Cov_PhiT.noalias() += state->_Cov.block(0, var->id(), state->_Cov.rows(), var->size())
@@ -78,7 +78,7 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
     }
 
     // Get Phi_NEW*Covariance*Phi_NEW^t + Q
-    Eigen::MatrixXf Phi_Cov_PhiT = Q.selfadjointView<Eigen::Upper>();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Phi_Cov_PhiT = Q.selfadjointView<Eigen::Upper>();
     for (size_t i=0; i<order_OLD.size(); i++) {
         std::shared_ptr<Type> var = order_OLD.at(i);
         Phi_Cov_PhiT.noalias() += Phi.block(0, Phi_id[i], Phi.rows(), var->size())
@@ -94,11 +94,11 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
     state->_Cov.block(start_id,start_id,phi_size,phi_size) = Phi_Cov_PhiT;
 
     // We should check if we are not positive semi-definitate (i.e. negative diagionals is not s.p.d)
-    Eigen::VectorXf diags = state->_Cov.diagonal();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> diags = state->_Cov.diagonal();
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
-            printf(RED "StateHelper::EKFPropagation() - diagonal at %d is %.2f\n" RESET,i,diags(i));
+            printf(RED "StateHelper::EKFPropagation() - diagonal at %d is %.2f\n" RESET,i,double(diags(i)));
             found_neg = true;
         }
     }
@@ -108,14 +108,14 @@ void StateHelper::EKFPropagation(std::shared_ptr<State> state, const std::vector
 
 
 void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &H_order,
-                            const Eigen::MatrixXf &H, const Eigen::VectorXf &res, const Eigen::MatrixXf &R) {
+                            const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H, const Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R) {
 
     //==========================================================
     //==========================================================
     // Part of the Kalman Gain K = (P*H^T)*S^{-1} = M*S^{-1}
     assert(res.rows() == R.rows());
     assert(H.rows() == res.rows());
-    Eigen::MatrixXf M_a = Eigen::MatrixXf::Zero(state->_Cov.rows(), res.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> M_a = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(state->_Cov.rows(), res.rows());
 
     // Get the location in small jacobian for each measuring variable
     int current_it = 0;
@@ -130,7 +130,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     // For each active variable find its M = P*H^T
     for (const auto &var: state->_variables) {
         // Sum up effect of each subjacobian = K_i= \sum_m (P_im Hm^T)
-        Eigen::MatrixXf M_i = Eigen::MatrixXf::Zero(var->size(), res.rows());
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> M_i = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(var->size(), res.rows());
         for (size_t i = 0; i < H_order.size(); i++) {
             std::shared_ptr<Type> meas_var = H_order[i];
             M_i.noalias() += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
@@ -142,19 +142,19 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     //==========================================================
     //==========================================================
     // Get covariance of the involved terms
-    Eigen::MatrixXf P_small = StateHelper::get_marginal_covariance(state, H_order);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> P_small = StateHelper::get_marginal_covariance(state, H_order);
 
     // Residual covariance S = H*Cov*H' + R
-    Eigen::MatrixXf S(R.rows(), R.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> S(R.rows(), R.rows());
     S.triangularView<Eigen::Upper>() = H * P_small * H.transpose();
     S.triangularView<Eigen::Upper>() += R;
-    //Eigen::MatrixXf S = H * P_small * H.transpose() + R;
+    //Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> S = H * P_small * H.transpose() + R;
 
     // Invert our S (should we use a more stable method here??)
-    Eigen::MatrixXf Sinv = Eigen::MatrixXf::Identity(R.rows(), R.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Sinv = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(R.rows(), R.rows());
     S.selfadjointView<Eigen::Upper>().llt().solveInPlace(Sinv);
-    Eigen::MatrixXf K = M_a * Sinv.selfadjointView<Eigen::Upper>();
-    //Eigen::MatrixXf K = M_a * S.inverse();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> K = M_a * Sinv.selfadjointView<Eigen::Upper>();
+    //Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> K = M_a * S.inverse();
 
     // Update Covariance
     state->_Cov.triangularView<Eigen::Upper>() -= K * M_a.transpose();
@@ -163,18 +163,18 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
     //Cov = 0.5*(Cov+Cov.transpose());
 
     // We should check if we are not positive semi-definitate (i.e. negative diagionals is not s.p.d)
-    Eigen::VectorXf diags = state->_Cov.diagonal();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> diags = state->_Cov.diagonal();
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
-            printf(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET,i,diags(i));
+            printf(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET,i,double(diags(i)));
             found_neg = true;
         }
     }
     assert(!found_neg);
 
     // Calculate our delta and update all our active states
-    Eigen::VectorXf dx = K*res;
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> dx = K*res;
     for (size_t i = 0; i < state->_variables.size(); i++) {
         state->_variables.at(i)->update(dx.block(state->_variables.at(i)->id(), 0, state->_variables.at(i)->size(), 1));
     }
@@ -182,7 +182,7 @@ void StateHelper::EKFUpdate(std::shared_ptr<State> state, const std::vector<std:
 }
 
 
-void StateHelper::fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4f &q_GtoI) {
+void StateHelper::fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Matrix<f_ekf,4,1> &q_GtoI) {
 
     // Fix our global yaw and position
     state->_Cov(state->_imu->q()->id()+2, state->_imu->q()->id()+2) = 0.0;
@@ -190,14 +190,14 @@ void StateHelper::fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Ei
 
     // Propagate into the current local IMU frame
     // R_GtoI = R_GtoI*R_GtoG -> H = R_GtoI
-    Eigen::Matrix3f R_GtoI = quat_2_Rot(q_GtoI);
+    Eigen::Matrix<f_ekf,3,3> R_GtoI = quat_2_Rot(q_GtoI);
     state->_Cov.block(state->_imu->q()->id(), state->_imu->q()->id(), 3, 3) =
             R_GtoI*state->_Cov.block(state->_imu->q()->id(), state->_imu->q()->id(), 3, 3)*R_GtoI.transpose();
 
 }
 
 
-Eigen::MatrixXf StateHelper::get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables) {
+Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> StateHelper::get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables) {
 
     // Calculate the marginal covariance size we need to make our matrix
     int cov_size = 0;
@@ -206,7 +206,7 @@ Eigen::MatrixXf StateHelper::get_marginal_covariance(std::shared_ptr<State> stat
     }
 
     // Construct our return covariance
-    Eigen::MatrixXf Small_cov = Eigen::MatrixXf::Zero(cov_size, cov_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Small_cov = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(cov_size, cov_size);
 
     // For each variable, lets copy over all other variable cross terms
     // Note: this copies over itself to when i_index=k_index
@@ -228,13 +228,13 @@ Eigen::MatrixXf StateHelper::get_marginal_covariance(std::shared_ptr<State> stat
 
 
 
-Eigen::MatrixXf StateHelper::get_full_covariance(std::shared_ptr<State> state) {
+Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> StateHelper::get_full_covariance(std::shared_ptr<State> state) {
 
     // Size of the covariance is the active
     int cov_size = (int)state->_Cov.rows();
 
     // Construct our return covariance
-    Eigen::MatrixXf full_cov = Eigen::MatrixXf::Zero(cov_size, cov_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> full_cov = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(cov_size, cov_size);
 
     // Copy in the active state elements
     full_cov.block(0,0,state->_Cov.rows(),state->_Cov.rows()) = state->_Cov;
@@ -273,7 +273,7 @@ void StateHelper::marginalize(std::shared_ptr<State> state, std::shared_ptr<Type
     int marg_id = marg->id();
     int x2_size = (int)state->_Cov.rows() - marg_id - marg_size;
 
-    Eigen::MatrixXf Cov_new(state->_Cov.rows() - marg_size, state->_Cov.rows() - marg_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Cov_new(state->_Cov.rows() - marg_size, state->_Cov.rows() - marg_size);
 
     //P_(x_1,x_1)
     Cov_new.block(0, 0, marg_id, marg_id) = state->_Cov.block(0, 0, marg_id, marg_id);
@@ -328,7 +328,7 @@ std::shared_ptr<Type> StateHelper::clone(std::shared_ptr<State> state, std::shar
     int new_loc = (int)state->_Cov.rows();
 
     // Resize both our covariance to the new size
-    state->_Cov.conservativeResizeLike(Eigen::MatrixXf::Zero(old_size + total_size, old_size + total_size));
+    state->_Cov.conservativeResizeLike(Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(old_size + total_size, old_size + total_size));
 
     // What is the new state, and variable we inserted
     const std::vector<std::shared_ptr<Type>> new_variables = state->_variables;
@@ -378,7 +378,7 @@ std::shared_ptr<Type> StateHelper::clone(std::shared_ptr<State> state, std::shar
 
 
 bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                             Eigen::MatrixXf &H_R, Eigen::MatrixXf &H_L, Eigen::MatrixXf &R, Eigen::VectorXf &res, float chi_2_mult) {
+                             Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_R, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_L, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R, Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res, f_ekf chi_2_mult) {
 
     // Check that this new variable is not already initialized
     if (std::find(state->_variables.begin(), state->_variables.end(), new_variable) != state->_variables.end()) {
@@ -395,11 +395,11 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
                 printf(RED "StateHelper::initialize() - Your noise is not isotropic!\n" RESET);
-                printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, double(R(r,c)), double(R(0,0)));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
                 printf(RED "StateHelper::initialize() - Your noise is not diagonal!\n" RESET);
-                printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, double(R(r,c)), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }
@@ -412,7 +412,7 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
     size_t new_var_size = new_variable->size();
     assert((int)new_var_size == H_L.cols());
 
-    Eigen::JacobiRotation<float> tempHo_GR;
+    Eigen::JacobiRotation<f_ekf> tempHo_GR;
     for (int n = 0; n < H_L.cols(); ++n) {
         for (int m = (int) H_L.rows() - 1; m > n; m--) {
             // Givens matrix G
@@ -428,29 +428,29 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
 
     // Separate into initializing and updating portions
     // 1. Invertible initializing system
-    Eigen::MatrixXf Hxinit = H_R.block(0, 0, new_var_size, H_R.cols());
-    Eigen::MatrixXf H_finit = H_L.block(0, 0, new_var_size, new_var_size);
-    Eigen::VectorXf resinit = res.block(0, 0, new_var_size, 1);
-    Eigen::MatrixXf Rinit = R.block(0, 0, new_var_size, new_var_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Hxinit = H_R.block(0, 0, new_var_size, H_R.cols());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> H_finit = H_L.block(0, 0, new_var_size, new_var_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> resinit = res.block(0, 0, new_var_size, 1);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Rinit = R.block(0, 0, new_var_size, new_var_size);
 
     // 2. Nullspace projected updating system
-    Eigen::MatrixXf Hup = H_R.block(new_var_size, 0, H_R.rows() - new_var_size, H_R.cols());
-    Eigen::VectorXf resup = res.block(new_var_size, 0, res.rows() - new_var_size, 1);
-    Eigen::MatrixXf Rup = R.block(new_var_size, new_var_size, R.rows() - new_var_size, R.rows() - new_var_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Hup = H_R.block(new_var_size, 0, H_R.rows() - new_var_size, H_R.cols());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> resup = res.block(new_var_size, 0, res.rows() - new_var_size, 1);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Rup = R.block(new_var_size, new_var_size, R.rows() - new_var_size, R.rows() - new_var_size);
 
     //==========================================================
     //==========================================================
 
     // Do mahalanobis distance testing
-    Eigen::MatrixXf P_up = get_marginal_covariance(state, H_order);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> P_up = get_marginal_covariance(state, H_order);
     assert(Rup.rows() == Hup.rows());
     assert(Hup.cols() == P_up.cols());
-    Eigen::MatrixXf S = Hup*P_up*Hup.transpose()+Rup;
-    float chi2 = resup.dot(S.llt().solve(resup));
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> S = Hup*P_up*Hup.transpose()+Rup;
+    f_ekf chi2 = resup.dot(S.llt().solve(resup));
 
     // Get what our threshold should be
     boost::math::chi_squared chi_squared_dist(res.rows());
-    float chi2_check = boost::math::quantile(chi_squared_dist, 0.95);
+    f_ekf chi2_check = boost::math::quantile(chi_squared_dist, 0.95);
     if (chi2 > chi_2_mult*chi2_check) {
         return false;
     }
@@ -470,7 +470,7 @@ bool StateHelper::initialize(std::shared_ptr<State> state, std::shared_ptr<Type>
 
 
 void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                                        const Eigen::MatrixXf &H_R, const Eigen::MatrixXf &H_L, const Eigen::MatrixXf &R, const Eigen::VectorXf &res) {
+                                        const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_R, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_L, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R, const Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res) {
 
     // Check that this new variable is not already initialized
     if (std::find(state->_variables.begin(), state->_variables.end(), new_variable) != state->_variables.end()) {
@@ -487,11 +487,11 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
                 printf(RED "StateHelper::initialize_invertible() - Your noise is not isotropic!\n" RESET);
-                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, double(R(r,c)), double(R(0,0)));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
                 printf(RED "StateHelper::initialize_invertible() - Your noise is not diagonal!\n" RESET);
-                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, double(R(r,c)), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }
@@ -503,7 +503,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     assert(res.rows() == R.rows());
     assert(H_L.rows() == res.rows());
     assert(H_L.rows() == H_R.rows());
-    Eigen::MatrixXf M_a = Eigen::MatrixXf::Zero(state->_Cov.rows(), res.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> M_a = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(state->_Cov.rows(), res.rows());
 
     // Get the location in small jacobian for each measuring variable
     int current_it = 0;
@@ -518,7 +518,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     // For each active variable find its M = P*H^T
     for (const auto &var: state->_variables) {
         // Sum up effect of each subjacobian= K_i= \sum_m (P_im Hm^T)
-        Eigen::MatrixXf M_i = Eigen::MatrixXf::Zero(var->size(), res.rows());
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> M_i = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(var->size(), res.rows());
         for (size_t i = 0; i < H_order.size(); i++) {
             std::shared_ptr<Type> meas_var = H_order.at(i);
             M_i += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
@@ -530,22 +530,22 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
     //==========================================================
     //==========================================================
     // Get covariance of this small jacobian
-    Eigen::MatrixXf P_small = StateHelper::get_marginal_covariance(state, H_order);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> P_small = StateHelper::get_marginal_covariance(state, H_order);
 
     // M = H_R*Cov*H_R' + R
-    Eigen::MatrixXf M(H_R.rows(), H_R.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> M(H_R.rows(), H_R.rows());
     M.triangularView<Eigen::Upper>() = H_R * P_small * H_R.transpose();
     M.triangularView<Eigen::Upper>() += R;
 
     // Covariance of the variable/landmark that will be initialized
     assert(H_L.rows()==H_L.cols());
     assert(H_L.rows() == new_variable->size());
-    Eigen::MatrixXf H_Linv = H_L.inverse();
-    Eigen::MatrixXf P_LL = H_Linv * M.selfadjointView<Eigen::Upper>() * H_Linv.transpose();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> H_Linv = H_L.inverse();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> P_LL = H_Linv * M.selfadjointView<Eigen::Upper>() * H_Linv.transpose();
 
     // Augment the covariance matrix
     size_t oldSize = state->_Cov.rows();
-    state->_Cov.conservativeResizeLike(Eigen::MatrixXf::Zero(oldSize + new_variable->size(), oldSize + new_variable->size()));
+    state->_Cov.conservativeResizeLike(Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(oldSize + new_variable->size(), oldSize + new_variable->size()));
     state->_Cov.block(0, oldSize, oldSize, new_variable->size()).noalias() = -M_a * H_Linv.transpose();
     state->_Cov.block(oldSize, 0, new_variable->size(), oldSize) = state->_Cov.block(0, oldSize, oldSize, new_variable->size()).transpose();
     state->_Cov.block(oldSize, oldSize, new_variable->size(), new_variable->size()) = P_LL;
@@ -562,7 +562,7 @@ void StateHelper::initialize_invertible(std::shared_ptr<State> state, std::share
 }
 
 
-void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<float, 3, 1> last_w) {
+void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<f_ekf, 3, 1> last_w) {
 
     // We can't insert a clone that occured at the same timestamp!
     if (state->_clones_IMU.find(state->_timestamp) != state->_clones_IMU.end()) {
@@ -589,7 +589,7 @@ void StateHelper::augment_clone(std::shared_ptr<State> state, Eigen::Matrix<floa
     // http://journals.sagepub.com/doi/pdf/10.1177/0278364913515286
     if (state->_options.do_calib_camera_timeoffset) {
         // Jacobian to augment by
-        Eigen::Matrix<float, 6, 1> dnc_dt = Eigen::MatrixXf::Zero(6, 1);
+        Eigen::Matrix<f_ekf, 6, 1> dnc_dt = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(6, 1);
         dnc_dt.block(0, 0, 3, 1) = last_w;
         dnc_dt.block(3, 0, 3, 1) = state->_imu->vel();
         // Augment covariance with time offset Jacobian

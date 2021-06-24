@@ -83,19 +83,19 @@ namespace ov_type {
          *
          * @param dx Perturbation used to update the variable through a defined "boxplus" operation
          */
-        virtual void update(const Eigen::VectorXf& dx) = 0;
+        virtual void update(const Eigen::Matrix<f_ekf,Eigen::Dynamic,1>& dx) = 0;
 
         /**
          * @brief Access variable's estimate
          */
-        virtual const Eigen::MatrixXf& value() const {
+        virtual const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& value() const {
             return _value;
         }
 
         /**
          * @brief Access variable's first-estimate
          */
-        virtual const Eigen::MatrixXf& fej() const {
+        virtual const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& fej() const {
             return _fej;
         }
 
@@ -103,7 +103,7 @@ namespace ov_type {
          * @brief Overwrite value of state's estimate
          * @param new_value New value that will overwrite state's value
          */
-        virtual void set_value(const Eigen::MatrixXf& new_value) {
+        virtual void set_value(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) {
             assert(_value.rows()==new_value.rows());
             assert(_value.cols()==new_value.cols());
             _value = new_value;
@@ -113,7 +113,7 @@ namespace ov_type {
          * @brief Overwrite value of first-estimate
          * @param new_value New value that will overwrite state's fej
          */
-        virtual void set_fej(const Eigen::MatrixXf& new_value) {
+        virtual void set_fej(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) {
             assert(_fej.rows()==new_value.rows());
             assert(_fej.cols()==new_value.cols());
             _fej = new_value;
@@ -140,10 +140,10 @@ namespace ov_type {
     protected:
 
         /// First-estimate
-        Eigen::MatrixXf _fej;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> _fej;
 
         /// Current best estimate
-        Eigen::MatrixXf _value;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> _value;
 
         /// Location of error state in covariance
         int _id = -1;

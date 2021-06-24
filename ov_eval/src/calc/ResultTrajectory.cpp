@@ -51,21 +51,21 @@ ResultTrajectory::ResultTrajectory(std::string path_est, std::string path_gt, st
     }
 
     // Perform alignment of the trajectories
-    Eigen::Matrix3f R_ESTtoGT, R_GTtoEST;
-    Eigen::Vector3f t_ESTinGT, t_GTinEST;
-    float s_ESTtoGT, s_GTtoEST;
+    Eigen::Matrix<f_ekf,3,3> R_ESTtoGT, R_GTtoEST;
+    Eigen::Matrix<f_ekf,3,1> t_ESTinGT, t_GTinEST;
+    f_ekf s_ESTtoGT, s_GTtoEST;
     AlignTrajectory::align_trajectory(est_poses, gt_poses, R_ESTtoGT, t_ESTinGT, s_ESTtoGT, alignment_method);
     AlignTrajectory::align_trajectory(gt_poses, est_poses, R_GTtoEST, t_GTinEST, s_GTtoEST, alignment_method);
 
     // Debug print to the user
-    Eigen::Vector4f q_ESTtoGT = Math::rot_2_quat(R_ESTtoGT);
-    Eigen::Vector4f q_GTtoEST = Math::rot_2_quat(R_GTtoEST);
-    printf("[TRAJ]: q_ESTtoGT = %.3f, %.3f, %.3f, %.3f | p_ESTinGT = %.3f, %.3f, %.3f | s = %.2f\n",q_ESTtoGT(0),q_ESTtoGT(1),q_ESTtoGT(2),q_ESTtoGT(3),t_ESTinGT(0),t_ESTinGT(1),t_ESTinGT(2),s_ESTtoGT);
+    Eigen::Matrix<f_ekf,4,1> q_ESTtoGT = Math::rot_2_quat(R_ESTtoGT);
+    Eigen::Matrix<f_ekf,4,1> q_GTtoEST = Math::rot_2_quat(R_GTtoEST);
+    printf("[TRAJ]: q_ESTtoGT = %.3f, %.3f, %.3f, %.3f | p_ESTinGT = %.3f, %.3f, %.3f | s = %.2f\n",float(q_ESTtoGT(0)),float(q_ESTtoGT(1)),float(q_ESTtoGT(2)),float(q_ESTtoGT(3)),float(t_ESTinGT(0)),float(t_ESTinGT(1)),float(t_ESTinGT(2)),float(s_ESTtoGT));
     //printf("[TRAJ]: q_GTtoEST = %.3f, %.3f, %.3f, %.3f | p_GTinEST = %.3f, %.3f, %.3f | s = %.2f\n",q_GTtoEST(0),q_GTtoEST(1),q_GTtoEST(2),q_GTtoEST(3),t_GTinEST(0),t_GTinEST(1),t_GTinEST(2),s_GTtoEST);
 
     // Finally lets calculate the aligned trajectories
     for(size_t i=0; i<gt_times.size(); i++) {
-        Eigen::Matrix<float,7,1> pose_ESTinGT, pose_GTinEST;
+        Eigen::Matrix<f_ekf,7,1> pose_ESTinGT, pose_GTinEST;
         pose_ESTinGT.block(0,0,3,1) = s_ESTtoGT*R_ESTtoGT*est_poses.at(i).block(0,0,3,1)+t_ESTinGT;
         pose_ESTinGT.block(3,0,4,1) = Math::quat_multiply(est_poses.at(i).block(3,0,4,1),Math::Inv(q_ESTtoGT));
         pose_GTinEST.block(0,0,3,1) = s_GTtoEST*R_GTtoEST*gt_poses.at(i).block(0,0,3,1)+t_GTinEST;
@@ -89,11 +89,11 @@ void ResultTrajectory::calculate_ate(Statistics &error_ori, Statistics &error_po
     for(size_t i=0; i<est_poses_aignedtoGT.size(); i++) {
 
         // Calculate orientation error
-        Eigen::Matrix3f e_R = Math::quat_2_Rot(est_poses_aignedtoGT.at(i).block(3,0,4,1)).transpose() * Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1));
-        float ori_err = 180.0/M_PI*Math::log_so3(e_R).norm();
+        Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(est_poses_aignedtoGT.at(i).block(3,0,4,1)).transpose() * Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1));
+        f_ekf ori_err = 180.0/M_PI*Math::log_so3(e_R).norm();
 
         // Calculate position error
-        float pos_err = (gt_poses.at(i).block(0,0,3,1)-est_poses_aignedtoGT.at(i).block(0,0,3,1)).norm();
+        f_ekf pos_err = (gt_poses.at(i).block(0,0,3,1)-est_poses_aignedtoGT.at(i).block(0,0,3,1)).norm();
 
         // Append this error!
         error_ori.timestamps.push_back(est_times.at(i));
@@ -120,11 +120,11 @@ void ResultTrajectory::calculate_ate_2f(Statistics &error_ori, Statistics &error
     for(size_t i=0; i<est_poses_aignedtoGT.size(); i++) {
 
         // Calculate orientation error
-        Eigen::Matrix3f e_R = Math::quat_2_Rot(est_poses_aignedtoGT.at(i).block(3,0,4,1)).transpose() * Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1));
-        float ori_err = 180.0/M_PI*Math::log_so3(e_R)(2);
+        Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(est_poses_aignedtoGT.at(i).block(3,0,4,1)).transpose() * Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1));
+        f_ekf ori_err = 180.0/M_PI*Math::log_so3(e_R)(2);
 
         // Calculate position error
-        float pos_err = (gt_poses.at(i).block(0,0,2,1)-est_poses_aignedtoGT.at(i).block(0,0,2,1)).norm();
+        f_ekf pos_err = (gt_poses.at(i).block(0,0,2,1)-est_poses_aignedtoGT.at(i).block(0,0,2,1)).norm();
 
         // Append this error!
         error_ori.timestamps.push_back(est_times.at(i));
@@ -142,29 +142,29 @@ void ResultTrajectory::calculate_ate_2f(Statistics &error_ori, Statistics &error
 
 
 
-void ResultTrajectory::calculate_rpe(const std::vector<float> &segment_lengths, std::map<float,std::pair<Statistics,Statistics>> &error_rpe) {
+void ResultTrajectory::calculate_rpe(const std::vector<f_ekf> &segment_lengths, std::map<f_ekf,std::pair<Statistics,Statistics>> &error_rpe) {
 
     // Distance at each point along the trajectory
-    float average_pos_difference = 0;
-    std::vector<float> accum_distances(gt_poses.size());
+    f_ekf average_pos_difference = 0;
+    std::vector<f_ekf> accum_distances(gt_poses.size());
     accum_distances[0] = 0;
     for (size_t i = 1; i < gt_poses.size(); i++) {
-        float pos_diff = (gt_poses[i].block(0,0,3,1) - gt_poses[i - 1].block(0,0,3,1)).norm();
+        f_ekf pos_diff = (gt_poses[i].block(0,0,3,1) - gt_poses[i - 1].block(0,0,3,1)).norm();
         accum_distances[i] = accum_distances[i - 1] + pos_diff;
         average_pos_difference += pos_diff;
     }
     average_pos_difference /= gt_poses.size();
 
     // Warn if large pos difference
-    float max_dist_diff = 0.5;
+    f_ekf max_dist_diff = 0.5;
     if(average_pos_difference > max_dist_diff) {
-        printf(YELLOW "[COMP]: average groundtruth position difference %.2f > %.2f is too large\n" RESET, average_pos_difference, max_dist_diff);
+        printf(YELLOW "[COMP]: average groundtruth position difference %.2f > %.2f is too large\n" RESET, float(average_pos_difference), float(max_dist_diff));
         printf(YELLOW "[COMP]: this will prevent the RPE from finding valid trajectory segments!!!\n" RESET);
         printf(YELLOW "[COMP]: the recommendation is to use a higher frequency groundtruth, or relax this trajectory segment logic...\n" RESET);
     }
 
     // Loop through each segment length
-    for(const float &distance : segment_lengths) {
+    for(const f_ekf &distance : segment_lengths) {
 
         // Our stats for this length
         Statistics error_ori, error_pos;
@@ -185,44 +185,44 @@ void ResultTrajectory::calculate_rpe(const std::vector<float> &segment_lengths, 
 
             //===============================================================================
             // Get T I1 to world EST at beginning of subtrajectory (at state idx)
-            Eigen::Matrix4f T_c1 = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_c1 = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_c1.block(0, 0, 3, 3) = Math::quat_2_Rot(est_poses_aignedtoGT.at(id_start).block(3,0,4,1)).transpose();
             T_c1.block(0, 3, 3, 1) = est_poses_aignedtoGT.at(id_start).block(0,0,3,1);
 
             // Get T I2 to world EST at end of subtrajectory starting (at state comparisons[idx])
-            Eigen::Matrix4f T_c2 = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_c2 = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_c2.block(0, 0, 3, 3) = Math::quat_2_Rot(est_poses_aignedtoGT.at(id_end).block(3,0,4,1)).transpose();
             T_c2.block(0, 3, 3, 1) = est_poses_aignedtoGT.at(id_end).block(0,0,3,1);
 
             // Get T I2 to I1 EST
-            Eigen::Matrix4f T_c1_c2 = Math::Inv_se3(T_c1) * T_c2;
+            Eigen::Matrix<f_ekf,4,4> T_c1_c2 = Math::Inv_se3(T_c1) * T_c2;
 
             //===============================================================================
             // Get T I1 to world GT at beginning of subtrajectory (at state idx)
-            Eigen::Matrix4f T_m1 = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_m1 = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_m1.block(0, 0, 3, 3) = Math::quat_2_Rot(gt_poses.at(id_start).block(3,0,4,1)).transpose();
             T_m1.block(0, 3, 3, 1) = gt_poses.at(id_start).block(0,0,3,1);
 
             // Get T I2 to world GT at end of subtrajectory starting (at state comparisons[idx])
-            Eigen::Matrix4f T_m2 = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_m2 = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_m2.block(0, 0, 3, 3) = Math::quat_2_Rot(gt_poses.at(id_end).block(3,0,4,1)).transpose();
             T_m2.block(0, 3, 3, 1) = gt_poses.at(id_end).block(0,0,3,1);
 
             // Get T I2 to I1 GT
-            Eigen::Matrix4f T_m1_m2 = Math::Inv_se3(T_m1) * T_m2;
+            Eigen::Matrix<f_ekf,4,4> T_m1_m2 = Math::Inv_se3(T_m1) * T_m2;
 
             //===============================================================================
             // Compute error transform between EST and GT start-end transform
-            Eigen::Matrix4f T_error_in_c2 = Math::Inv_se3(T_m1_m2) * T_c1_c2;
+            Eigen::Matrix<f_ekf,4,4> T_error_in_c2 = Math::Inv_se3(T_m1_m2) * T_c1_c2;
 
-            Eigen::Matrix4f T_c2_rot = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_c2_rot = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_c2_rot.block(0, 0, 3, 3) = T_c2.block(0, 0, 3, 3);
 
-            Eigen::Matrix4f T_c2_rot_inv = Eigen::Matrix4f::Identity();
+            Eigen::Matrix<f_ekf,4,4> T_c2_rot_inv = Eigen::Matrix<f_ekf,4,4>::Identity();
             T_c2_rot_inv.block(0, 0, 3, 3) = T_c2.block(0, 0, 3, 3).transpose();
 
             // Rotate rotation so that rotation error is in the global frame (allows us to look at yaw error)
-            Eigen::Matrix4f T_error_in_w = T_c2_rot * T_error_in_c2 * T_c2_rot_inv;
+            Eigen::Matrix<f_ekf,4,4> T_error_in_w = T_c2_rot * T_error_in_c2 * T_c2_rot_inv;
 
             //===============================================================================
             // Compute error for position
@@ -230,7 +230,7 @@ void ResultTrajectory::calculate_rpe(const std::vector<float> &segment_lengths, 
             error_pos.values.push_back(T_error_in_w.block(0, 3, 3, 1).norm());
 
             // Calculate orientation error
-            float ori_err = 180.0/M_PI*Math::log_so3(T_error_in_w.block(0, 0, 3, 3)).norm();
+            f_ekf ori_err = 180.0/M_PI*Math::log_so3(T_error_in_w.block(0, 0, 3, 3)).norm();
             error_ori.timestamps.push_back(est_times.at(id_start));
             error_ori.values.push_back(ori_err);
 
@@ -267,18 +267,18 @@ void ResultTrajectory::calculate_nees(Statistics &nees_ori, Statistics &nees_pos
 
         // Calculate orientation error
         // NOTE: we define our error as e_R = -Log(R*Rhat^T)
-        Eigen::Matrix3f e_R = Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1)) * Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose();
-        Eigen::Vector3f errori = -Math::log_so3(e_R);
-        //Eigen::Vector4f e_q = Math::quat_multiply(gt_poses_aignedtoEST.at(i).block(3,0,4,1),Math::Inv(est_poses.at(i).block(3,0,4,1)));
-        //Eigen::Vector3f errori = 2*e_q.block(0,0,3,1);
-        float ori_nees = errori.transpose()*est_covori.at(i).inverse()*errori;
+        Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(gt_poses.at(i).block(3,0,4,1)) * Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose();
+        Eigen::Matrix<f_ekf,3,1> errori = -Math::log_so3(e_R);
+        //Eigen::Matrix<f_ekf,4,1> e_q = Math::quat_multiply(gt_poses_aignedtoEST.at(i).block(3,0,4,1),Math::Inv(est_poses.at(i).block(3,0,4,1)));
+        //Eigen::Matrix<f_ekf,3,1> errori = 2*e_q.block(0,0,3,1);
+        f_ekf ori_nees = errori.transpose()*est_covori.at(i).inverse()*errori;
 
         // Calculate nees position error
-        Eigen::Vector3f errpos = gt_poses_aignedtoEST.at(i).block(0,0,3,1)-est_poses.at(i).block(0,0,3,1);
-        float pos_nees = errpos.transpose()*est_covpos.at(i).inverse()*errpos;
+        Eigen::Matrix<f_ekf,3,1> errpos = gt_poses_aignedtoEST.at(i).block(0,0,3,1)-est_poses.at(i).block(0,0,3,1);
+        f_ekf pos_nees = errpos.transpose()*est_covpos.at(i).inverse()*errpos;
 
         // Skip if nan error value
-        if(std::isnan(ori_nees) || std::isnan(pos_nees)) {
+        if(flx::isnan(ori_nees) || flx::isnan(pos_nees)) {
             printf(YELLOW "[TRAJ]: nees calculation had nan number (covariance is wrong?) skipping...\n" RESET);
             continue;
         }
@@ -317,10 +317,10 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
     for(size_t i=0; i<est_poses.size(); i++) {
 
         // Calculate local orientation error, then propagate its covariance into the global frame of reference
-        Eigen::Vector4f e_q = Math::quat_multiply(gt_poses_aignedtoEST.at(i).block(3,0,4,1),Math::Inv(est_poses.at(i).block(3,0,4,1)));
-        Eigen::Vector3f errori_local = 2*e_q.block(0,0,3,1);
-        Eigen::Vector3f errori_global = Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose()*errori_local;
-        Eigen::Matrix3f cov_global;
+        Eigen::Matrix<f_ekf,4,1> e_q = Math::quat_multiply(gt_poses_aignedtoEST.at(i).block(3,0,4,1),Math::Inv(est_poses.at(i).block(3,0,4,1)));
+        Eigen::Matrix<f_ekf,3,1> errori_local = f_ekf(2)*e_q.block(0,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> errori_global = Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose()*errori_local;
+        Eigen::Matrix<f_ekf,3,3> cov_global;
         if(est_times.size() == est_covori.size()) {
             cov_global = Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose()*est_covori.at(i)*Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1));
         }
@@ -328,9 +328,9 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
         // Convert to roll pitch yaw (also need to "wrap" the error to -pi to pi)
         // NOTE: our rot2rpy is in the form R_input = R_z(yaw)*R_y(pitch)*R_x(roll)
         // NOTE: this error is in the "global" frame since we do rot2rpy on R_ItoG rotation
-        Eigen::Vector3f ypr_est_ItoG = Math::rot2rpy(Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose());
-        Eigen::Vector3f ypr_gt_ItoG = Math::rot2rpy(Math::quat_2_Rot(gt_poses_aignedtoEST.at(i).block(3,0,4,1)).transpose());
-        Eigen::Vector3f errori_rpy = ypr_gt_ItoG-ypr_est_ItoG;
+        Eigen::Matrix<f_ekf,3,1> ypr_est_ItoG = Math::rot2rpy(Math::quat_2_Rot(est_poses.at(i).block(3,0,4,1)).transpose());
+        Eigen::Matrix<f_ekf,3,1> ypr_gt_ItoG = Math::rot2rpy(Math::quat_2_Rot(gt_poses_aignedtoEST.at(i).block(3,0,4,1)).transpose());
+        Eigen::Matrix<f_ekf,3,1> errori_rpy = ypr_gt_ItoG-ypr_est_ItoG;
         for(size_t idx=0; idx<3; idx++) {
             while(errori_rpy(idx)<-M_PI) {
                 errori_rpy(idx) += 2*M_PI;
@@ -344,16 +344,16 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
         // NOTE: one can derive this by perturbing the rpy error equation
         // NOTE: R*Exp(theta_erro) = Rz*Rz(error)*Ry*Ry(error)*Rx*Rx(error)
         // NOTE: example can be found here http://mars.cs.umn.edu/tr/reports/Trawny05c.pdf
-        Eigen::Matrix<float,3,3> H_xyz2rpy = Eigen::Matrix<float,3,3>::Identity();
+        Eigen::Matrix<f_ekf,3,3> H_xyz2rpy = Eigen::Matrix<f_ekf,3,3>::Identity();
         H_xyz2rpy.block(0,1,3,1) = Math::rot_x(-ypr_est_ItoG(0))*H_xyz2rpy.block(0,1,3,1);
         H_xyz2rpy.block(0,2,3,1) = Math::rot_x(-ypr_est_ItoG(0))*Math::rot_y(-ypr_est_ItoG(1))*H_xyz2rpy.block(0,2,3,1);
-        Eigen::Matrix3f cov_rpy;
+        Eigen::Matrix<f_ekf,3,3> cov_rpy;
         if(est_times.size() == est_covori.size()) {
             cov_rpy = H_xyz2rpy.inverse()*est_covori.at(i)*H_xyz2rpy.inverse().transpose();
         }
 
         // Calculate position error
-        Eigen::Vector3f errpos = gt_poses_aignedtoEST.at(i).block(0,0,3,1)-est_poses.at(i).block(0,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> errpos = gt_poses_aignedtoEST.at(i).block(0,0,3,1)-est_poses.at(i).block(0,0,3,1);
 
         // POSITION: Append this error!
         posx.timestamps.push_back(est_times.at(i));
@@ -363,9 +363,9 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
         posz.timestamps.push_back(est_times.at(i));
         posz.values.push_back(errpos(2));
         if(est_times.size() == est_covpos.size()) {
-            posx.values_bound.push_back(3*std::sqrt(est_covpos.at(i)(0,0)));
-            posy.values_bound.push_back(3*std::sqrt(est_covpos.at(i)(1,1)));
-            posz.values_bound.push_back(3*std::sqrt(est_covpos.at(i)(2,2)));
+            posx.values_bound.push_back(3*flx::sqrt(est_covpos.at(i)(0,0)));
+            posy.values_bound.push_back(3*flx::sqrt(est_covpos.at(i)(1,1)));
+            posz.values_bound.push_back(3*flx::sqrt(est_covpos.at(i)(2,2)));
         }
 
         // ORIENTATION: Append this error!
@@ -376,9 +376,9 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
         oriz.timestamps.push_back(est_times.at(i));
         oriz.values.push_back(180.0/M_PI*errori_global(2));
         if(est_times.size() == est_covori.size()) {
-            orix.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_global(0,0)));
-            oriy.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_global(1,1)));
-            oriz.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_global(2,2)));
+            orix.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_global(0,0)));
+            oriy.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_global(1,1)));
+            oriz.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_global(2,2)));
         }
 
         // RPY: Append this error!
@@ -389,9 +389,9 @@ void ResultTrajectory::calculate_error(Statistics &posx, Statistics &posy, Stati
         yaw.timestamps.push_back(est_times.at(i));
         yaw.values.push_back(180.0/M_PI*errori_rpy(2));
         if(est_times.size() == est_covori.size()) {
-            roll.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_rpy(0,0)));
-            pitch.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_rpy(1,1)));
-            yaw.values_bound.push_back(3*180.0/M_PI*std::sqrt(cov_rpy(2,2)));
+            roll.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_rpy(0,0)));
+            pitch.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_rpy(1,1)));
+            yaw.values_bound.push_back(3*180.0/M_PI*flx::sqrt(cov_rpy(2,2)));
         }
 
     }

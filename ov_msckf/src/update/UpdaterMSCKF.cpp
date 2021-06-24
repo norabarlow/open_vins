@@ -78,8 +78,8 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
         for(const auto &clone_imu : state->_clones_IMU) {
 
             // Get current camera pose
-            Eigen::Matrix<float,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
-            Eigen::Matrix<float,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
+            Eigen::Matrix<f_ekf,3,3> R_GtoCi = clone_calib.second->Rot()*clone_imu.second->Rot();
+            Eigen::Matrix<f_ekf,3,1> p_CioinG = clone_imu.second->pos() - R_GtoCi.transpose()*clone_calib.second->pos();
 
             // Append to our map
             clones_cami.insert({clone_imu.first,FeatureInitializer::ClonePose(R_GtoCi,p_CioinG)});
@@ -136,8 +136,8 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     }
 
     // Large Jacobian and residual of *all* features for this update
-    Eigen::VectorXf res_big = Eigen::VectorXf::Zero(max_meas_size);
-    Eigen::MatrixXf Hx_big = Eigen::MatrixXf::Zero(max_meas_size, max_hx_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> res_big = Eigen::Matrix<f_ekf,Eigen::Dynamic,1>::Zero(max_meas_size);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Hx_big = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(max_meas_size, max_hx_size);
     std::unordered_map<std::shared_ptr<Type>,size_t> Hx_mapping;
     std::vector<std::shared_ptr<Type>> Hx_order_big;
     size_t ct_jacob = 0;
@@ -172,9 +172,9 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
         }
 
         // Our return values (feature jacobian, state jacobian, residual, and order of state jacobian)
-        Eigen::MatrixXf H_f;
-        Eigen::MatrixXf H_x;
-        Eigen::VectorXf res;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> H_f;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> H_x;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,1> res;
         std::vector<std::shared_ptr<Type>> Hx_order;
 
         // Get the Jacobian for this feature
@@ -184,13 +184,13 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
         UpdaterHelper::nullspace_project_inplace(H_f, H_x, res);
 
         /// Chi2 distance check
-        Eigen::MatrixXf P_marg = StateHelper::get_marginal_covariance(state, Hx_order);
-        Eigen::MatrixXf S = H_x*P_marg*H_x.transpose();
-        S.diagonal() += _options.sigma_pix_sq*Eigen::VectorXf::Ones(S.rows());
-        float chi2 = res.dot(S.llt().solve(res));
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> P_marg = StateHelper::get_marginal_covariance(state, Hx_order);
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> S = H_x*P_marg*H_x.transpose();
+        S.diagonal() += _options.sigma_pix_sq*Eigen::Matrix<f_ekf,Eigen::Dynamic,1>::Ones(S.rows());
+        f_ekf chi2 = res.dot(S.llt().solve(res));
 
         // Get our threshold (we precompute up to 500 but handle the case that it is more)
-        float chi2_check;
+        f_ekf chi2_check;
         if(res.rows() < 500) {
             chi2_check = chi_squared_table[res.rows()];
         } else {
@@ -257,7 +257,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     rT4 =  boost::posix_time::microsec_clock::local_time();
 
     // Our noise is isotropic, so make it here after our compression
-    Eigen::MatrixXf R_big = _options.sigma_pix_sq*Eigen::MatrixXf::Identity(res_big.rows(),res_big.rows());
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> R_big = _options.sigma_pix_sq*Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(res_big.rows(),res_big.rows());
 
     // 6. With all good features update the state
     StateHelper::EKFUpdate(state, Hx_order_big, Hx_big, res_big, R_big);

@@ -100,7 +100,7 @@ namespace ov_core {
          * @param camera_fisheye Map of camera_id => bool if we should do radtan or fisheye distortion model
          * @param correct_active If we should re-undistort active features in our database
          */
-        void set_calibration(std::map<size_t,Eigen::VectorXf> camera_calib,
+        void set_calibration(std::map<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> camera_calib,
                              std::map<size_t, bool> camera_fisheye, bool correct_active=false) {
 
             // Assert vectors are equal

@@ -95,7 +95,8 @@ int main(int argc, char** argv)
 
     // Parameters for our extractor
     int num_pts, num_aruco, fast_threshold, grid_x, grid_y, min_px_dist;
-    float knn_ratio;
+    double dknn_ratio;
+    f_ekf knn_ratio;
     bool do_downsizing, use_stereo;
     nh.param<int>("num_pts", num_pts, 800);
     nh.param<int>("num_aruco", num_aruco, 1024);
@@ -104,9 +105,11 @@ int main(int argc, char** argv)
     nh.param<int>("grid_x", grid_x, 9);
     nh.param<int>("grid_y", grid_y, 7);
     nh.param<int>("min_px_dist", min_px_dist, 3);
-    nh.param<float>("knn_ratio", knn_ratio, 0.85);
+    nh.param<double>("knn_ratio", dknn_ratio, 0.85);
     nh.param<bool>("downsize_aruco", do_downsizing, false);
     nh.param<bool>("use_stereo", use_stereo, false);
+
+    knn_ratio = f_ekf(knn_ratio);
 
     // Debug print!
     printf("max features: %d\n", num_pts);
@@ -118,12 +121,12 @@ int main(int argc, char** argv)
     printf("downsize aruco image: %d\n", do_downsizing);
 
     // Fake camera info (we don't need this, as we are not using the normalized coordinates for anything)
-    Eigen::Matrix<float,8,1> cam0_calib;
+    Eigen::Matrix<f_ekf,8,1> cam0_calib;
     cam0_calib << 1,1,0,0,0,0,0,0;
 
     // Create our n-camera vectors
     std::map<size_t,bool> camera_fisheye;
-    std::map<size_t,Eigen::VectorXf> camera_calibration;
+    std::map<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> camera_calibration;
     camera_fisheye.insert({0,false});
     camera_calibration.insert({0,cam0_calib});
     camera_fisheye.insert({1,false});
@@ -306,11 +309,11 @@ void handle_stereo(f_ts time0, f_ts time1, cv::Mat img0, cv::Mat img1, bool use_
     if (frames > 60) {
         // Calculate the FPS
         f_ts fps = (f_ts) frames / (time_curr.toSec()-time_start.toSec());
-        float lpf = (float) num_lostfeats / frames;
-        float fpf = (float) featslengths / num_lostfeats;
-        float mpf = (float) num_margfeats / frames;
+        f_ekf lpf = (f_ekf) num_lostfeats / frames;
+        f_ekf fpf = (f_ekf) featslengths / num_lostfeats;
+        f_ekf mpf = (f_ekf) num_margfeats / frames;
         // DEBUG PRINT OUT
-        printf("fps = %.2f | lost_feats/frame = %.2f | track_length/lost_feat = %.2f | marg_tracks/frame = %.2f\n",float(fps),lpf,fpf,mpf);
+        printf("fps = %.2f | lost_feats/frame = %.2f | track_length/lost_feat = %.2f | marg_tracks/frame = %.2f\n",double(fps),double(lpf),double(fpf),double(mpf));
         // Reset variables
         frames = 0;
         time_start = time_curr;

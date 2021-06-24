@@ -93,7 +93,7 @@ namespace ov_core {
          * It will create a new feature, if it is an ID that we have not seen before.
          */
         void update_feature(size_t id, f_ts timestamp, size_t cam_id,
-                            float u, float v, float u_n, float v_n) {
+                            f_ekf u, f_ekf v, f_ekf u_n, f_ekf v_n) {
 
             // Find this feature using the ID lookup
             std::unique_lock<std::mutex> lck(mtx);
@@ -101,8 +101,8 @@ namespace ov_core {
                 // Get our feature
                 std::shared_ptr<Feature> feat = features_idlookup.at(id);
                 // Append this new information to it!
-                feat->uvs[cam_id].push_back(Eigen::Vector2f(u, v));
-                feat->uvs_norm[cam_id].push_back(Eigen::Vector2f(u_n, v_n));
+                feat->uvs[cam_id].push_back(Eigen::Matrix<f_ekf,2,1>(u, v));
+                feat->uvs_norm[cam_id].push_back(Eigen::Matrix<f_ekf,2,1>(u_n, v_n));
                 feat->timestamps[cam_id].push_back(timestamp);
                 return;
             }
@@ -113,8 +113,8 @@ namespace ov_core {
             // Else we have not found the feature, so lets make it be a new one!
             std::shared_ptr<Feature> feat = std::make_shared<Feature>();
             feat->featid = id;
-            feat->uvs[cam_id].push_back(Eigen::Vector2f(u, v));
-            feat->uvs_norm[cam_id].push_back(Eigen::Vector2f(u_n, v_n));
+            feat->uvs[cam_id].push_back(Eigen::Matrix<f_ekf,2,1>(u, v));
+            feat->uvs_norm[cam_id].push_back(Eigen::Matrix<f_ekf,2,1>(u_n, v_n));
             feat->timestamps[cam_id].push_back(timestamp);
 
             // Append this new feature into our database

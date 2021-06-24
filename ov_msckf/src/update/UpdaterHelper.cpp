@@ -25,8 +25,8 @@ using namespace ov_core;
 using namespace ov_msckf;
 
 
-void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXf &H_f,
-                                                        std::vector<Eigen::MatrixXf> &H_x, std::vector<std::shared_ptr<Type>> &x_order) {
+void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_f,
+                                                        std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>> &H_x, std::vector<std::shared_ptr<Type>> &x_order) {
 
     // Global XYZ representation
     if (feature.feat_representation == LandmarkRepresentation::Representation::GLOBAL_3D) {
@@ -39,24 +39,24 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
     if (feature.feat_representation == LandmarkRepresentation::Representation::GLOBAL_FULL_INVERSE_DEPTH) {
 
         // Get the feature linearization point
-        Eigen::Matrix<float,3,1> p_FinG = (state->_options.do_fej)? feature.p_FinG_fej : feature.p_FinG;
+        Eigen::Matrix<f_ekf,3,1> p_FinG = (state->_options.do_fej)? feature.p_FinG_fej : feature.p_FinG;
 
         // Get inverse depth representation (should match what is in Landmark.cpp)
-        float g_rho = 1/p_FinG.norm();
-        float g_phi = std::acos(g_rho*p_FinG(2));
-        //float g_theta = std::asin(g_rho*p_FinG(1)/std::sin(g_phi));
-        float g_theta = std::atan2(p_FinG(1),p_FinG(0));
-        Eigen::Matrix<float,3,1> p_invFinG;
+        f_ekf g_rho = 1/p_FinG.norm();
+        f_ekf g_phi = flx::acos(g_rho*p_FinG(2));
+        //f_ekf g_theta = std::asin(g_rho*p_FinG(1)/flx::sin(g_phi));
+        f_ekf g_theta = flx::atan2(p_FinG(1),p_FinG(0));
+        Eigen::Matrix<f_ekf,3,1> p_invFinG;
         p_invFinG(0) = g_theta;
         p_invFinG(1) = g_phi;
         p_invFinG(2) = g_rho;
 
         // Get inverse depth bearings
-        float sin_th = std::sin(p_invFinG(0,0));
-        float cos_th = std::cos(p_invFinG(0,0));
-        float sin_phi = std::sin(p_invFinG(1,0));
-        float cos_phi = std::cos(p_invFinG(1,0));
-        float rho = p_invFinG(2,0);
+        f_ekf sin_th = flx::sin(p_invFinG(0,0));
+        f_ekf cos_th = flx::cos(p_invFinG(0,0));
+        f_ekf sin_phi = flx::sin(p_invFinG(1,0));
+        f_ekf cos_phi = flx::cos(p_invFinG(1,0));
+        f_ekf rho = p_invFinG(2,0);
 
         // Construct the Jacobian
         H_f.resize(3,3);
@@ -76,26 +76,26 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
     assert(feature.anchor_cam_id!=-1);
 
     // Anchor pose orientation and position, and camera calibration for our anchor camera
-    Eigen::Matrix3f R_ItoC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->Rot();
-    Eigen::Vector3f p_IinC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->pos();
-    Eigen::Matrix3f R_GtoI = state->_clones_IMU.at(feature.anchor_clone_timestamp)->Rot();
-    Eigen::Vector3f p_IinG = state->_clones_IMU.at(feature.anchor_clone_timestamp)->pos();
-    Eigen::Vector3f p_FinA = feature.p_FinA;
+    Eigen::Matrix<f_ekf,3,3> R_ItoC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->Rot();
+    Eigen::Matrix<f_ekf,3,1> p_IinC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->pos();
+    Eigen::Matrix<f_ekf,3,3> R_GtoI = state->_clones_IMU.at(feature.anchor_clone_timestamp)->Rot();
+    Eigen::Matrix<f_ekf,3,1> p_IinG = state->_clones_IMU.at(feature.anchor_clone_timestamp)->pos();
+    Eigen::Matrix<f_ekf,3,1> p_FinA = feature.p_FinA;
 
     // If I am doing FEJ, I should FEJ the anchor states (should we fej calibration???)
     // Also get the FEJ position of the feature if we are
     if(state->_options.do_fej) {
         // "Best" feature in the global frame
-        Eigen::Vector3f p_FinG_best = R_GtoI.transpose() * R_ItoC.transpose()*(feature.p_FinA - p_IinC) + p_IinG;
+        Eigen::Matrix<f_ekf,3,1> p_FinG_best = R_GtoI.transpose() * R_ItoC.transpose()*(feature.p_FinA - p_IinC) + p_IinG;
         // Transform the best into our anchor frame using FEJ
         R_GtoI = state->_clones_IMU.at(feature.anchor_clone_timestamp)->Rot_fej();
         p_IinG = state->_clones_IMU.at(feature.anchor_clone_timestamp)->pos_fej();
         p_FinA = (R_GtoI.transpose()*R_ItoC.transpose()).transpose()*(p_FinG_best - p_IinG) + p_IinC;
     }
-    Eigen::Matrix3f R_CtoG = R_GtoI.transpose()*R_ItoC.transpose();
+    Eigen::Matrix<f_ekf,3,3> R_CtoG = R_GtoI.transpose()*R_ItoC.transpose();
 
     // Jacobian for our anchor pose
-    Eigen::Matrix<float,3,6> H_anc;
+    Eigen::Matrix<f_ekf,3,6> H_anc;
     H_anc.block(0,0,3,3).noalias() = -R_GtoI.transpose()*skew_x(R_ItoC.transpose()*(p_FinA-p_IinC));
     H_anc.block(0,3,3,3).setIdentity();
 
@@ -105,7 +105,7 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
 
     // Get calibration Jacobians (for anchor clone)
     if (state->_options.do_calib_camera_pose) {
-        Eigen::Matrix<float,3,6> H_calib;
+        Eigen::Matrix<f_ekf,3,6> H_calib;
         H_calib.block(0,0,3,3).noalias() = -R_CtoG*skew_x(p_FinA-p_IinC);
         H_calib.block(0,3,3,3) = -R_CtoG;
         x_order.push_back(state->_calib_IMUtoCAM.at(feature.anchor_cam_id));
@@ -122,24 +122,24 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
     if (feature.feat_representation == LandmarkRepresentation::Representation::ANCHORED_FULL_INVERSE_DEPTH) {
 
         // Get inverse depth representation (should match what is in Landmark.cpp)
-        float a_rho = 1/p_FinA.norm();
-        float a_phi = std::acos(a_rho*p_FinA(2));
-        float a_theta = std::atan2(p_FinA(1),p_FinA(0));
-        Eigen::Matrix<float,3,1> p_invFinA;
+        f_ekf a_rho = 1/p_FinA.norm();
+        f_ekf a_phi = flx::acos(a_rho*p_FinA(2));
+        f_ekf a_theta = flx::atan2(p_FinA(1),p_FinA(0));
+        Eigen::Matrix<f_ekf,3,1> p_invFinA;
         p_invFinA(0) = a_theta;
         p_invFinA(1) = a_phi;
         p_invFinA(2) = a_rho;
 
         // Using anchored inverse depth
-        float sin_th = std::sin(p_invFinA(0,0));
-        float cos_th = std::cos(p_invFinA(0,0));
-        float sin_phi = std::sin(p_invFinA(1,0));
-        float cos_phi = std::cos(p_invFinA(1,0));
-        float rho = p_invFinA(2,0);
+        f_ekf sin_th = flx::sin(p_invFinA(0,0));
+        f_ekf cos_th = flx::cos(p_invFinA(0,0));
+        f_ekf sin_phi = flx::sin(p_invFinA(1,0));
+        f_ekf cos_phi = flx::cos(p_invFinA(1,0));
+        f_ekf rho = p_invFinA(2,0);
         //assert(p_invFinA(2,0)>=0.0);
 
         // Jacobian of anchored 3D position wrt inverse depth parameters
-        Eigen::Matrix<float,3,3> d_pfinA_dpinv;
+        Eigen::Matrix<f_ekf,3,3> d_pfinA_dpinv;
         d_pfinA_dpinv << -(1.0/rho)*sin_th*sin_phi, (1.0/rho)*cos_th*cos_phi, -(1.0/(rho*rho))*cos_th*sin_phi,
                 (1.0/rho)*cos_th*sin_phi, (1.0/rho)*sin_th*cos_phi, -(1.0/(rho*rho))*sin_th*sin_phi,
                 0.0, -(1.0/rho)*sin_phi, -(1.0/(rho*rho))*cos_phi;
@@ -151,18 +151,18 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
     if (feature.feat_representation == LandmarkRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH) {
 
         // Get inverse depth representation (should match what is in Landmark.cpp)
-        Eigen::Matrix<float,3,1> p_invFinA_MSCKF;
+        Eigen::Matrix<f_ekf,3,1> p_invFinA_MSCKF;
         p_invFinA_MSCKF(0) = p_FinA(0)/p_FinA(2);
         p_invFinA_MSCKF(1) = p_FinA(1)/p_FinA(2);
         p_invFinA_MSCKF(2) = 1/p_FinA(2);
 
         // Using the MSCKF version of inverse depth
-        float alpha = p_invFinA_MSCKF(0,0);
-        float beta = p_invFinA_MSCKF(1,0);
-        float rho = p_invFinA_MSCKF(2,0);
+        f_ekf alpha = p_invFinA_MSCKF(0,0);
+        f_ekf beta = p_invFinA_MSCKF(1,0);
+        f_ekf rho = p_invFinA_MSCKF(2,0);
 
         // Jacobian of anchored 3D position wrt inverse depth parameters
-        Eigen::Matrix<float,3,3> d_pfinA_dpinv;
+        Eigen::Matrix<f_ekf,3,3> d_pfinA_dpinv;
         d_pfinA_dpinv << (1.0/rho), 0.0, -(1.0/(rho*rho))*alpha,
                 0.0, (1.0/rho), -(1.0/(rho*rho))*beta,
                 0.0, 0.0, -(1.0/(rho*rho));
@@ -174,11 +174,11 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
     if (feature.feat_representation == LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) {
 
         // Get inverse depth representation (should match what is in Landmark.cpp)
-        float rho = 1.0/p_FinA(2);
-        Eigen::Vector3f bearing = rho*p_FinA;
+        f_ekf rho = 1.0/p_FinA(2);
+        Eigen::Matrix<f_ekf,3,1> bearing = rho*p_FinA;
 
         // Jacobian of anchored 3D position wrt inverse depth parameters
-        Eigen::Vector3f d_pfinA_drho;
+        Eigen::Matrix<f_ekf,3,1> d_pfinA_drho;
         d_pfinA_drho << -(1.0/(rho*rho))*bearing;
         H_f = R_CtoG*d_pfinA_drho;
         return;
@@ -192,46 +192,46 @@ void UpdaterHelper::get_feature_jacobian_representation(std::shared_ptr<State> s
 
 
 
-void UpdaterHelper::get_feature_jacobian_intrinsics(std::shared_ptr<State> state, const Eigen::Vector2f &uv_norm, bool isfisheye,
-                                                    Eigen::Matrix<float,8,1> cam_d, Eigen::Matrix<float,2,2> &dz_dzn, Eigen::Matrix<float,2,8> &dz_dzeta) {
+void UpdaterHelper::get_feature_jacobian_intrinsics(std::shared_ptr<State> state, const Eigen::Matrix<f_ekf,2,1> &uv_norm, bool isfisheye,
+                                                    Eigen::Matrix<f_ekf,8,1> cam_d, Eigen::Matrix<f_ekf,2,2> &dz_dzn, Eigen::Matrix<f_ekf,2,8> &dz_dzeta) {
 
     // Calculate distortion uv and jacobian
     if(isfisheye) {
 
         // Calculate distorted coordinates for fisheye
-        float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-        float theta = std::atan(r);
-        float theta_d = theta+cam_d(4)*std::pow(theta,3)+cam_d(5)*std::pow(theta,5)+cam_d(6)*std::pow(theta,7)+cam_d(7)*std::pow(theta,9);
+        f_ekf r = flx::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+        f_ekf theta = flx::atan(r);
+        f_ekf theta_d = theta+cam_d(4)*flx::pow(theta,3)+cam_d(5)*flx::pow(theta,5)+cam_d(6)*flx::pow(theta,7)+cam_d(7)*flx::pow(theta,9);
 
         // Handle when r is small (meaning our xy is near the camera center)
-        float inv_r = (r > 1e-8)? 1.0/r : 1.0;
-        float cdist = (r > 1e-8)? theta_d * inv_r : 1.0;
+        f_ekf inv_r = (r > 1e-8)? f_ekf(1.0)/r : f_ekf(1.0);
+        f_ekf cdist = (r > 1e-8)? theta_d * inv_r : f_ekf(1.0);
 
         // Jacobian of distorted pixel to "normalized" pixel
-        Eigen::Matrix<float,2,2> duv_dxy = Eigen::Matrix<float,2,2>::Zero();
+        Eigen::Matrix<f_ekf,2,2> duv_dxy = Eigen::Matrix<f_ekf,2,2>::Zero();
         duv_dxy << cam_d(0), 0, 0, cam_d(1);
 
         // Jacobian of "normalized" pixel to normalized pixel
-        Eigen::Matrix<float,2,2> dxy_dxyn = Eigen::Matrix<float,2,2>::Zero();
+        Eigen::Matrix<f_ekf,2,2> dxy_dxyn = Eigen::Matrix<f_ekf,2,2>::Zero();
         dxy_dxyn << theta_d*inv_r, 0, 0, theta_d*inv_r;
 
         // Jacobian of "normalized" pixel to r
-        Eigen::Matrix<float,2,1> dxy_dr = Eigen::Matrix<float,2,1>::Zero();
+        Eigen::Matrix<f_ekf,2,1> dxy_dr = Eigen::Matrix<f_ekf,2,1>::Zero();
         dxy_dr << -uv_norm(0)*theta_d*inv_r*inv_r, -uv_norm(1)*theta_d*inv_r*inv_r;
 
         // Jacobian of r pixel to normalized xy
-        Eigen::Matrix<float,1,2> dr_dxyn = Eigen::Matrix<float,1,2>::Zero();
+        Eigen::Matrix<f_ekf,1,2> dr_dxyn = Eigen::Matrix<f_ekf,1,2>::Zero();
         dr_dxyn << uv_norm(0)*inv_r, uv_norm(1)*inv_r;
 
         // Jacobian of "normalized" pixel to theta_d
-        Eigen::Matrix<float,2,1> dxy_dthd = Eigen::Matrix<float,2,1>::Zero();
+        Eigen::Matrix<f_ekf,2,1> dxy_dthd = Eigen::Matrix<f_ekf,2,1>::Zero();
         dxy_dthd << uv_norm(0)*inv_r, uv_norm(1)*inv_r;
 
         // Jacobian of theta_d to theta
-        float dthd_dth = 1+3*cam_d(4)*std::pow(theta,2)+5*cam_d(5)*std::pow(theta,4)+7*cam_d(6)*std::pow(theta,6)+9*cam_d(7)*std::pow(theta,8);
+        f_ekf dthd_dth = 1+3*cam_d(4)*flx::pow(theta,2)+5*cam_d(5)*flx::pow(theta,4)+7*cam_d(6)*flx::pow(theta,6)+9*cam_d(7)*flx::pow(theta,8);
 
         // Jacobian of theta to r
-        float dth_dr = 1/(r*r+1);
+        f_ekf dth_dr = 1/(r*r+1);
 
         // Total Jacobian wrt normalized pixel coordinates
         dz_dzn = duv_dxy*(dxy_dxyn+(dxy_dr+dxy_dthd*dthd_dth*dth_dr)*dr_dxyn);
@@ -240,38 +240,38 @@ void UpdaterHelper::get_feature_jacobian_intrinsics(std::shared_ptr<State> state
         if(state->_options.do_calib_camera_intrinsics) {
 
             // Calculate distorted coordinates for fisheye
-            float x1 = uv_norm(0)*cdist;
-            float y1 = uv_norm(1)*cdist;
+            f_ekf x1 = uv_norm(0)*cdist;
+            f_ekf y1 = uv_norm(1)*cdist;
 
             // Jacobian
             dz_dzeta(0,0) = x1;
             dz_dzeta(0,2) = 1;
-            dz_dzeta(0,4) = cam_d(0)*uv_norm(0)*inv_r*std::pow(theta,3);
-            dz_dzeta(0,5) = cam_d(0)*uv_norm(0)*inv_r*std::pow(theta,5);
-            dz_dzeta(0,6) = cam_d(0)*uv_norm(0)*inv_r*std::pow(theta,7);
-            dz_dzeta(0,7) = cam_d(0)*uv_norm(0)*inv_r*std::pow(theta,9);
+            dz_dzeta(0,4) = cam_d(0)*uv_norm(0)*inv_r*flx::pow(theta,3);
+            dz_dzeta(0,5) = cam_d(0)*uv_norm(0)*inv_r*flx::pow(theta,5);
+            dz_dzeta(0,6) = cam_d(0)*uv_norm(0)*inv_r*flx::pow(theta,7);
+            dz_dzeta(0,7) = cam_d(0)*uv_norm(0)*inv_r*flx::pow(theta,9);
             dz_dzeta(1,1) = y1;
             dz_dzeta(1,3) = 1;
-            dz_dzeta(1,4) = cam_d(1)*uv_norm(1)*inv_r*std::pow(theta,3);
-            dz_dzeta(1,5) = cam_d(1)*uv_norm(1)*inv_r*std::pow(theta,5);
-            dz_dzeta(1,6) = cam_d(1)*uv_norm(1)*inv_r*std::pow(theta,7);
-            dz_dzeta(1,7) = cam_d(1)*uv_norm(1)*inv_r*std::pow(theta,9);
+            dz_dzeta(1,4) = cam_d(1)*uv_norm(1)*inv_r*flx::pow(theta,3);
+            dz_dzeta(1,5) = cam_d(1)*uv_norm(1)*inv_r*flx::pow(theta,5);
+            dz_dzeta(1,6) = cam_d(1)*uv_norm(1)*inv_r*flx::pow(theta,7);
+            dz_dzeta(1,7) = cam_d(1)*uv_norm(1)*inv_r*flx::pow(theta,9);
         }
 
 
     } else {
 
         // Calculate distorted coordinates for radial
-        float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-        float r_2 = r*r;
-        float r_4 = r_2*r_2;
+        f_ekf r = flx::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+        f_ekf r_2 = r*r;
+        f_ekf r_4 = r_2*r_2;
 
         // Jacobian of distorted pixel to normalized pixel
-        float x = uv_norm(0);
-        float y = uv_norm(1);
-        float x_2 = uv_norm(0)*uv_norm(0);
-        float y_2 = uv_norm(1)*uv_norm(1);
-        float x_y = uv_norm(0)*uv_norm(1);
+        f_ekf x = uv_norm(0);
+        f_ekf y = uv_norm(1);
+        f_ekf x_2 = uv_norm(0)*uv_norm(0);
+        f_ekf y_2 = uv_norm(1)*uv_norm(1);
+        f_ekf x_y = uv_norm(0)*uv_norm(1);
         dz_dzn(0,0) = cam_d(0)*((1+cam_d(4)*r_2+cam_d(5)*r_4)+(2*cam_d(4)*x_2+4*cam_d(5)*x_2*r)+2*cam_d(6)*y+(2*cam_d(7)*x+4*cam_d(7)*x));
         dz_dzn(0,1) = cam_d(0)*(2*cam_d(4)*x_y+4*cam_d(5)*x_y*r+2*cam_d(6)*x+2*cam_d(7)*y);
         dz_dzn(1,0) = cam_d(1)*(2*cam_d(4)*x_y+4*cam_d(5)*x_y*r+2*cam_d(6)*x+2*cam_d(7)*y);
@@ -281,8 +281,8 @@ void UpdaterHelper::get_feature_jacobian_intrinsics(std::shared_ptr<State> state
         if(state->_options.do_calib_camera_intrinsics) {
 
             // Calculate distorted coordinates for radtan
-            float x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
-            float y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
+            f_ekf x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
+            f_ekf y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
 
             // Jacobian
             dz_dzeta(0,0) = x1;
@@ -306,7 +306,7 @@ void UpdaterHelper::get_feature_jacobian_intrinsics(std::shared_ptr<State> state
 
 
 
-void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::MatrixXf &H_f, Eigen::MatrixXf &H_x, Eigen::VectorXf &res, std::vector<std::shared_ptr<Type>> &x_order) {
+void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, UpdaterHelperFeature &feature, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_f, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_x, Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res, std::vector<std::shared_ptr<Type>> &x_order) {
 
     // Total number of measurements for this feature
     int total_meas = 0;
@@ -384,23 +384,23 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
 
     // Calculate the position of this feature in the global frame
     // If anchored, then we need to calculate the position of the feature in the global
-    Eigen::Vector3f p_FinG = feature.p_FinG;
+    Eigen::Matrix<f_ekf,3,1> p_FinG = feature.p_FinG;
     if(LandmarkRepresentation::is_relative_representation(feature.feat_representation)) {
         // Assert that we have an anchor pose for this feature
         assert(feature.anchor_cam_id!=-1);
         // Get calibration for our anchor camera
-        Eigen::Matrix<float, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->Rot();
-        Eigen::Matrix<float, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->pos();
+        Eigen::Matrix<f_ekf, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->Rot();
+        Eigen::Matrix<f_ekf, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(feature.anchor_cam_id)->pos();
         // Anchor pose orientation and position
-        Eigen::Matrix<float,3,3> R_GtoI = state->_clones_IMU.at(feature.anchor_clone_timestamp)->Rot();
-        Eigen::Matrix<float,3,1> p_IinG = state->_clones_IMU.at(feature.anchor_clone_timestamp)->pos();
+        Eigen::Matrix<f_ekf,3,3> R_GtoI = state->_clones_IMU.at(feature.anchor_clone_timestamp)->Rot();
+        Eigen::Matrix<f_ekf,3,1> p_IinG = state->_clones_IMU.at(feature.anchor_clone_timestamp)->pos();
         // Feature in the global frame
         p_FinG = R_GtoI.transpose() * R_ItoC.transpose()*(feature.p_FinA - p_IinC) + p_IinG;
     }
 
     // Calculate the position of this feature in the global frame FEJ
     // If anchored, then we can use the "best" p_FinG since the value of p_FinA does not matter
-    Eigen::Vector3f p_FinG_fej = feature.p_FinG_fej;
+    Eigen::Matrix<f_ekf,3,1> p_FinG_fej = feature.p_FinG_fej;
     if(LandmarkRepresentation::is_relative_representation(feature.feat_representation)) {
         p_FinG_fej = p_FinG;
     }
@@ -411,14 +411,14 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
     // Allocate our residual and Jacobians
     int c = 0;
     int jacobsize = (feature.feat_representation!=LandmarkRepresentation::Representation::ANCHORED_INVERSE_DEPTH_SINGLE) ? 3 : 1;
-    res = Eigen::VectorXf::Zero(2*total_meas);
-    H_f = Eigen::MatrixXf::Zero(2*total_meas,jacobsize);
-    H_x = Eigen::MatrixXf::Zero(2*total_meas,total_hx);
+    res = Eigen::Matrix<f_ekf,Eigen::Dynamic,1>::Zero(2*total_meas);
+    H_f = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(2*total_meas,jacobsize);
+    H_x = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Zero(2*total_meas,total_hx);
 
     // Derivative of p_FinG in respect to feature representation.
     // This only needs to be computed once and thus we pull it out of the loop
-    Eigen::MatrixXf dpfg_dlambda;
-    std::vector<Eigen::MatrixXf> dpfg_dx;
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> dpfg_dlambda;
+    std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>> dpfg_dx;
     std::vector<std::shared_ptr<Type>> dpfg_dx_order;
     UpdaterHelper::get_feature_jacobian_representation(state, feature, dpfg_dlambda, dpfg_dx, dpfg_dx_order);
 
@@ -433,9 +433,9 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
         // Our calibration between the IMU and CAMi frames
         std::shared_ptr<Vec> distortion = state->_cam_intrinsics.at(pair.first);
         std::shared_ptr<PoseJPL> calibration = state->_calib_IMUtoCAM.at(pair.first);
-        Eigen::Matrix<float,3,3> R_ItoC = calibration->Rot();
-        Eigen::Matrix<float,3,1> p_IinC = calibration->pos();
-        Eigen::Matrix<float,8,1> cam_d = distortion->value();
+        Eigen::Matrix<f_ekf,3,3> R_ItoC = calibration->Rot();
+        Eigen::Matrix<f_ekf,3,1> p_IinC = calibration->pos();
+        Eigen::Matrix<f_ekf,8,1> cam_d = distortion->value();
 
         // Loop through all measurements for this specific camera
         for (size_t m = 0; m < feature.timestamps[pair.first].size(); m++) {
@@ -445,54 +445,54 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
 
             // Get current IMU clone state
             std::shared_ptr<PoseJPL> clone_Ii = state->_clones_IMU.at(feature.timestamps[pair.first].at(m));
-            Eigen::Matrix<float,3,3> R_GtoIi = clone_Ii->Rot();
-            Eigen::Matrix<float,3,1> p_IiinG = clone_Ii->pos();
+            Eigen::Matrix<f_ekf,3,3> R_GtoIi = clone_Ii->Rot();
+            Eigen::Matrix<f_ekf,3,1> p_IiinG = clone_Ii->pos();
 
             // Get current feature in the IMU
-            Eigen::Matrix<float,3,1> p_FinIi = R_GtoIi*(p_FinG-p_IiinG);
+            Eigen::Matrix<f_ekf,3,1> p_FinIi = R_GtoIi*(p_FinG-p_IiinG);
 
             // Project the current feature into the current frame of reference
-            Eigen::Matrix<float,3,1> p_FinCi = R_ItoC*p_FinIi+p_IinC;
-            Eigen::Matrix<float,2,1> uv_norm;
+            Eigen::Matrix<f_ekf,3,1> p_FinCi = R_ItoC*p_FinIi+p_IinC;
+            Eigen::Matrix<f_ekf,2,1> uv_norm;
             uv_norm << p_FinCi(0)/p_FinCi(2),p_FinCi(1)/p_FinCi(2);
 
             // Distort the normalized coordinates (false=radtan, true=fisheye)
-            Eigen::Matrix<float,2,1> uv_dist;
+            Eigen::Matrix<f_ekf,2,1> uv_dist;
 
             // Calculate distortion uv and jacobian
             if(state->_cam_intrinsics_model.at(pair.first)) {
 
                 // Calculate distorted coordinates for fisheye
-                float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-                float theta = std::atan(r);
-                float theta_d = theta+cam_d(4)*std::pow(theta,3)+cam_d(5)*std::pow(theta,5)+cam_d(6)*std::pow(theta,7)+cam_d(7)*std::pow(theta,9);
+                f_ekf r = flx::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+                f_ekf theta = flx::atan(r);
+                f_ekf theta_d = theta+cam_d(4)*flx::pow(theta,3)+cam_d(5)*flx::pow(theta,5)+cam_d(6)*flx::pow(theta,7)+cam_d(7)*flx::pow(theta,9);
 
                 // Handle when r is small (meaning our xy is near the camera center)
-                float inv_r = (r > 1e-8)? 1.0/r : 1.0;
-                float cdist = (r > 1e-8)? theta_d * inv_r : 1.0;
+                f_ekf inv_r = (r > 1e-8)? f_ekf(1.0)/r : f_ekf(1.0);
+                f_ekf cdist = (r > 1e-8)? theta_d * inv_r : f_ekf(1.0);
 
                 // Calculate distorted coordinates for fisheye
-                float x1 = uv_norm(0)*cdist;
-                float y1 = uv_norm(1)*cdist;
+                f_ekf x1 = uv_norm(0)*cdist;
+                f_ekf y1 = uv_norm(1)*cdist;
                 uv_dist(0) = cam_d(0)*x1 + cam_d(2);
                 uv_dist(1) = cam_d(1)*y1 + cam_d(3);
 
             } else {
 
                 // Calculate distorted coordinates for radial
-                float r = std::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
-                float r_2 = r*r;
-                float r_4 = r_2*r_2;
-                float x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
-                float y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
+                f_ekf r = flx::sqrt(uv_norm(0)*uv_norm(0)+uv_norm(1)*uv_norm(1));
+                f_ekf r_2 = r*r;
+                f_ekf r_4 = r_2*r_2;
+                f_ekf x1 = uv_norm(0)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+2*cam_d(6)*uv_norm(0)*uv_norm(1)+cam_d(7)*(r_2+2*uv_norm(0)*uv_norm(0));
+                f_ekf y1 = uv_norm(1)*(1+cam_d(4)*r_2+cam_d(5)*r_4)+cam_d(6)*(r_2+2*uv_norm(1)*uv_norm(1))+2*cam_d(7)*uv_norm(0)*uv_norm(1);
                 uv_dist(0) = cam_d(0)*x1 + cam_d(2);
                 uv_dist(1) = cam_d(1)*y1 + cam_d(3);
 
             }
 
             // Our residual
-            Eigen::Matrix<float,2,1> uv_m;
-            uv_m << (float)feature.uvs[pair.first].at(m)(0), (float)feature.uvs[pair.first].at(m)(1);
+            Eigen::Matrix<f_ekf,2,1> uv_m;
+            uv_m << (f_ekf)feature.uvs[pair.first].at(m)(0), (f_ekf)feature.uvs[pair.first].at(m)(1);
             res.block(2*c,0,2,1) = uv_m - uv_dist;
 
 
@@ -512,20 +512,20 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
             }
 
             // Compute Jacobians in respect to normalized image coordinates and possibly the camera intrinsics
-            Eigen::Matrix<float,2,2> dz_dzn = Eigen::Matrix<float,2,2>::Zero();
-            Eigen::Matrix<float,2,8> dz_dzeta = Eigen::Matrix<float,2,8>::Zero();
+            Eigen::Matrix<f_ekf,2,2> dz_dzn = Eigen::Matrix<f_ekf,2,2>::Zero();
+            Eigen::Matrix<f_ekf,2,8> dz_dzeta = Eigen::Matrix<f_ekf,2,8>::Zero();
             UpdaterHelper::get_feature_jacobian_intrinsics(state, uv_norm, state->_cam_intrinsics_model.at(pair.first), cam_d, dz_dzn, dz_dzeta);
 
             // Normalized coordinates in respect to projection function
-            Eigen::Matrix<float,2,3> dzn_dpfc = Eigen::Matrix<float,2,3>::Zero();
+            Eigen::Matrix<f_ekf,2,3> dzn_dpfc = Eigen::Matrix<f_ekf,2,3>::Zero();
             dzn_dpfc << 1/p_FinCi(2),0,-p_FinCi(0)/(p_FinCi(2)*p_FinCi(2)),
                     0, 1/p_FinCi(2),-p_FinCi(1)/(p_FinCi(2)*p_FinCi(2));
 
             // Derivative of p_FinCi in respect to p_FinIi
-            Eigen::Matrix<float,3,3> dpfc_dpfg = R_ItoC*R_GtoIi;
+            Eigen::Matrix<f_ekf,3,3> dpfc_dpfg = R_ItoC*R_GtoIi;
 
             // Derivative of p_FinCi in respect to camera clone state
-            Eigen::Matrix<float,3,6> dpfc_dclone = Eigen::Matrix<float,3,6>::Zero();
+            Eigen::Matrix<f_ekf,3,6> dpfc_dclone = Eigen::Matrix<f_ekf,3,6>::Zero();
             dpfc_dclone.block(0,0,3,3).noalias() = R_ItoC*skew_x(p_FinIi);
             dpfc_dclone.block(0,3,3,3) = -dpfc_dpfg;
 
@@ -534,8 +534,8 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
 
 
             // Precompute some matrices
-            Eigen::Matrix<float,2,3> dz_dpfc = dz_dzn*dzn_dpfc;
-            Eigen::Matrix<float,2,3> dz_dpfg = dz_dpfc*dpfc_dpfg;
+            Eigen::Matrix<f_ekf,2,3> dz_dpfc = dz_dzn*dzn_dpfc;
+            Eigen::Matrix<f_ekf,2,3> dz_dpfg = dz_dpfc*dpfc_dpfg;
 
             // CHAINRULE: get the total feature Jacobian
             H_f.block(2*c,0,2,H_f.cols()).noalias() = dz_dpfg*dpfg_dlambda;
@@ -556,9 +556,9 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
             if(state->_options.do_calib_camera_pose) {
 
                 // Calculate the Jacobian
-                Eigen::Matrix<float,3,6> dpfc_dcalib = Eigen::Matrix<float,3,6>::Zero();
+                Eigen::Matrix<f_ekf,3,6> dpfc_dcalib = Eigen::Matrix<f_ekf,3,6>::Zero();
                 dpfc_dcalib.block(0,0,3,3) = skew_x(p_FinCi-p_IinC);
-                dpfc_dcalib.block(0,3,3,3) = Eigen::Matrix<float,3,3>::Identity();
+                dpfc_dcalib.block(0,3,3,3) = Eigen::Matrix<f_ekf,3,3>::Identity();
 
                 // Chainrule it and add it to the big jacobian
                 H_x.block(2*c,map_hx[calibration],2,calibration->size()).noalias() += dz_dpfc*dpfc_dcalib;
@@ -581,13 +581,13 @@ void UpdaterHelper::get_feature_jacobian_full(std::shared_ptr<State> state, Upda
 }
 
 
-void UpdaterHelper::nullspace_project_inplace(Eigen::MatrixXf &H_f, Eigen::MatrixXf &H_x, Eigen::VectorXf &res) {
+void UpdaterHelper::nullspace_project_inplace(Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_f, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_x, Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res) {
 
     // Apply the left nullspace of H_f to all variables
     // Based on "Matrix Computations 4th Edition by Golub and Van Loan"
     // See page 252, Algorithm 5.2.4 for how these two loops work
     // They use "matlab" index notation, thus we need to subtract 1 from all index
-    Eigen::JacobiRotation<float> tempHo_GR;
+    Eigen::JacobiRotation<f_ekf> tempHo_GR;
     for (int n = 0; n < H_f.cols(); ++n) {
         for (int m = (int) H_f.rows() - 1; m > n; m--) {
             // Givens matrix G
@@ -614,7 +614,7 @@ void UpdaterHelper::nullspace_project_inplace(Eigen::MatrixXf &H_f, Eigen::Matri
 
 
 
-void UpdaterHelper::measurement_compress_inplace(Eigen::MatrixXf &H_x, Eigen::VectorXf &res) {
+void UpdaterHelper::measurement_compress_inplace(Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_x, Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res) {
 
     // Return if H_x is a fat matrix (there is no need to compress in this case)
     if(H_x.rows() <= H_x.cols())
@@ -624,7 +624,7 @@ void UpdaterHelper::measurement_compress_inplace(Eigen::MatrixXf &H_x, Eigen::Ve
     // Based on "Matrix Computations 4th Edition by Golub and Van Loan"
     // See page 252, Algorithm 5.2.4 for how these two loops work
     // They use "matlab" index notation, thus we need to subtract 1 from all index
-    Eigen::JacobiRotation<float> tempHo_GR;
+    Eigen::JacobiRotation<f_ekf> tempHo_GR;
     for (int n=0; n<H_x.cols(); n++) {
         for (int m=(int)H_x.rows()-1; m>n; m--) {
             // Givens matrix G

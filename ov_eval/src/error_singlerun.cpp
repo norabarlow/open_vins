@@ -106,12 +106,12 @@ int main(int argc, char **argv) {
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
     std::vector<f_ts> times;
-    std::vector<Eigen::Matrix<float,7,1>> poses;
-    std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
+    std::vector<Eigen::Matrix<f_ekf,7,1>> poses;
+    std::vector<Eigen::Matrix<f_ekf,3,3>> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
     // Print its length and stats
-    float length = ov_eval::Loader::get_total_length(poses);
-    printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),length);
+    f_ekf length = ov_eval::Loader::get_total_length(poses);
+    printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),double(length));
 
     // Create our trajectory object
     ov_eval::ResultTrajectory traj(argv[3], argv[2], argv[1]);
@@ -128,19 +128,19 @@ int main(int argc, char **argv) {
     printf("======================================\n");
     printf("Absolute Trajectory Error\n");
     printf("======================================\n");
-    printf("rmse_ori = %.3f | rmse_pos = %.3f\n",error_ori.rmse,error_pos.rmse);
-    printf("mean_ori = %.3f | mean_pos = %.3f\n",error_ori.mean,error_pos.mean);
-    printf("min_ori  = %.3f | min_pos  = %.3f\n",error_ori.min,error_pos.min);
-    printf("max_ori  = %.3f | max_pos  = %.3f\n",error_ori.max,error_pos.max);
-    printf("std_ori  = %.3f | std_pos  = %.3f\n",error_ori.std,error_pos.std);
+    printf("rmse_ori = %.3f | rmse_pos = %.3f\n",double(error_ori.rmse),double(error_pos.rmse));
+    printf("mean_ori = %.3f | mean_pos = %.3f\n",double(error_ori.mean),double(error_pos.mean));
+    printf("min_ori  = %.3f | min_pos  = %.3f\n",double(error_ori.min),double(error_pos.min));
+    printf("max_ori  = %.3f | max_pos  = %.3f\n",double(error_ori.max),double(error_pos.max));
+    printf("std_ori  = %.3f | std_pos  = %.3f\n",double(error_ori.std),double(error_pos.std));
 
     //===========================================================
     // Relative pose error
     //===========================================================
 
     // Calculate
-    std::vector<float> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
-    std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
+    std::vector<f_ekf> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
+    std::map<f_ekf,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
     traj.calculate_rpe(segments, error_rpe);
 
     // Print it
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
     printf("Relative Pose Error\n");
     printf("======================================\n");
     for(const auto &seg : error_rpe) {
-        printf("seg %d - median_ori = %.3f | median_pos = %.3f (%d samples)\n",(int)seg.first,seg.second.first.median,seg.second.second.median,(int)seg.second.second.values.size());
+        printf("seg %d - median_ori = %.3f | median_pos = %.3f (%d samples)\n",(int)seg.first,double(seg.second.first.median),double(seg.second.second.median),(int)seg.second.second.values.size());
         //printf("seg %d - std_ori  = %.3f | std_pos  = %.3f\n",(int)seg.first,seg.second.first.std,seg.second.second.std);
     }
 
@@ -163,18 +163,19 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(800, 600);
 
     // Plot each RPE next to each other
-    float ct = 1;
-    float width = 0.50;
-    std::vector<float> xticks;
+    f_ekf ct = 1;
+    f_ekf width = 0.50;
+    std::vector<f_ekf> xticks;
     std::vector<std::string> labels;
     for(const auto &seg : error_rpe) {
         xticks.push_back(ct);
         labels.push_back(std::to_string((int)seg.first));
-        matplotlibcpp::boxplot(seg.second.first.values, ct++, width, "blue", "-", params_rpe);
+        matplotlibcpp::boxplot(seg.second.first.values, ct, width, "blue", "-", params_rpe);
+        ct = ct + 1;
     }
 
     // Display to the user
-    matplotlibcpp::xlim(0.5f,ct-0.5f);
+    matplotlibcpp::xlim(f_ekf(0.5),ct-f_ekf(0.5));
     matplotlibcpp::xticks(xticks,labels);
     matplotlibcpp::title("Relative Orientation Error");
     matplotlibcpp::ylabel("orientation error (deg)");
@@ -187,11 +188,12 @@ int main(int argc, char **argv) {
     // Plot each RPE next to each other
     ct = 1;
     for(const auto &seg : error_rpe) {
-        matplotlibcpp::boxplot(seg.second.second.values, ct++, width, "blue", "-", params_rpe);
+        matplotlibcpp::boxplot(seg.second.second.values, ct, width, "blue", "-", params_rpe);
+        ct = ct + 1;
     }
 
     // Display to the user
-    matplotlibcpp::xlim(0.5f,ct-0.5f);
+    matplotlibcpp::xlim(f_ekf(0.5),ct-f_ekf(0.5));
     matplotlibcpp::xticks(xticks,labels);
     matplotlibcpp::title("Relative Position Error");
     matplotlibcpp::ylabel("translation error (m)");
@@ -212,10 +214,10 @@ int main(int argc, char **argv) {
     printf("======================================\n");
     printf("Normalized Estimation Error Squared\n");
     printf("======================================\n");
-    printf("mean_ori = %.3f | mean_pos = %.3f\n",nees_ori.mean,nees_pos.mean);
-    printf("min_ori  = %.3f | min_pos  = %.3f\n",nees_ori.min,nees_pos.min);
-    printf("max_ori  = %.3f | max_pos  = %.3f\n",nees_ori.max,nees_pos.max);
-    printf("std_ori  = %.3f | std_pos  = %.3f\n",nees_ori.std,nees_pos.std);
+    printf("mean_ori = %.3f | mean_pos = %.3f\n",double(nees_ori.mean),double(nees_pos.mean));
+    printf("min_ori  = %.3f | min_pos  = %.3f\n",double(nees_ori.min),double(nees_pos.min));
+    printf("max_ori  = %.3f | max_pos  = %.3f\n",double(nees_ori.max),double(nees_pos.max));
+    printf("std_ori  = %.3f | std_pos  = %.3f\n",double(nees_ori.std),double(nees_pos.std));
     printf("======================================\n");
 
 

@@ -70,7 +70,7 @@ namespace ov_msckf {
          * @param app Core estimator manager
          * @param sim Simulator if we are simulating
          */
-        RosVisualizer(ros::NodeHandle &nh, std::shared_ptr<VioManager> app, std::shared_ptr<Simulator> sim=nullptr);
+        RosVisualizer(ros::NodeHandle &nh, std::shared_ptr<VioManager> app, std::shared_ptr<void()> sim=nullptr);
 
 
         /**
@@ -115,7 +115,8 @@ namespace ov_msckf {
         std::shared_ptr<VioManager> _app;
 
         /// Simulator (is nullptr if we are not sim'ing)
-        std::shared_ptr<Simulator> _sim;
+        //std::shared_ptr<Simulator> _sim;
+        std::shared_ptr<void()> _sim;
 
         // Our publishers
         ros::Publisher pub_poseimu, pub_odomimu, pub_pathimu;
@@ -131,10 +132,10 @@ namespace ov_msckf {
 
         // Groundtruth infomation
         ros::Publisher pub_pathgt, pub_posegt;
-        float summed_rmse_ori = 0.0;
-        float summed_rmse_pos = 0.0;
-        float summed_nees_ori = 0.0;
-        float summed_nees_pos = 0.0;
+        f_ekf summed_rmse_ori = 0.0;
+        f_ekf summed_rmse_pos = 0.0;
+        f_ekf summed_nees_ori = 0.0;
+        f_ekf summed_nees_pos = 0.0;
         size_t summed_number = 0;
 
         // Start and end timestamps

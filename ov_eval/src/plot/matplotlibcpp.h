@@ -235,7 +235,7 @@ namespace matplotlibcpp {
         detail::s_backend = name;
     }
 
-    inline bool annotate(std::string annotation, float x, float y)
+    inline bool annotate(std::string annotation, f_ekf x, f_ekf y)
     {
         PyObject * xy = PyTuple_New(2);
         PyObject * str = PyString_FromString(annotation.c_str());
@@ -262,8 +262,8 @@ namespace matplotlibcpp {
 #ifndef WITHOUT_NUMPY
 // Type selector for numpy array conversion
     template <typename T> struct select_npy_type { const static NPY_TYPES type = NPY_NOTYPE; }; //Default
-    template <> struct select_npy_type<float> { const static NPY_TYPES type = NPY_DOUBLE; };
-    template <> struct select_npy_type<float> { const static NPY_TYPES type = NPY_FLOAT; };
+    template <> struct select_npy_type<f_ekf> { const static NPY_TYPES type = NPY_DOUBLE; };
+    template <> struct select_npy_type<f_ekf> { const static NPY_TYPES type = NPY_FLOAT; };
     template <> struct select_npy_type<bool> { const static NPY_TYPES type = NPY_BOOL; };
     template <> struct select_npy_type<int8_t> { const static NPY_TYPES type = NPY_INT8; };
     template <> struct select_npy_type<int16_t> { const static NPY_TYPES type = NPY_SHORT; };
@@ -281,7 +281,7 @@ namespace matplotlibcpp {
         NPY_TYPES type = select_npy_type<Numeric>::type;
         if (type == NPY_NOTYPE)
         {
-            std::vector<float> vd(v.size());
+            std::vector<f_ekf> vd(v.size());
             npy_intp vsize = v.size();
             std::copy(v.begin(),v.end(),vd.begin());
             PyObject* varray = PyArray_SimpleNewFromData(1, &vsize, NPY_DOUBLE, (void*)(vd.data()));
@@ -305,7 +305,7 @@ namespace matplotlibcpp {
         PyArrayObject *varray =
                 (PyArrayObject *)PyArray_SimpleNew(2, vsize, NPY_DOUBLE);
 
-        float *vd_begin = static_cast<float *>(PyArray_DATA(varray));
+        f_ekf *vd_begin = static_cast<f_ekf *>(PyArray_DATA(varray));
 
         for (const ::std::vector<Numeric> &v_row : v) {
             if (v_row.size() != static_cast<size_t>(vsize[1]))
@@ -550,7 +550,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
     template< typename Numeric>
     bool hist(const std::vector<Numeric>& y, long bins=10,std::string color="b",
-              float alpha=1.0, bool cumulative=false)
+              f_ekf alpha=1.0, bool cumulative=false)
     {
 
         PyObject* yarray = get_array(y);
@@ -611,7 +611,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         internal::imshow((void *) ptr, NPY_UINT8, rows, columns, colors, keywords);
     }
 
-    void imshow(const float *ptr, const int rows, const int columns, const int colors, const std::map<std::string, std::string> &keywords = {})
+    void imshow(const f_ekf *ptr, const int rows, const int columns, const int colors, const std::map<std::string, std::string> &keywords = {})
     {
         internal::imshow((void *) ptr, NPY_FLOAT, rows, columns, colors, keywords);
     }
@@ -651,7 +651,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     template<typename NumericX, typename NumericY>
     bool scatter(const std::vector<NumericX>& x,
                  const std::vector<NumericY>& y,
-                 const float s=1.0) // The marker size in points**2
+                 const f_ekf s=1.0) // The marker size in points**2
     {
         assert(x.size() == y.size());
 
@@ -675,7 +675,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template< typename Numeric>
-    bool bar(const std::vector<Numeric>& y, std::string ec = "black", std::string ls = "-", float lw = 1.0,
+    bool bar(const std::vector<Numeric>& y, std::string ec = "black", std::string ls = "-", f_ekf lw = 1.0,
              const std::map<std::string, std::string>& keywords = {})
     {
         PyObject* yarray = get_array(y);
@@ -705,11 +705,11 @@ PyObject* get_array(const std::vector<Numeric>& v)
         return res;
     }
 
-    inline bool subplots_adjust(const std::map<std::string, float>& keywords = {})
+    inline bool subplots_adjust(const std::map<std::string, f_ekf>& keywords = {})
     {
 
         PyObject* kwargs = PyDict_New();
-        for (std::map<std::string, float>::const_iterator it =
+        for (std::map<std::string, f_ekf>::const_iterator it =
                 keywords.begin(); it != keywords.end(); ++it) {
             PyDict_SetItemString(kwargs, it->first.c_str(),
                                  PyFloat_FromDouble(it->second));
@@ -728,7 +728,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template< typename Numeric>
-    bool named_hist(std::string label,const std::vector<Numeric>& y, long bins=10, std::string color="b", float alpha=1.0)
+    bool named_hist(std::string label,const std::vector<Numeric>& y, long bins=10, std::string color="b", f_ekf alpha=1.0)
     {
         PyObject* yarray = get_array(y);
 
@@ -809,7 +809,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
     template<typename NumericX>
-    bool boxplot(const std::vector<NumericX>& x, const float &position, const float &width, const std::string &color, const std::string &linestyle,
+    bool boxplot(const std::vector<NumericX>& x, const f_ekf &position, const f_ekf &width, const std::string &color, const std::string &linestyle,
                  const std::map<std::string, std::string>& keywords = {}, bool vert=true)
     {
 
@@ -1246,8 +1246,8 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
         const size_t dpi = 100;
         PyObject* size = PyTuple_New(2);
-        PyTuple_SetItem(size, 0, PyFloat_FromDouble((float)w / dpi));
-        PyTuple_SetItem(size, 1, PyFloat_FromDouble((float)h / dpi));
+        PyTuple_SetItem(size, 0, PyFloat_FromDouble(f_ekf(w) / dpi));
+        PyTuple_SetItem(size, 1, PyFloat_FromDouble(f_ekf(h) / dpi));
 
         PyObject* kwargs = PyDict_New();
         PyDict_SetItemString(kwargs, "figsize", size);
@@ -1305,14 +1305,14 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
 
-    inline float* xlim()
+    inline f_ekf* xlim()
     {
         PyObject* args = PyTuple_New(0);
         PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_xlim, args);
         PyObject* left = PyTuple_GetItem(res,0);
         PyObject* right = PyTuple_GetItem(res,1);
 
-        float* arr = new float[2];
+        f_ekf* arr = new f_ekf[2];
         arr[0] = PyFloat_AsDouble(left);
         arr[1] = PyFloat_AsDouble(right);
 
@@ -1323,14 +1323,14 @@ PyObject* get_array(const std::vector<Numeric>& v)
     }
 
 
-    inline float* ylim()
+    inline f_ekf* ylim()
     {
         PyObject* args = PyTuple_New(0);
         PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_ylim, args);
         PyObject* left = PyTuple_GetItem(res,0);
         PyObject* right = PyTuple_GetItem(res,1);
 
-        float* arr = new float[2];
+        f_ekf* arr = new f_ekf[2];
         arr[0] = PyFloat_AsDouble(left);
         arr[1] = PyFloat_AsDouble(right);
 
@@ -1660,7 +1660,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         Py_DECREF(res);
     }
 
-    inline std::vector<std::array<float, 2>> ginput(const int numClicks = 1, const std::map<std::string, std::string>& keywords = {})
+    inline std::vector<std::array<f_ekf, 2>> ginput(const int numClicks = 1, const std::map<std::string, std::string>& keywords = {})
     {
         PyObject *args = PyTuple_New(1);
         PyTuple_SetItem(args, 0, PyLong_FromLong(numClicks));
@@ -1680,11 +1680,11 @@ PyObject* get_array(const std::vector<Numeric>& v)
         if (!res) throw std::runtime_error("Call to ginput() failed.");
 
         const size_t len = PyList_Size(res);
-        std::vector<std::array<float, 2>> out;
+        std::vector<std::array<f_ekf, 2>> out;
         out.reserve(len);
         for (size_t i = 0; i < len; i++) {
             PyObject *current = PyList_GetItem(res, i);
-            std::array<float, 2> position;
+            std::array<f_ekf, 2> position;
             position[0] = PyFloat_AsDouble(PyTuple_GetItem(current, 0));
             position[1] = PyFloat_AsDouble(PyTuple_GetItem(current, 1));
             out.push_back(position);
@@ -1799,8 +1799,8 @@ PyObject* get_array(const std::vector<Numeric>& v)
                 if(begin(ticks) == end(ticks)) return true;
 
                 // We could use additional meta-programming to deduce the correct element type of y,
-                // but all values have to be convertible to float anyways
-                std::vector<float> y;
+                // but all values have to be convertible to f_ekf anyways
+                std::vector<f_ekf> y;
                 for(auto x : ticks) y.push_back(f(x));
                 return plot_impl<std::false_type>()(ticks,y,format);
             }
@@ -1822,16 +1822,16 @@ PyObject* get_array(const std::vector<Numeric>& v)
  * This group of plot() functions is needed to support initializer lists, i.e. calling
  *    plot( {1,2,3,4} )
  */
-    inline bool plot(const std::vector<float>& x, const std::vector<float>& y, const std::string& format = "") {
-        return plot<float,float>(x,y,format);
+    inline bool plot(const std::vector<f_ekf>& x, const std::vector<f_ekf>& y, const std::string& format = "") {
+        return plot<f_ekf,f_ekf>(x,y,format);
     }
 
-    inline bool plot(const std::vector<float>& y, const std::string& format = "") {
-        return plot<float>(y,format);
+    inline bool plot(const std::vector<f_ekf>& y, const std::string& format = "") {
+        return plot<f_ekf>(y,format);
     }
 
-    inline bool plot(const std::vector<float>& x, const std::vector<float>& y, const std::map<std::string, std::string>& keywords) {
-        return plot<float>(x,y,keywords);
+    inline bool plot(const std::vector<f_ekf>& x, const std::vector<f_ekf>& y, const std::map<std::string, std::string>& keywords) {
+        return plot<f_ekf>(x,y,keywords);
     }
 
 /*
@@ -1881,7 +1881,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
         // shorter initialization with name or format only
         // basically calls line, = plot([], [])
         Plot(const std::string& name = "", const std::string& format = "")
-                : Plot(name, std::vector<float>(), std::vector<float>(), format) {}
+                : Plot(name, std::vector<f_ekf>(), std::vector<f_ekf>(), format) {}
 
         template<typename Numeric>
         bool update(const std::vector<Numeric>& x, const std::vector<Numeric>& y) {
@@ -1904,7 +1904,7 @@ PyObject* get_array(const std::vector<Numeric>& v)
 
         // clears the plot but keep it available
         bool clear() {
-            return update(std::vector<float>(), std::vector<float>());
+            return update(std::vector<f_ekf>(), std::vector<f_ekf>());
         }
 
         // definitely remove this line

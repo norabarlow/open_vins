@@ -123,7 +123,7 @@ namespace ov_msckf {
         friend class StateHelper;
 
         /// Covariance of all active variables
-        Eigen::MatrixXf _Cov;
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> _Cov;
 
         /// Vector of variables
         std::vector<std::shared_ptr<Type>> _variables;

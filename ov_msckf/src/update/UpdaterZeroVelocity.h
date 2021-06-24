@@ -62,14 +62,14 @@ namespace ov_msckf {
          * @param zupt_max_velocity Max velocity we should consider to do a update with
          * @param zupt_noise_multiplier Multiplier of our IMU noise matrix (default should be 1.0)
          */
-        UpdaterZeroVelocity(UpdaterOptions &options, Propagator::NoiseManager &noises, Eigen::Vector3f gravity, float zupt_max_velocity, float zupt_noise_multiplier)
+        UpdaterZeroVelocity(UpdaterOptions &options, Propagator::NoiseManager &noises, Eigen::Matrix<f_ekf,3,1> gravity, f_ekf zupt_max_velocity, f_ekf zupt_noise_multiplier)
                             : _options(options), _noises(noises), _gravity(gravity), _zupt_max_velocity(zupt_max_velocity), _zupt_noise_multiplier(zupt_noise_multiplier) {
 
             // Save our raw pixel noise squared
-            _noises.sigma_w_2 = std::pow(_noises.sigma_w,2);
-            _noises.sigma_a_2 = std::pow(_noises.sigma_a,2);
-            _noises.sigma_wb_2 = std::pow(_noises.sigma_wb,2);
-            _noises.sigma_ab_2 = std::pow(_noises.sigma_ab,2);
+            _noises.sigma_w_2 = flx::pow(_noises.sigma_w,2);
+            _noises.sigma_a_2 = flx::pow(_noises.sigma_a,2);
+            _noises.sigma_wb_2 = flx::pow(_noises.sigma_wb,2);
+            _noises.sigma_ab_2 = flx::pow(_noises.sigma_ab,2);
 
             // Initialize the chi squared test table with confidence level 0.95
             // https://github.com/KumarRobotics/msckf_vio/blob/050c50defa5a7fd9a04c1eed5687b405f02919b5/src/msckf_vio.cpp#L215-L221
@@ -131,16 +131,16 @@ namespace ov_msckf {
         Propagator::NoiseManager _noises;
 
         /// Gravity vector
-        Eigen::Matrix<float, 3, 1> _gravity;
+        Eigen::Matrix<f_ekf, 3, 1> _gravity;
 
         /// Max velocity (m/s) that we should consider a zupt with
-        float _zupt_max_velocity = 1.0;
+        f_ekf _zupt_max_velocity = 1.0;
 
         /// Multiplier of our IMU noise matrix (default should be 1.0)
-        float _zupt_noise_multiplier = 1.0;
+        f_ekf _zupt_noise_multiplier = 1.0;
 
         /// Chi squared 95th percentile table (lookup would be size of residual)
-        std::map<int, float> chi_squared_table;
+        std::map<int, f_ekf> chi_squared_table;
 
         /// Our history of IMU messages (time, angular, linear)
         std::vector<ov_core::ImuData> imu_data;

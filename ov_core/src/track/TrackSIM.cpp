@@ -26,7 +26,7 @@ using namespace ov_core;
 
 
 
-void TrackSIM::feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+void TrackSIM::feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> &feats) {
 
 
     // Assert our two vectors are equal

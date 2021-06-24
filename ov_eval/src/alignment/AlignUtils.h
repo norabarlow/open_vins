@@ -53,9 +53,9 @@ namespace ov_eval {
          * Equation (17)-(18) in [Zhang et al. 2018 IROS](http://rpg.ifi.uzh.ch/docs/IROS18_Zhang.pdf) paper.
          * @param C Data matrix
          */
-        static inline float get_best_yaw(const Eigen::Matrix<float, 3, 3> &C) {
-            float A = C(0, 1) - C(1, 0);
-            float B = C(0, 0) + C(1, 1);
+        static inline f_ekf get_best_yaw(const Eigen::Matrix<f_ekf, 3, 3> &C) {
+            f_ekf A = C(0, 1) - C(1, 0);
+            f_ekf B = C(0, 0) + C(1, 1);
             //return M_PI_2 - atan2(B, A);
             return atan2(A, B);
         }
@@ -65,12 +65,12 @@ namespace ov_eval {
          * @param data Vector of data
          * @return Mean value
          */
-        static inline Eigen::Matrix<float, 3, 1> get_mean(const std::vector<Eigen::Matrix<float, 3, 1>> &data) {
-            Eigen::Matrix<float, 3, 1> mean = Eigen::Matrix<float, 3, 1>::Zero();
+        static inline Eigen::Matrix<f_ekf, 3, 1> get_mean(const std::vector<Eigen::Matrix<f_ekf, 3, 1>> &data) {
+            Eigen::Matrix<f_ekf, 3, 1> mean = Eigen::Matrix<f_ekf, 3, 1>::Zero();
             for (size_t i = 0; i < data.size(); i++) {
                 mean.noalias() += data[i];
             }
-            mean /= data.size();
+            mean /= f_ekf(data.size());
             return mean;
         }
 
@@ -86,30 +86,30 @@ namespace ov_eval {
          * @param known_scale Whether to fix scale
          * @param yaw_only Whether to only use yaw orientation (such as when frames are already gravity aligned)
          */
-        static void align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &data,
-                                  const std::vector<Eigen::Matrix<float, 3, 1>> &model,
-                                  Eigen::Matrix<float, 3, 3> &R, Eigen::Matrix<float, 3, 1> &t,
-                                  float &s, bool known_scale, bool yaw_only);
+        static void align_umeyama(const std::vector<Eigen::Matrix<f_ekf, 3, 1>> &data,
+                                  const std::vector<Eigen::Matrix<f_ekf, 3, 1>> &model,
+                                  Eigen::Matrix<f_ekf, 3, 3> &R, Eigen::Matrix<f_ekf, 3, 1> &t,
+                                  f_ekf &s, bool known_scale, bool yaw_only);
 
         /**
          * @brief Will intersect our loaded data so that we have common timestamps.
          * @param offset Time offset to append to our estimate
          * @param max_difference Biggest allowed difference between matched timesteps
          */
-        static void perform_association(float offset, float max_difference,
+        static void perform_association(f_ekf offset, f_ekf max_difference,
                                         std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
-                                        std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses);
+                                        std::vector<Eigen::Matrix<f_ekf,7,1>> &est_poses, std::vector<Eigen::Matrix<f_ekf,7,1>> &gt_poses);
 
         /**
          * @brief Will intersect our loaded data so that we have common timestamps.
          * @param offset Time offset to append to our estimate
          * @param max_difference Biggest allowed difference between matched timesteps
          */
-        static void perform_association(float offset, float max_difference,
+        static void perform_association(f_ekf offset, f_ekf max_difference,
                                         std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
-                                        std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
-                                        std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
-                                        std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos);
+                                        std::vector<Eigen::Matrix<f_ekf,7,1>> &est_poses, std::vector<Eigen::Matrix<f_ekf,7,1>> &gt_poses,
+                                        std::vector<Eigen::Matrix<f_ekf,3,3>> &est_covori, std::vector<Eigen::Matrix<f_ekf,3,3>> &est_covpos,
+                                        std::vector<Eigen::Matrix<f_ekf,3,3>> &gt_covori, std::vector<Eigen::Matrix<f_ekf,3,3>> &gt_covpos);
 
 
 

@@ -40,6 +40,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized -Wmaybe-uninit
 # Include our header files
 include_directories(
         src
+        ${EIGEN3_INCLUDE_DIR}
 )
 
 ##################################################

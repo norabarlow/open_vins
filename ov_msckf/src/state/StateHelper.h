@@ -78,7 +78,7 @@ namespace ov_msckf {
          */
         static void EKFPropagation(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &order_NEW,
                                    const std::vector<std::shared_ptr<Type>> &order_OLD,
-                                   const Eigen::MatrixXf &Phi, const Eigen::MatrixXf &Q);
+                                   const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &Phi, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &Q);
 
         /**
          * @brief Performs EKF update of the state (see @ref linear-meas page)
@@ -89,7 +89,7 @@ namespace ov_msckf {
          * @param R updating measurement covariance
          */
         static void EKFUpdate(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &H_order,
-                              const Eigen::MatrixXf &H, const Eigen::VectorXf &res, const Eigen::MatrixXf &R);
+                              const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H, const Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R);
 
         /**
          * @brief This will fix the initial covariance matrix gauge freedoms (4fof, yaw and position).
@@ -102,7 +102,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param q_GtoI Initial rotation from global frame to the first ever IMU orientation.
          */
-        static void fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Vector4f &q_GtoI);
+        static void fix_4fof_gauge_freedoms(std::shared_ptr<State> state, const Eigen::Matrix<f_ekf,4,1> &q_GtoI);
 
         /**
         * @brief For a given set of variables, this will this will calculate a smaller covariance.
@@ -115,7 +115,7 @@ namespace ov_msckf {
         * @param small_variables Vector of variables whose marginal covariance is desired
         * @return marginal covariance of the passed variables
         */
-        static Eigen::MatrixXf get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables);
+        static Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> get_marginal_covariance(std::shared_ptr<State> state, const std::vector<std::shared_ptr<Type>> &small_variables);
 
 
         /**
@@ -128,7 +128,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @return covariance of current state
          */
-        static Eigen::MatrixXf get_full_covariance(std::shared_ptr<State> state);
+        static Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> get_full_covariance(std::shared_ptr<State> state);
 
         /**
          * @brief Marginalizes a variable, properly modifying the ordering/covariances in the state
@@ -171,7 +171,7 @@ namespace ov_msckf {
          * @param chi_2_mult Value we should multiply the chi2 threshold by (larger means it will be accepted more measurements)
          */
         static bool initialize(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                               Eigen::MatrixXf &H_R, Eigen::MatrixXf &H_L, Eigen::MatrixXf &R, Eigen::VectorXf &res, float chi_2_mult);
+                               Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_R, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_L, Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R, Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res, f_ekf chi_2_mult);
 
 
         /**
@@ -189,7 +189,7 @@ namespace ov_msckf {
          * @param res Residual of initializing measurements
          */
         static void initialize_invertible(std::shared_ptr<State> state, std::shared_ptr<Type> new_variable, const std::vector<std::shared_ptr<Type>> &H_order,
-                                          const Eigen::MatrixXf &H_R, const Eigen::MatrixXf &H_L, const Eigen::MatrixXf &R, const Eigen::VectorXf &res);
+                                          const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_R, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &H_L, const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> &R, const Eigen::Matrix<f_ekf,Eigen::Dynamic,1> &res);
 
 
         /**
@@ -216,7 +216,7 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param last_w The estimated angular velocity at cloning time (used to estimate imu-cam time offset)
          */
-        static void augment_clone(std::shared_ptr<State> state, Eigen::Matrix<float, 3, 1> last_w);
+        static void augment_clone(std::shared_ptr<State> state, Eigen::Matrix<f_ekf, 3, 1> last_w);
 
 
         /**

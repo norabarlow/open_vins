@@ -73,7 +73,7 @@ namespace ov_core {
          * @param camids Camera ids that we have simulated measurements for
          * @param feats Raw uv simulated measurements
          */
-        void feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats);
+        void feed_measurement_simulation(f_ts timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> &feats);
 
 
     protected:

@@ -52,15 +52,15 @@ namespace ov_eval {
          * @param cov_pos Vector of position covariances at each timestep (empty if we can't load)
          */
         static void load_data(std::string path_traj,
-                              std::vector<f_ts> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
-                              std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos);
+                              std::vector<f_ts> &times, std::vector<Eigen::Matrix<f_ekf,7,1>> &poses,
+                              std::vector<Eigen::Matrix<f_ekf,3,3>> &cov_ori, std::vector<Eigen::Matrix<f_ekf,3,3>> &cov_pos);
 
         /**
          * @brief Load an arbitrary sized row of *space* separated values, used for our simulation
          * @param path Path to our text file to load
          * @param values Each row of values
          */
-        static void load_simulation(std::string path, std::vector<Eigen::VectorXf> &values);
+        static void load_simulation(std::string path, std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> &values);
 
         /**
          * @brief Load *comma* separated timing file from pid_ros.py file
@@ -87,7 +87,7 @@ namespace ov_eval {
          * @param poses Pose at every timestep [pos,quat]
          * @return Distance travels (meters)
          */
-        static float get_total_length(const std::vector<Eigen::Matrix<float,7,1>> &poses);
+        static f_ekf get_total_length(const std::vector<Eigen::Matrix<f_ekf,7,1>> &poses);
 
     private:
 

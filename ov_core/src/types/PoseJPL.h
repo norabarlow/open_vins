@@ -47,7 +47,7 @@ namespace ov_type {
             _p = std::shared_ptr<Vec>(new Vec(3));
 
             // Set our default state value
-            Eigen::Matrix<float, 7, 1> pose0;
+            Eigen::Matrix<f_ekf, 7, 1> pose0;
             pose0.setZero();
             pose0(3) = 1.0;
             set_value_internal(pose0);
@@ -75,13 +75,13 @@ namespace ov_type {
          *
          * @param dx Correction vector (orientation then position)
          */
-        void update(const Eigen::VectorXf& dx) override {
+        void update(const Eigen::Matrix<f_ekf,Eigen::Dynamic,1>& dx) override {
 
             assert(dx.rows() == _size);
 
-            Eigen::Matrix<float, 7, 1> newX = _value;
+            Eigen::Matrix<f_ekf, 7, 1> newX = _value;
 
-            Eigen::Matrix<float, 4, 1> dq;
+            Eigen::Matrix<f_ekf, 4, 1> dq;
             dq << .5 * dx.block(0, 0, 3, 1), 1.0;
             dq = ov_core::quatnorm(dq);
 
@@ -99,7 +99,7 @@ namespace ov_type {
          * @brief Sets the value of the estimate
          * @param new_value New value we should set
          */
-        void set_value(const Eigen::MatrixXf& new_value) override {
+        void set_value(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) override {
             set_value_internal(new_value);
         }
 
@@ -107,7 +107,7 @@ namespace ov_type {
          * @brief Sets the value of the first estimate
          * @param new_value New value we should set
          */
-        void set_fej(const Eigen::MatrixXf& new_value) override {
+        void set_fej(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) override {
             set_fej_internal(new_value);
         }
 
@@ -128,32 +128,32 @@ namespace ov_type {
         }
 
         /// Rotation access
-        Eigen::Matrix<float, 3, 3> Rot() const {
+        Eigen::Matrix<f_ekf, 3, 3> Rot() const {
             return _q->Rot();
         }
 
         /// FEJ Rotation access
-        Eigen::Matrix<float, 3, 3> Rot_fej() const {
+        Eigen::Matrix<f_ekf, 3, 3> Rot_fej() const {
             return _q->Rot_fej();;
         }
 
         /// Rotation access as quaternion
-        Eigen::Matrix<float, 4, 1> quat() const {
+        Eigen::Matrix<f_ekf, 4, 1> quat() const {
             return _q->value();
         }
 
         /// FEJ Rotation access as quaternion
-        Eigen::Matrix<float, 4, 1> quat_fej() const {
+        Eigen::Matrix<f_ekf, 4, 1> quat_fej() const {
             return _q->fej();
         }
 
         /// Position access
-        Eigen::Matrix<float, 3, 1> pos() const {
+        Eigen::Matrix<f_ekf, 3, 1> pos() const {
             return _p->value();
         }
 
         // FEJ position access
-        Eigen::Matrix<float, 3, 1> pos_fej() const {
+        Eigen::Matrix<f_ekf, 3, 1> pos_fej() const {
             return _p->fej();
         }
 
@@ -179,7 +179,7 @@ namespace ov_type {
          * @brief Sets the value of the estimate
          * @param new_value New value we should set
          */
-        void set_value_internal(const Eigen::MatrixXf& new_value) {
+        void set_value_internal(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) {
 
             assert(new_value.rows() == 7);
             assert(new_value.cols() == 1);
@@ -197,7 +197,7 @@ namespace ov_type {
          * @brief Sets the value of the first estimate
          * @param new_value New value we should set
          */
-        void set_fej_internal(const Eigen::MatrixXf& new_value) {
+        void set_fej_internal(const Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>& new_value) {
 
             assert(new_value.rows() == 7);
             assert(new_value.cols() == 1);

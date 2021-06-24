@@ -90,9 +90,9 @@ namespace ov_core {
      * @param[in] rot 3x3 rotation matrix
      * @return 4x1 quaternion
      */
-    inline Eigen::Matrix<float, 4, 1> rot_2_quat(const Eigen::Matrix<float, 3, 3> &rot) {
-        Eigen::Matrix<float, 4, 1> q;
-        float T = rot.trace();
+    inline Eigen::Matrix<f_ekf, 4, 1> rot_2_quat(const Eigen::Matrix<f_ekf, 3, 3> &rot) {
+        Eigen::Matrix<f_ekf, 4, 1> q;
+        f_ekf T = rot.trace();
         if ((rot(0, 0) >= T) && (rot(0, 0) >= rot(1, 1)) && (rot(0, 0) >= rot(2, 2))) {
             //cout << "case 1- " << endl;
             q(0) = sqrt((1 + (2 * rot(0, 0)) - T) / 4);
@@ -141,8 +141,8 @@ namespace ov_core {
      * @param[in] w 3x1 vector to be made a skew-symmetric
      * @return 3x3 skew-symmetric matrix
      */
-    inline Eigen::Matrix<float, 3, 3> skew_x(const Eigen::Matrix<float, 3, 1> &w) {
-        Eigen::Matrix<float, 3, 3> w_x;
+    inline Eigen::Matrix<f_ekf, 3, 3> skew_x(const Eigen::Matrix<f_ekf, 3, 1> &w) {
+        Eigen::Matrix<f_ekf, 3, 3> w_x;
         w_x << 0, -w(2), w(1),
                 w(2), 0, -w(0),
                 -w(1), w(0), 0;
@@ -161,11 +161,11 @@ namespace ov_core {
      * @param[in] q JPL quaternion
      * @return 3x3 SO(3) rotation matrix
      */
-    inline Eigen::Matrix<float, 3, 3> quat_2_Rot(const Eigen::Matrix<float, 4, 1> &q) {
-        Eigen::Matrix<float, 3, 3> q_x = skew_x(q.block(0, 0, 3, 1));
-        Eigen::MatrixXf Rot = (2 * std::pow(q(3, 0), 2) - 1) * Eigen::MatrixXf::Identity(3, 3)
-                              - 2 * q(3, 0) * q_x +
-                              2 * q.block(0, 0, 3, 1) * (q.block(0, 0, 3, 1).transpose());
+    inline Eigen::Matrix<f_ekf, 3, 3> quat_2_Rot(const Eigen::Matrix<f_ekf, 4, 1> &q) {
+        Eigen::Matrix<f_ekf, 3, 3> q_x = skew_x(q.block(0, 0, 3, 1));
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Rot = (2 * flx::pow(q(3, 0), f_ekf(2)) - 1) * Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3)
+                              - f_ekf(2) * q(3, 0) * q_x +
+                              f_ekf(2) * q.block(0, 0, 3, 1) * (q.block(0, 0, 3, 1).transpose());
         return Rot;
     }
 
@@ -191,11 +191,11 @@ namespace ov_core {
      * @param[in] p Second JPL quaternion
      * @return 4x1 resulting p*q quaternion
      */
-    inline Eigen::Matrix<float, 4, 1> quat_multiply(const Eigen::Matrix<float, 4, 1> &q, const Eigen::Matrix<float, 4, 1> &p) {
-        Eigen::Matrix<float, 4, 1> q_t;
-        Eigen::Matrix<float, 4, 4> Qm;
+    inline Eigen::Matrix<f_ekf, 4, 1> quat_multiply(const Eigen::Matrix<f_ekf, 4, 1> &q, const Eigen::Matrix<f_ekf, 4, 1> &p) {
+        Eigen::Matrix<f_ekf, 4, 1> q_t;
+        Eigen::Matrix<f_ekf, 4, 4> Qm;
         // create big L matrix
-        Qm.block(0, 0, 3, 3) = q(3, 0) * Eigen::MatrixXf::Identity(3, 3) - skew_x(q.block(0, 0, 3, 1));
+        Qm.block(0, 0, 3, 3) = q(3, 0) * Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3) - skew_x(q.block(0, 0, 3, 1));
         Qm.block(0, 3, 3, 1) = q.block(0, 0, 3, 1);
         Qm.block(3, 0, 1, 3) = -q.block(0, 0, 3, 1).transpose();
         Qm(3, 3) = q(3, 0);
@@ -217,8 +217,8 @@ namespace ov_core {
      * @param[in] w_x skew-symmetric matrix
      * @return 3x1 vector portion of skew
      */
-    inline Eigen::Matrix<float, 3, 1> vee(const Eigen::Matrix<float, 3, 3> &w_x) {
-        Eigen::Matrix<float, 3, 1> w;
+    inline Eigen::Matrix<f_ekf, 3, 1> vee(const Eigen::Matrix<f_ekf, 3, 3> &w_x) {
+        Eigen::Matrix<f_ekf, 3, 1> w;
         w << w_x(2, 1), w_x(0, 2), w_x(1, 0);
         return w;
     }
@@ -244,25 +244,25 @@ namespace ov_core {
      * @param[in] w 3x1 vector we will take the exponential of
      * @return SO(3) rotation matrix
      */
-    inline Eigen::Matrix<float, 3, 3> exp_so3(const Eigen::Matrix<float, 3, 1> &w) {
+    inline Eigen::Matrix<f_ekf, 3, 3> exp_so3(const Eigen::Matrix<f_ekf, 3, 1> &w) {
         // get theta
-        Eigen::Matrix<float, 3, 3> w_x = skew_x(w);
-        float theta = w.norm();
+        Eigen::Matrix<f_ekf, 3, 3> w_x = skew_x(w);
+        f_ekf theta = w.norm();
         // Handle small angle values
-        float A, B;
+        f_ekf A, B;
         if(theta < 1e-12) {
             A = 1;
             B = 0.5;
         } else {
-            A = sin(theta)/theta;
-            B = (1-cos(theta))/(theta*theta);
+            A = flx::sin(theta)/theta;
+            B = (1-flx::cos(theta))/(theta*theta);
         }
         // compute so(3) rotation
-        Eigen::Matrix<float, 3, 3> R;
+        Eigen::Matrix<f_ekf, 3, 3> R;
         if (theta == 0) {
-            R = Eigen::MatrixXf::Identity(3, 3);
+            R = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3);
         } else {
-            R = Eigen::MatrixXf::Identity(3, 3) + A*w_x + B*w_x*w_x;
+            R = Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3) + A*w_x + B*w_x*w_x;
         }
         return R;
     }
@@ -281,26 +281,26 @@ namespace ov_core {
      * @param[in] R 3x3 SO(3) rotation matrix
      * @return 3x1 in the se(3) space [omegax, omegay, omegaz]
      */
-    inline Eigen::Matrix<float, 3, 1> log_so3(const Eigen::Matrix<float, 3, 3> &R) {
+    inline Eigen::Matrix<f_ekf, 3, 1> log_so3(const Eigen::Matrix<f_ekf, 3, 3> &R) {
         // magnitude of the skew elements (handle edge case where we sometimes have a>1...)
-        float a = 0.5*(R.trace()-1);
-        float theta = (a > 1)? acos(1) : ((a < -1)? acos(-1) : acos(a));
+        f_ekf a = 0.5*(R.trace()-1);
+        f_ekf theta = (a > 1)? flx::acos(f_ekf(1)) : ((a < -1)? flx::acos(f_ekf(-1)) : flx::acos(a));
         // Handle small angle values
-        float D;
+        f_ekf D;
         if(theta < 1e-12) {
             D = 0.5;
         } else {
-            D = theta/(2*sin(theta));
+            D = theta/(2*flx::sin(theta));
         }
         // calculate the skew symetric matrix
-        Eigen::Matrix<float, 3, 3> w_x = D*(R-R.transpose());
+        Eigen::Matrix<f_ekf, 3, 3> w_x = D*(R-R.transpose());
         // check if we are near the identity
-        if (R != Eigen::MatrixXf::Identity(3, 3)) {
-            Eigen::Vector3f vec;
+        if (R != Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3)) {
+            Eigen::Matrix<f_ekf,3,1> vec;
             vec << w_x(2, 1), w_x(0, 2), w_x(1, 0);
             return vec;
         } else {
-            return Eigen::Vector3f::Zero();
+            return Eigen::Matrix<f_ekf,3,1>::Zero();
         }
     }
 
@@ -324,33 +324,33 @@ namespace ov_core {
      * @param vec 6x1 in the se(3) space [omega, u]
      * @return 4x4 SE(3) matrix
      */
-    inline Eigen::Matrix4f exp_se3(Eigen::Matrix<float,6,1> vec) {
+    inline Eigen::Matrix<f_ekf,4,4> exp_se3(Eigen::Matrix<f_ekf,6,1> vec) {
 
         // Precompute our values
-        Eigen::Vector3f w = vec.head(3);
-        Eigen::Vector3f u = vec.tail(3);
-        float theta = sqrt(w.dot(w));
-        Eigen::Matrix3f wskew;
+        Eigen::Matrix<f_ekf,3,1> w = vec.head(3);
+        Eigen::Matrix<f_ekf,3,1> u = vec.tail(3);
+        f_ekf theta = sqrt(w.dot(w));
+        Eigen::Matrix<f_ekf,3,3> wskew;
         wskew << 0, -w(2), w(1), w(2), 0, -w(0), -w(1), w(0), 0;
 
         // Handle small angle values
-        float A, B, C;
+        f_ekf A, B, C;
         if(theta < 1e-12) {
             A = 1;
             B = 0.5;
             C = 1.0/6.0;
         } else {
-            A = sin(theta)/theta;
-            B = (1-cos(theta))/(theta*theta);
+            A = flx::sin(theta)/theta;
+            B = (1-flx::cos(theta))/(theta*theta);
             C = (1-A)/(theta*theta);
         }
 
         // Matrices we need V and Identity
-        Eigen::Matrix3f I_33 = Eigen::Matrix3f::Identity();
-        Eigen::Matrix3f V = I_33 + B*wskew + C*wskew*wskew;
+        Eigen::Matrix<f_ekf,3,3> I_33 = Eigen::Matrix<f_ekf,3,3>::Identity();
+        Eigen::Matrix<f_ekf,3,3> V = I_33 + B*wskew + C*wskew*wskew;
 
         // Get the final matrix to return
-        Eigen::Matrix4f mat = Eigen::Matrix4f::Zero();
+        Eigen::Matrix<f_ekf,4,4> mat = Eigen::Matrix<f_ekf,4,4>::Zero();
         mat.block(0,0,3,3) = I_33 + A*wskew + B*wskew*wskew;
         mat.block(0,3,3,1) = V*u;
         mat(3,3) = 1;
@@ -376,37 +376,37 @@ namespace ov_core {
      * @param mat 4x4 SE(3) matrix
      * @return 6x1 in the se(3) space [omega, u]
      */
-    inline Eigen::Matrix<float,6,1> log_se3(Eigen::Matrix4f mat) {
+    inline Eigen::Matrix<f_ekf,6,1> log_se3(Eigen::Matrix<f_ekf,4,4> mat) {
 
         // Get sub-matrices
-        Eigen::Matrix3f R = mat.block(0,0,3,3);
-        Eigen::Vector3f t = mat.block(0,3,3,1);
+        Eigen::Matrix<f_ekf,3,3> R = mat.block(0,0,3,3);
+        Eigen::Matrix<f_ekf,3,1> t = mat.block(0,3,3,1);
 
         // Get theta (handle edge case where we sometimes have a>1...)
-        float a = 0.5*(R.trace()-1);
-        float theta = (a > 1)? acos(1) : ((a < -1)? acos(-1) : acos(a));
+        f_ekf a = 0.5*(R.trace()-1);
+        f_ekf theta = (a > f_ekf(1))? flx::acos(f_ekf(1)) : ((a < -1)? flx::acos(f_ekf(-1)) : flx::acos(a));
 
         // Handle small angle values
-        float A, B, D, E;
+        f_ekf A, B, D, E;
         if(theta < 1e-12) {
             A = 1;
             B = 0.5;
             D = 0.5;
             E = 1.0/12.0;
         } else {
-            A = sin(theta)/theta;
-            B = (1-cos(theta))/(theta*theta);
-            D = theta/(2*sin(theta));
+            A = flx::sin(theta)/theta;
+            B = (1-flx::cos(theta))/(theta*theta);
+            D = theta/(2*flx::sin(theta));
             E = 1/(theta*theta)*(1-0.5*A/B);
         }
 
         // Get the skew matrix and V inverse
-        Eigen::Matrix3f I_33 = Eigen::Matrix3f::Identity();
-        Eigen::Matrix3f wskew = D*(R-R.transpose());
-        Eigen::Matrix3f Vinv = I_33 - 0.5*wskew+E*wskew*wskew;
+        Eigen::Matrix<f_ekf,3,3> I_33 = Eigen::Matrix<f_ekf,3,3>::Identity();
+        Eigen::Matrix<f_ekf,3,3> wskew = D*(R-R.transpose());
+        Eigen::Matrix<f_ekf,3,3> Vinv = I_33 - f_ekf(0.5)*wskew+E*wskew*wskew;
 
         // Calculate vector
-        Eigen::Matrix<float,6,1> vec;
+        Eigen::Matrix<f_ekf,6,1> vec;
         vec.head(3) << wskew(2, 1), wskew(0, 2), wskew(1, 0);
         vec.tail(3) = Vinv*t;
         return vec;
@@ -424,8 +424,8 @@ namespace ov_core {
      * @param vec 6x1 in the se(3) space [omega, u]
      * @return Lie algebra se(3) 4x4 matrix
      */
-    inline Eigen::Matrix4f hat_se3(const Eigen::Matrix<float,6,1> &vec) {
-        Eigen::Matrix4f mat = Eigen::Matrix4f::Zero();
+    inline Eigen::Matrix<f_ekf,4,4> hat_se3(const Eigen::Matrix<f_ekf,6,1> &vec) {
+        Eigen::Matrix<f_ekf,4,4> mat = Eigen::Matrix<f_ekf,4,4>::Zero();
         mat.block(0,0,3,3) = skew_x(vec.head(3));
         mat.block(0,3,3,1) = vec.tail(3);
         return mat;
@@ -444,8 +444,8 @@ namespace ov_core {
      * @param[in] T SE(3) matrix
      * @return inversed SE(3) matrix
      */
-    inline Eigen::Matrix4f Inv_se3(const Eigen::Matrix4f &T) {
-        Eigen::Matrix4f Tinv = Eigen::Matrix4f::Identity();
+    inline Eigen::Matrix<f_ekf,4,4> Inv_se3(const Eigen::Matrix<f_ekf,4,4> &T) {
+        Eigen::Matrix<f_ekf,4,4> Tinv = Eigen::Matrix<f_ekf,4,4>::Identity();
         Tinv.block(0,0,3,3) = T.block(0,0,3,3).transpose();
         Tinv.block(0,3,3,1) = -Tinv.block(0,0,3,3)*T.block(0,3,3,1);
         return Tinv;
@@ -462,8 +462,8 @@ namespace ov_core {
      * @param[in] q quaternion we want to change
      * @return inversed quaternion
      */
-    inline Eigen::Matrix<float, 4, 1> Inv(Eigen::Matrix<float, 4, 1> q) {
-        Eigen::Matrix<float, 4, 1> qinv;
+    inline Eigen::Matrix<f_ekf, 4, 1> Inv(Eigen::Matrix<f_ekf, 4, 1> q) {
+        Eigen::Matrix<f_ekf, 4, 1> qinv;
         qinv.block(0, 0, 3, 1) = -q.block(0, 0, 3, 1);
         qinv(3, 0) = q(3, 0);
         return qinv;
@@ -475,8 +475,8 @@ namespace ov_core {
      * See equation (48) of trawny tech report [Indirect Kalman Filter for 3D Attitude Estimation](http://mars.cs.umn.edu/tr/reports/Trawny05b.pdf).
      *
      */
-    inline Eigen::Matrix<float, 4, 4> Omega(Eigen::Matrix<float, 3, 1> w) {
-        Eigen::Matrix<float, 4, 4> mat;
+    inline Eigen::Matrix<f_ekf, 4, 4> Omega(Eigen::Matrix<f_ekf, 3, 1> w) {
+        Eigen::Matrix<f_ekf, 4, 4> mat;
         mat.block(0, 0, 3, 3) = -skew_x(w);
         mat.block(3, 0, 1, 3) = -w.transpose();
         mat.block(0, 3, 3, 1) = w;
@@ -489,7 +489,7 @@ namespace ov_core {
      * @param q_t Quaternion to normalized
      * @return Normalized quaterion
      */
-    inline Eigen::Matrix<float, 4, 1> quatnorm(Eigen::Matrix<float, 4, 1> q_t) {
+    inline Eigen::Matrix<f_ekf, 4, 1> quatnorm(Eigen::Matrix<f_ekf, 4, 1> q_t) {
         if (q_t(3, 0) < 0) {
             q_t *= -1;
         }
@@ -508,15 +508,15 @@ namespace ov_core {
      * @param w axis-angle
      * @return The left Jacobian of SO(3)
      */
-    inline Eigen::Matrix<float, 3, 3> Jl_so3(Eigen::Matrix<float, 3, 1> w) {
-        float theta = w.norm();
+    inline Eigen::Matrix<f_ekf, 3, 3> Jl_so3(Eigen::Matrix<f_ekf, 3, 1> w) {
+        f_ekf theta = w.norm();
         if (theta < 1e-12) {
-            return Eigen::MatrixXf::Identity(3, 3);
+            return Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3);
         } else {
-            Eigen::Matrix<float, 3, 1> a = w / theta;
-            Eigen::Matrix<float, 3, 3> J = sin(theta) / theta * Eigen::MatrixXf::Identity(3, 3) +
-                                            (1 - sin(theta) / theta) * a * a.transpose() +
-                                            ((1 - cos(theta)) / theta) * skew_x(a);
+            Eigen::Matrix<f_ekf, 3, 1> a = w / theta;
+            Eigen::Matrix<f_ekf, 3, 3> J = flx::sin(theta) / theta * Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(3, 3) +
+                                            (1 - flx::sin(theta) / theta) * a * a.transpose() +
+                                            ((1 - flx::cos(theta)) / theta) * skew_x(a);
             return J;
         }
     }
@@ -532,7 +532,7 @@ namespace ov_core {
      * @param w axis-angle
      * @return The right Jacobian of SO(3)
      */
-    inline Eigen::Matrix<float, 3, 3> Jr_so3(Eigen::Matrix<float, 3, 1> w) {
+    inline Eigen::Matrix<f_ekf, 3, 3> Jr_so3(Eigen::Matrix<f_ekf, 3, 1> w) {
         return Jl_so3(-w);
     }
 

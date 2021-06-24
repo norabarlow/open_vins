@@ -54,36 +54,36 @@ namespace ov_core {
         struct ClonePose {
 
             /// Rotation
-            Eigen::Matrix<float,3,3> _Rot;
+            Eigen::Matrix<f_ekf,3,3> _Rot;
 
             /// Position
-            Eigen::Matrix<float,3,1> _pos;
+            Eigen::Matrix<f_ekf,3,1> _pos;
 
             /// Constructs pose from rotation and position
-            ClonePose(const Eigen::Matrix<float,3,3> &R, const Eigen::Matrix<float,3,1> &p) {
+            ClonePose(const Eigen::Matrix<f_ekf,3,3> &R, const Eigen::Matrix<f_ekf,3,1> &p) {
                 _Rot = R;
                 _pos = p;
             }
 
             /// Constructs pose from quaternion and position
-            ClonePose(const Eigen::Matrix<float,4,1> &q, const Eigen::Matrix<float,3,1> &p) {
+            ClonePose(const Eigen::Matrix<f_ekf,4,1> &q, const Eigen::Matrix<f_ekf,3,1> &p) {
                 _Rot = quat_2_Rot(q);
                 _pos = p;
             }
 
             /// Default constructor
             ClonePose() {
-                _Rot = Eigen::Matrix<float,3,3>::Identity();
-                _pos = Eigen::Matrix<float,3,1>::Zero();
+                _Rot = Eigen::Matrix<f_ekf,3,3>::Identity();
+                _pos = Eigen::Matrix<f_ekf,3,1>::Zero();
             }
 
             /// Accessor for rotation
-            const Eigen::Matrix<float,3,3> &Rot() {
+            const Eigen::Matrix<f_ekf,3,3> &Rot() {
                 return _Rot;
             }
 
             /// Accessor for position
-            const Eigen::Matrix<float,3,1> &pos() {
+            const Eigen::Matrix<f_ekf,3,1> &pos() {
                 return _pos;
             }
 
@@ -149,7 +149,7 @@ namespace ov_core {
          * @param beta y/z in anchor
          * @param rho 1/z inverse depth
          */
-        float compute_error(std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM,Feature* feat,float alpha,float beta,float rho);
+        f_ekf compute_error(std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM,Feature* feat,f_ekf alpha,f_ekf beta,f_ekf rho);
 
     };
 

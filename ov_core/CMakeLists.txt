@@ -82,12 +82,12 @@ endif()
 add_library(ov_core_lib SHARED
         src/dummy.cpp
         src/init/InertialInitializer.cpp
-        src/sim/BsplineSE3.cpp
+        #        src/sim/BsplineSE3.cpp
         src/track/TrackBase.cpp
         src/track/TrackAruco.cpp
         src/track/TrackDescriptor.cpp
         src/track/TrackKLT.cpp
-        src/track/TrackSIM.cpp
+        #src/track/TrackSIM.cpp
         src/types/Landmark.cpp
         src/feat/Feature.cpp
         src/feat/FeatureInitializer.cpp

@@ -55,7 +55,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestam
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    f_ts t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts t_off_new = f_ts(state->_calib_dt_CAMtoIMU->value()(0));
 
     // First lets construct an IMU vector of measurements we need
     f_ts time0 = state->_timestamp+last_prop_time_offset;
@@ -67,8 +67,8 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestam
     // Q_summed = Phi_i*Q_summed*Phi_i^T + Q_i
     // After summing we can multiple the total phi to get the updated covariance
     // We will then add the noise to the IMU portion of the state
-    Eigen::Matrix<float,15,15> Phi_summed = Eigen::Matrix<float,15,15>::Identity();
-    Eigen::Matrix<float,15,15> Qd_summed = Eigen::Matrix<float,15,15>::Zero();
+    Eigen::Matrix<f_ekf,15,15> Phi_summed = Eigen::Matrix<f_ekf,15,15>::Identity();
+    Eigen::Matrix<f_ekf,15,15> Qd_summed = Eigen::Matrix<f_ekf,15,15>::Zero();
     f_ts dt_summed = 0;
 
     // Loop through all IMU messages, and use them to move the state forward in time
@@ -77,8 +77,8 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestam
         for(size_t i=0; i<prop_data.size()-1; i++) {
 
             // Get the next state Jacobian and noise Jacobian for this IMU reading
-            Eigen::Matrix<float, 15, 15> F = Eigen::Matrix<float, 15, 15>::Zero();
-            Eigen::Matrix<float, 15, 15> Qdi = Eigen::Matrix<float, 15, 15>::Zero();
+            Eigen::Matrix<f_ekf, 15, 15> F = Eigen::Matrix<f_ekf, 15, 15>::Zero();
+            Eigen::Matrix<f_ekf, 15, 15> Qdi = Eigen::Matrix<f_ekf, 15, 15>::Zero();
             predict_and_compute(state, prop_data.at(i), prop_data.at(i+1), F, Qdi);
 
             // Next we should propagate our IMU covariance
@@ -95,7 +95,7 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestam
     }
 
     // Last angular velocity (used for cloning when estimating time offset)
-    Eigen::Matrix<float,3,1> last_w = Eigen::Matrix<float,3,1>::Zero();
+    Eigen::Matrix<f_ekf,3,1> last_w = Eigen::Matrix<f_ekf,3,1>::Zero();
     if(prop_data.size() > 1) last_w = prop_data.at(prop_data.size()-2).wm - state->_imu->bias_g();
     else if(!prop_data.empty()) last_w = prop_data.at(prop_data.size()-1).wm - state->_imu->bias_g();
 
@@ -116,16 +116,16 @@ void Propagator::propagate_and_clone(std::shared_ptr<State> state, f_ts timestam
 
 
 
-void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timestamp, Eigen::Matrix<float,13,1> &state_plus) {
+void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timestamp, Eigen::Matrix<f_ekf,13,1> &state_plus) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
-        last_prop_time_offset = state->_calib_dt_CAMtoIMU->value()(0);
+        last_prop_time_offset = f_ekf(state->_calib_dt_CAMtoIMU->value()(0));
         have_last_prop_time_offset = true;
     }
 
     // Get what our IMU-camera offset should be (t_imu = t_cam + calib_dt)
-    f_ts t_off_new = state->_calib_dt_CAMtoIMU->value()(0);
+    f_ts t_off_new = f_ekf(state->_calib_dt_CAMtoIMU->value()(0));
 
     // First lets construct an IMU vector of measurements we need
     f_ts time0 = state->_timestamp+last_prop_time_offset;
@@ -133,8 +133,8 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timesta
     std::vector<ov_core::ImuData> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // Save the original IMU state
-    Eigen::VectorXf orig_val = state->_imu->value();
-    Eigen::VectorXf orig_fej = state->_imu->fej();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> orig_val = state->_imu->value();
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,1> orig_fej = state->_imu->fej();
 
     // Loop through all IMU messages, and use them to move the state forward in time
     // This uses the zero'th order quat, and then constant acceleration discrete
@@ -146,19 +146,19 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timesta
             //assert(data_plus.timestamp>data_minus.timestamp);
 
             // Corrected imu measurements
-            Eigen::Matrix<float,3,1> w_hat = prop_data.at(i).wm - state->_imu->bias_g();
-            Eigen::Matrix<float,3,1> a_hat = prop_data.at(i).am - state->_imu->bias_a();
-            Eigen::Matrix<float,3,1> w_hat2 = prop_data.at(i+1).wm - state->_imu->bias_g();
-            Eigen::Matrix<float,3,1> a_hat2 = prop_data.at(i+1).am - state->_imu->bias_a();
+            Eigen::Matrix<f_ekf,3,1> w_hat = prop_data.at(i).wm - state->_imu->bias_g();
+            Eigen::Matrix<f_ekf,3,1> a_hat = prop_data.at(i).am - state->_imu->bias_a();
+            Eigen::Matrix<f_ekf,3,1> w_hat2 = prop_data.at(i+1).wm - state->_imu->bias_g();
+            Eigen::Matrix<f_ekf,3,1> a_hat2 = prop_data.at(i+1).am - state->_imu->bias_a();
 
             // Compute the new state mean value
-            Eigen::Vector4f new_q;
-            Eigen::Vector3f new_v, new_p;
+            Eigen::Matrix<f_ekf,4,1> new_q;
+            Eigen::Matrix<f_ekf,3,1> new_v, new_p;
             if(state->_options.use_rk4_integration) predict_mean_rk4(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
             else predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
 
             //Now replace imu estimate and fej with propagated values
-            Eigen::Matrix<float,16,1> imu_x = state->_imu->value();
+            Eigen::Matrix<f_ekf,16,1> imu_x = state->_imu->value();
             imu_x.block(0,0,4,1) = new_q;
             imu_x.block(4,0,3,1) = new_p;
             imu_x.block(7,0,3,1) = new_v;
@@ -169,7 +169,7 @@ void Propagator::fast_state_propagate(std::shared_ptr<State> state, f_ts timesta
     }
 
     // Now record what the predicted state should be
-    state_plus = Eigen::Matrix<float,13,1>::Zero();
+    state_plus = Eigen::Matrix<f_ekf,13,1>::Zero();
     state_plus.block(0,0,4,1) = state->_imu->quat();
     state_plus.block(4,0,3,1) = state->_imu->pos();
     state_plus.block(7,0,3,1) = state->_imu->vel();
@@ -290,25 +290,25 @@ std::vector<ov_core::ImuData> Propagator::select_imu_readings(const std::vector<
 
 
 void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core::ImuData &data_minus, const ov_core::ImuData &data_plus,
-                                     Eigen::Matrix<float,15,15> &F, Eigen::Matrix<float,15,15> &Qd) {
+                                     Eigen::Matrix<f_ekf,15,15> &F, Eigen::Matrix<f_ekf,15,15> &Qd) {
 
     // Set them to zero
     F.setZero();
     Qd.setZero();
 
     // Time elapsed over interval
-    float dt = float(data_plus.timestamp-data_minus.timestamp);
+    f_ekf dt = f_ekf(data_plus.timestamp-data_minus.timestamp);
     //assert(data_plus.timestamp>data_minus.timestamp);
 
     // Corrected imu measurements
-    Eigen::Matrix<float,3,1> w_hat = data_minus.wm - state->_imu->bias_g();
-    Eigen::Matrix<float,3,1> a_hat = data_minus.am - state->_imu->bias_a();
-    Eigen::Matrix<float,3,1> w_hat2 = data_plus.wm - state->_imu->bias_g();
-    Eigen::Matrix<float,3,1> a_hat2 = data_plus.am - state->_imu->bias_a();
+    Eigen::Matrix<f_ekf,3,1> w_hat = data_minus.wm - state->_imu->bias_g();
+    Eigen::Matrix<f_ekf,3,1> a_hat = data_minus.am - state->_imu->bias_a();
+    Eigen::Matrix<f_ekf,3,1> w_hat2 = data_plus.wm - state->_imu->bias_g();
+    Eigen::Matrix<f_ekf,3,1> a_hat2 = data_plus.am - state->_imu->bias_a();
 
     // Compute the new state mean value
-    Eigen::Vector4f new_q;
-    Eigen::Vector3f new_v, new_p;
+    Eigen::Matrix<f_ekf,4,1> new_q;
+    Eigen::Matrix<f_ekf,3,1> new_v, new_p;
     if(state->_options.use_rk4_integration) predict_mean_rk4(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
     else predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
 
@@ -320,18 +320,18 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
     int ba_id = state->_imu->ba()->id()-state->_imu->id();
 
     // Allocate noise Jacobian
-    Eigen::Matrix<float,15,12> G = Eigen::Matrix<float,15,12>::Zero();
+    Eigen::Matrix<f_ekf,15,12> G = Eigen::Matrix<f_ekf,15,12>::Zero();
 
     // Now compute Jacobian of new state wrt old state and noise
     if (state->_options.do_fej) {
 
         // This is the change in the orientation from the end of the last prop to the current prop
         // This is needed since we need to include the "k-th" updated orientation information
-        Eigen::Matrix<float,3,3> Rfej = state->_imu->Rot_fej();
-        Eigen::Matrix<float,3,3> dR = quat_2_Rot(new_q)*Rfej.transpose();
+        Eigen::Matrix<f_ekf,3,3> Rfej = state->_imu->Rot_fej();
+        Eigen::Matrix<f_ekf,3,3> dR = quat_2_Rot(new_q)*Rfej.transpose();
 
-        Eigen::Matrix<float,3,1> v_fej = state->_imu->vel_fej();
-        Eigen::Matrix<float,3,1> p_fej = state->_imu->pos_fej();
+        Eigen::Matrix<f_ekf,3,1> v_fej = state->_imu->vel_fej();
+        Eigen::Matrix<f_ekf,3,1> p_fej = state->_imu->pos_fej();
 
         F.block(th_id, th_id, 3, 3) = dR;
         F.block(th_id, bg_id, 3, 3).noalias() = -dR * Jr_so3(-w_hat * dt) * dt;
@@ -344,7 +344,7 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
         F.block(ba_id, ba_id, 3, 3).setIdentity();
         F.block(p_id, th_id, 3, 3).noalias() = -skew_x(new_p-p_fej-v_fej*dt+0.5*_gravity*dt*dt)*Rfej.transpose();
         //F.block(p_id, th_id, 3, 3).noalias() = -0.5 * Rfej.transpose() * skew_x(2*Rfej*(new_p-p_fej-v_fej*dt+0.5*_gravity*dt*dt));
-        F.block(p_id, v_id, 3, 3) = Eigen::Matrix<float, 3, 3>::Identity() * dt;
+        F.block(p_id, v_id, 3, 3) = Eigen::Matrix<f_ekf, 3, 3>::Identity() * dt;
         F.block(p_id, ba_id, 3, 3) = -0.5 * Rfej.transpose() * dt * dt;
         F.block(p_id, p_id, 3, 3).setIdentity();
 
@@ -352,12 +352,12 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
         //G.block(th_id, 0, 3, 3) = -dR * Jr_so3(-log_so3(dR)) * dt;
         G.block(v_id, 3, 3, 3) = -Rfej.transpose() * dt;
         G.block(p_id, 3, 3, 3) = -0.5 * Rfej.transpose() * dt * dt;
-        G.block(bg_id, 6, 3, 3) = Eigen::Matrix<float,3,3>::Identity();
-        G.block(ba_id, 9, 3, 3) = Eigen::Matrix<float,3,3>::Identity();
+        G.block(bg_id, 6, 3, 3) = Eigen::Matrix<f_ekf,3,3>::Identity();
+        G.block(ba_id, 9, 3, 3) = Eigen::Matrix<f_ekf,3,3>::Identity();
 
     } else {
 
-        Eigen::Matrix<float,3,3> R_Gtoi = state->_imu->Rot();
+        Eigen::Matrix<f_ekf,3,3> R_Gtoi = state->_imu->Rot();
 
         F.block(th_id, th_id, 3, 3) = exp_so3(-w_hat * dt);
         F.block(th_id, bg_id, 3, 3).noalias() = -exp_so3(-w_hat * dt) * Jr_so3(-w_hat * dt) * dt;
@@ -367,32 +367,32 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
         F.block(v_id, ba_id, 3, 3) = -R_Gtoi.transpose() * dt;
         F.block(ba_id, ba_id, 3, 3).setIdentity();
         F.block(p_id, th_id, 3, 3).noalias() = -0.5 * R_Gtoi.transpose() * skew_x(a_hat * dt * dt);
-        F.block(p_id, v_id, 3, 3) = Eigen::Matrix<float, 3, 3>::Identity() * dt;
+        F.block(p_id, v_id, 3, 3) = Eigen::Matrix<f_ekf, 3, 3>::Identity() * dt;
         F.block(p_id, ba_id, 3, 3) = -0.5 * R_Gtoi.transpose() * dt * dt;
         F.block(p_id, p_id, 3, 3).setIdentity();
 
         G.block(th_id, 0, 3, 3) = -exp_so3(-w_hat * dt) * Jr_so3(-w_hat * dt) * dt;
         G.block(v_id, 3, 3, 3) = -R_Gtoi.transpose() * dt;
         G.block(p_id, 3, 3, 3) = -0.5 * R_Gtoi.transpose() * dt * dt;
-        G.block(bg_id, 6, 3, 3) = Eigen::Matrix<float,3,3>::Identity();
-        G.block(ba_id, 9, 3, 3) = Eigen::Matrix<float,3,3>::Identity();
+        G.block(bg_id, 6, 3, 3) = Eigen::Matrix<f_ekf,3,3>::Identity();
+        G.block(ba_id, 9, 3, 3) = Eigen::Matrix<f_ekf,3,3>::Identity();
     }
 
     // Construct our discrete noise covariance matrix
     // Note that we need to convert our continuous time noises to discrete
     // Equations (129) amd (130) of Trawny tech report
-    Eigen::Matrix<float,12,12> Qc = Eigen::Matrix<float,12,12>::Zero();
-    Qc.block(0,0,3,3) = _noises.sigma_w_2/dt*Eigen::Matrix<float,3,3>::Identity();
-    Qc.block(3,3,3,3) = _noises.sigma_a_2/dt*Eigen::Matrix<float,3,3>::Identity();
-    Qc.block(6,6,3,3) = _noises.sigma_wb_2*dt*Eigen::Matrix<float,3,3>::Identity();
-    Qc.block(9,9,3,3) = _noises.sigma_ab_2*dt*Eigen::Matrix<float,3,3>::Identity();
+    Eigen::Matrix<f_ekf,12,12> Qc = Eigen::Matrix<f_ekf,12,12>::Zero();
+    Qc.block(0,0,3,3) = _noises.sigma_w_2/dt*Eigen::Matrix<f_ekf,3,3>::Identity();
+    Qc.block(3,3,3,3) = _noises.sigma_a_2/dt*Eigen::Matrix<f_ekf,3,3>::Identity();
+    Qc.block(6,6,3,3) = _noises.sigma_wb_2*dt*Eigen::Matrix<f_ekf,3,3>::Identity();
+    Qc.block(9,9,3,3) = _noises.sigma_ab_2*dt*Eigen::Matrix<f_ekf,3,3>::Identity();
 
     // Compute the noise injected into the state over the interval
     Qd = G*Qc*G.transpose();
     Qd = 0.5*(Qd+Qd.transpose());
 
     //Now replace imu estimate and fej with propagated values
-    Eigen::Matrix<float,16,1> imu_x = state->_imu->value();
+    Eigen::Matrix<f_ekf,16,1> imu_x = state->_imu->value();
     imu_x.block(0,0,4,1) = new_q;
     imu_x.block(4,0,3,1) = new_p;
     imu_x.block(7,0,3,1) = new_v;
@@ -403,120 +403,120 @@ void Propagator::predict_and_compute(std::shared_ptr<State> state, const ov_core
 
 
 void Propagator::predict_mean_discrete(std::shared_ptr<State> state, f_ts dt,
-                                        const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
-                                        const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
-                                        Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {
+                                        const Eigen::Matrix<f_ekf,3,1> &w_hat1, const Eigen::Matrix<f_ekf,3,1> &a_hat1,
+                                        const Eigen::Matrix<f_ekf,3,1> &w_hat2, const Eigen::Matrix<f_ekf,3,1> &a_hat2,
+                                        Eigen::Matrix<f_ekf,4,1> &new_q, Eigen::Matrix<f_ekf,3,1> &new_v, Eigen::Matrix<f_ekf,3,1> &new_p) {
 
     // If we are averaging the IMU, then do so
-    Eigen::Vector3f w_hat = w_hat1;
-    Eigen::Vector3f a_hat = a_hat1;
+    Eigen::Matrix<f_ekf,3,1> w_hat = w_hat1;
+    Eigen::Matrix<f_ekf,3,1> a_hat = a_hat1;
     if (state->_options.imu_avg) {
         w_hat = .5*(w_hat1+w_hat2);
         a_hat = .5*(a_hat1+a_hat2);
     }
 
     // Pre-compute things
-    float w_norm = w_hat.norm();
-    Eigen::Matrix<float,4,4> I_4x4 = Eigen::Matrix<float,4,4>::Identity();
-    Eigen::Matrix<float,3,3> R_Gtoi = state->_imu->Rot();
+    f_ekf w_norm = w_hat.norm();
+    Eigen::Matrix<f_ekf,4,4> I_4x4 = Eigen::Matrix<f_ekf,4,4>::Identity();
+    Eigen::Matrix<f_ekf,3,3> R_Gtoi = state->_imu->Rot();
 
     // Orientation: Equation (101) and (103) and of Trawny indirect TR
-    Eigen::Matrix<float,4,4> bigO;
+    Eigen::Matrix<f_ekf,4,4> bigO;
     if(w_norm > 1e-20) {
-        bigO = std::cos(0.5*w_norm*float(dt))*I_4x4 + 1/w_norm*std::sin(0.5*w_norm*float(dt))*Omega(w_hat);
+        bigO = flx::cos(f_ekf(0.5)*w_norm*f_ekf(dt))*I_4x4 + f_ekf(1)/w_norm*flx::sin(f_ekf(0.5)*w_norm*f_ekf(dt))*Omega(w_hat);
     } else {
-        bigO = I_4x4 + 0.5*float(dt)*Omega(w_hat);
+        bigO = I_4x4 + f_ekf(0.5)*f_ekf(dt)*Omega(w_hat);
     }
     new_q = quatnorm(bigO*state->_imu->quat());
     //new_q = rot_2_quat(exp_so3(-w_hat*dt)*R_Gtoi);
 
     // Velocity: just the acceleration in the local frame, minus global gravity
-    new_v = state->_imu->vel() + R_Gtoi.transpose()*a_hat*float(dt) - _gravity*float(dt);
+    new_v = state->_imu->vel() + R_Gtoi.transpose()*a_hat*f_ekf(dt) - _gravity*f_ekf(dt);
 
     // Position: just velocity times dt, with the acceleration integrated twice
-    new_p = state->_imu->pos() + state->_imu->vel()*float(dt) + 0.5*R_Gtoi.transpose()*a_hat*float(dt*dt) - 0.5*_gravity*float(dt*dt);
+    new_p = state->_imu->pos() + state->_imu->vel()*f_ekf(dt) + 0.5*R_Gtoi.transpose()*a_hat*f_ekf(dt*dt) - 0.5*_gravity*f_ekf(dt*dt);
 
 }
 
 
 
 void Propagator::predict_mean_rk4(std::shared_ptr<State> state, f_ts dt,
-                                  const Eigen::Vector3f &w_hat1, const Eigen::Vector3f &a_hat1,
-                                  const Eigen::Vector3f &w_hat2, const Eigen::Vector3f &a_hat2,
-                                  Eigen::Vector4f &new_q, Eigen::Vector3f &new_v, Eigen::Vector3f &new_p) {
+                                  const Eigen::Matrix<f_ekf,3,1> &w_hat1, const Eigen::Matrix<f_ekf,3,1> &a_hat1,
+                                  const Eigen::Matrix<f_ekf,3,1> &w_hat2, const Eigen::Matrix<f_ekf,3,1> &a_hat2,
+                                  Eigen::Matrix<f_ekf,4,1> &new_q, Eigen::Matrix<f_ekf,3,1> &new_v, Eigen::Matrix<f_ekf,3,1> &new_p) {
 
     // Pre-compute things
-    Eigen::Vector3f w_hat = w_hat1;
-    Eigen::Vector3f a_hat = a_hat1;
-    Eigen::Vector3f w_alpha = (w_hat2-w_hat1)/float(dt);
-    Eigen::Vector3f a_jerk = (a_hat2-a_hat1)/float(dt);
+    Eigen::Matrix<f_ekf,3,1> w_hat = w_hat1;
+    Eigen::Matrix<f_ekf,3,1> a_hat = a_hat1;
+    Eigen::Matrix<f_ekf,3,1> w_alpha = (w_hat2-w_hat1)/f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> a_jerk = (a_hat2-a_hat1)/f_ekf(dt);
 
     // y0 ================
-    Eigen::Vector4f q_0 = state->_imu->quat();
-    Eigen::Vector3f p_0 = state->_imu->pos();
-    Eigen::Vector3f v_0 = state->_imu->vel();
+    Eigen::Matrix<f_ekf,4,1> q_0 = state->_imu->quat();
+    Eigen::Matrix<f_ekf,3,1> p_0 = state->_imu->pos();
+    Eigen::Matrix<f_ekf,3,1> v_0 = state->_imu->vel();
 
     // k1 ================
-    Eigen::Vector4f dq_0 = {0,0,0,1};
-    Eigen::Vector4f q0_dot = 0.5*Omega(w_hat)*dq_0;
-    Eigen::Vector3f p0_dot = v_0;
-    Eigen::Matrix3f R_Gto0 = quat_2_Rot(quat_multiply(dq_0,q_0));
-    Eigen::Vector3f v0_dot = R_Gto0.transpose()*a_hat-_gravity;
+    Eigen::Matrix<f_ekf,4,1> dq_0 = {0,0,0,1};
+    Eigen::Matrix<f_ekf,4,1> q0_dot = 0.5*Omega(w_hat)*dq_0;
+    Eigen::Matrix<f_ekf,3,1> p0_dot = v_0;
+    Eigen::Matrix<f_ekf,3,3> R_Gto0 = quat_2_Rot(quat_multiply(dq_0,q_0));
+    Eigen::Matrix<f_ekf,3,1> v0_dot = R_Gto0.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k1_q = q0_dot*float(dt);
-    Eigen::Vector3f k1_p = p0_dot*float(dt);
-    Eigen::Vector3f k1_v = v0_dot*float(dt);
+    Eigen::Matrix<f_ekf,4,1> k1_q = q0_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k1_p = p0_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k1_v = v0_dot*f_ekf(dt);
 
     // k2 ================
-    w_hat += 0.5*w_alpha*float(dt);
-    a_hat += 0.5*a_jerk*float(dt);
+    w_hat += 0.5*w_alpha*f_ekf(dt);
+    a_hat += 0.5*a_jerk*f_ekf(dt);
 
-    Eigen::Vector4f dq_1 = quatnorm(dq_0+0.5*k1_q);
-    //Eigen::Vector3f p_1 = p_0+0.5*k1_p;
-    Eigen::Vector3f v_1 = v_0+0.5*k1_v;
+    Eigen::Matrix<f_ekf,4,1> dq_1 = quatnorm(dq_0+0.5*k1_q);
+    //Eigen::Matrix<f_ekf,3,1> p_1 = p_0+0.5*k1_p;
+    Eigen::Matrix<f_ekf,3,1> v_1 = v_0+0.5*k1_v;
 
-    Eigen::Vector4f q1_dot = 0.5*Omega(w_hat)*dq_1;
-    Eigen::Vector3f p1_dot = v_1;
-    Eigen::Matrix3f R_Gto1 = quat_2_Rot(quat_multiply(dq_1,q_0));
-    Eigen::Vector3f v1_dot = R_Gto1.transpose()*a_hat-_gravity;
+    Eigen::Matrix<f_ekf,4,1> q1_dot = 0.5*Omega(w_hat)*dq_1;
+    Eigen::Matrix<f_ekf,3,1> p1_dot = v_1;
+    Eigen::Matrix<f_ekf,3,3> R_Gto1 = quat_2_Rot(quat_multiply(dq_1,q_0));
+    Eigen::Matrix<f_ekf,3,1> v1_dot = R_Gto1.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k2_q = q1_dot*float(dt);
-    Eigen::Vector3f k2_p = p1_dot*float(dt);
-    Eigen::Vector3f k2_v = v1_dot*float(dt);
+    Eigen::Matrix<f_ekf,4,1> k2_q = q1_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k2_p = p1_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k2_v = v1_dot*f_ekf(dt);
 
     // k3 ================
-    Eigen::Vector4f dq_2 = quatnorm(dq_0+0.5*k2_q);
-    //Eigen::Vector3f p_2 = p_0+0.5*k2_p;
-    Eigen::Vector3f v_2 = v_0+0.5*k2_v;
+    Eigen::Matrix<f_ekf,4,1> dq_2 = quatnorm(dq_0+0.5*k2_q);
+    //Eigen::Matrix<f_ekf,3,1> p_2 = p_0+0.5*k2_p;
+    Eigen::Matrix<f_ekf,3,1> v_2 = v_0+0.5*k2_v;
 
-    Eigen::Vector4f q2_dot = 0.5*Omega(w_hat)*dq_2;
-    Eigen::Vector3f p2_dot = v_2;
-    Eigen::Matrix3f R_Gto2 = quat_2_Rot(quat_multiply(dq_2,q_0));
-    Eigen::Vector3f v2_dot = R_Gto2.transpose()*a_hat-_gravity;
+    Eigen::Matrix<f_ekf,4,1> q2_dot = 0.5*Omega(w_hat)*dq_2;
+    Eigen::Matrix<f_ekf,3,1> p2_dot = v_2;
+    Eigen::Matrix<f_ekf,3,3> R_Gto2 = quat_2_Rot(quat_multiply(dq_2,q_0));
+    Eigen::Matrix<f_ekf,3,1> v2_dot = R_Gto2.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k3_q = q2_dot*float(dt);
-    Eigen::Vector3f k3_p = p2_dot*float(dt);
-    Eigen::Vector3f k3_v = v2_dot*float(dt);
+    Eigen::Matrix<f_ekf,4,1> k3_q = q2_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k3_p = p2_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k3_v = v2_dot*f_ekf(dt);
 
     // k4 ================
-    w_hat += 0.5*w_alpha*float(dt);
-    a_hat += 0.5*a_jerk*float(dt);
+    w_hat += 0.5*w_alpha*f_ekf(dt);
+    a_hat += 0.5*a_jerk*f_ekf(dt);
 
-    Eigen::Vector4f dq_3 = quatnorm(dq_0+k3_q);
-    //Eigen::Vector3f p_3 = p_0+k3_p;
-    Eigen::Vector3f v_3 = v_0+k3_v;
+    Eigen::Matrix<f_ekf,4,1> dq_3 = quatnorm(dq_0+k3_q);
+    //Eigen::Matrix<f_ekf,3,1> p_3 = p_0+k3_p;
+    Eigen::Matrix<f_ekf,3,1> v_3 = v_0+k3_v;
 
-    Eigen::Vector4f q3_dot = 0.5*Omega(w_hat)*dq_3;
-    Eigen::Vector3f p3_dot = v_3;
-    Eigen::Matrix3f R_Gto3 = quat_2_Rot(quat_multiply(dq_3,q_0));
-    Eigen::Vector3f v3_dot = R_Gto3.transpose()*a_hat-_gravity;
+    Eigen::Matrix<f_ekf,4,1> q3_dot = 0.5*Omega(w_hat)*dq_3;
+    Eigen::Matrix<f_ekf,3,1> p3_dot = v_3;
+    Eigen::Matrix<f_ekf,3,3> R_Gto3 = quat_2_Rot(quat_multiply(dq_3,q_0));
+    Eigen::Matrix<f_ekf,3,1> v3_dot = R_Gto3.transpose()*a_hat-_gravity;
 
-    Eigen::Vector4f k4_q = q3_dot*float(dt);
-    Eigen::Vector3f k4_p = p3_dot*float(dt);
-    Eigen::Vector3f k4_v = v3_dot*float(dt);
+    Eigen::Matrix<f_ekf,4,1> k4_q = q3_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k4_p = p3_dot*f_ekf(dt);
+    Eigen::Matrix<f_ekf,3,1> k4_v = v3_dot*f_ekf(dt);
 
     // y+dt ================
-    Eigen::Vector4f dq = quatnorm(dq_0+(1.0/6.0)*k1_q+(1.0/3.0)*k2_q+(1.0/3.0)*k3_q+(1.0/6.0)*k4_q);
+    Eigen::Matrix<f_ekf,4,1> dq = quatnorm(dq_0+(1.0/6.0)*k1_q+(1.0/3.0)*k2_q+(1.0/3.0)*k3_q+(1.0/6.0)*k4_q);
     new_q = quat_multiply(dq, q_0);
     new_p = p_0+(1.0/6.0)*k1_p+(1.0/3.0)*k2_p+(1.0/3.0)*k3_p+(1.0/6.0)*k4_p;
     new_v = v_0+(1.0/6.0)*k1_v+(1.0/3.0)*k2_v+(1.0/3.0)*k3_v+(1.0/6.0)*k4_v;

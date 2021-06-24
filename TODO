@@ -1,0 +1,5 @@
+floatx:
+plot all in double or something (currently converting to f_ts, or something)
+
+notes:
+simulation doesn't work because not everything compatible with floatx

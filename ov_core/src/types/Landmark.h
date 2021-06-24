@@ -64,10 +64,10 @@ namespace ov_type {
         bool should_marg = false;
 
         /// First normalized uv coordinate bearing of this measurement (used for single depth representation)
-        Eigen::Vector3f uv_norm_zero;
+        Eigen::Matrix<f_ekf,3,1> uv_norm_zero;
 
         /// First estimate normalized uv coordinate bearing of this measurement (used for single depth representation)
-        Eigen::Vector3f uv_norm_zero_fej;
+        Eigen::Matrix<f_ekf,3,1> uv_norm_zero_fej;
 
         /// What feature representation this feature currently has
         LandmarkRepresentation::Representation _feat_representation;
@@ -77,13 +77,13 @@ namespace ov_type {
          * We want to selectively update the FEJ value if we are using an anchored representation.
          * @param dx Additive error state correction
          */
-        void update(const Eigen::VectorXf& dx) override {
+        void update(const Eigen::Matrix<f_ekf,Eigen::Dynamic,1>& dx) override {
             // Update estimate
             assert(dx.rows() == _size);
             set_value(_value+dx);
             // Ensure we are not near zero in the z-direction
             if (LandmarkRepresentation::is_relative_representation(_feat_representation) && _value(_value.rows()-1) < 1e-8) {
-                printf(YELLOW "WARNING DEPTH %.8f BECAME CLOSE TO ZERO IN UPDATE!!!\n" RESET, _value(_value.rows()-1));
+                printf(YELLOW "WARNING DEPTH %.8f BECAME CLOSE TO ZERO IN UPDATE!!!\n" RESET, double(_value(_value.rows()-1)));
                 should_marg = true;
             }
         }
@@ -93,7 +93,7 @@ namespace ov_type {
          * @param getfej Set to true to get the landmark FEJ value
          * @return Position of feature either in global or anchor frame
          */
-        Eigen::Matrix<float,3,1> get_xyz(bool getfej) const;
+        Eigen::Matrix<f_ekf,3,1> get_xyz(bool getfej) const;
 
 
         /**
@@ -101,7 +101,7 @@ namespace ov_type {
          * @param p_FinG Position of the feature either in global or anchor frame
          * @param isfej Set to true to set the landmark FEJ value
          */
-        void set_from_xyz(Eigen::Matrix<float,3,1> p_FinG, bool isfej);
+        void set_from_xyz(Eigen::Matrix<f_ekf,3,1> p_FinG, bool isfej);
 
 
     };

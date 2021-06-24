@@ -52,12 +52,12 @@ int main(int argc, char **argv) {
     // Load it!
     boost::filesystem::path path_gt(argv[2]);
     std::vector<f_ts> times;
-    std::vector<Eigen::Matrix<float,7,1>> poses;
-    std::vector<Eigen::Matrix3f> cov_ori, cov_pos;
+    std::vector<Eigen::Matrix<f_ekf,7,1>> poses;
+    std::vector<Eigen::Matrix<f_ekf,3,3>> cov_ori, cov_pos;
     ov_eval::Loader::load_data(argv[2], times, poses, cov_ori, cov_pos);
     // Print its length and stats
-    float length = ov_eval::Loader::get_total_length(poses);
-    printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),length);
+    f_ekf length = ov_eval::Loader::get_total_length(poses);
+    printf("[COMP]: %d poses in %s => length of %.2f meters\n",(int)times.size(),path_gt.stem().string().c_str(),double(length));
 
 
     // Get the algorithms we will process
@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
 
 
     // Relative pose error segment lengths
-    //std::vector<float> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
-    std::vector<float> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
+    //std::vector<f_ekf> segments = {8.0, 16.0, 24.0, 32.0, 40.0};
+    std::vector<f_ekf> segments = {7.0, 14.0, 21.0, 28.0, 35.0};
 
 
     //===============================================================================
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
         // Errors for this specific dataset (i.e. our averages over the total runs)
         ov_eval::Statistics ate_dataset_ori, ate_dataset_pos;
         ov_eval::Statistics ate_2f_dataset_ori, ate_2f_dataset_pos;
-        std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
+        std::map<f_ekf,std::pair<ov_eval::Statistics,ov_eval::Statistics>> rpe_dataset;
         for(const auto& len : segments) {
             rpe_dataset.insert({len,{ov_eval::Statistics(),ov_eval::Statistics()}});
         }
@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
 
 
             // Calculate RPE error for this dataset
-            std::map<float,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
+            std::map<f_ekf,std::pair<ov_eval::Statistics,ov_eval::Statistics>> error_rpe;
             traj.calculate_rpe(segments, error_rpe);
             for(const auto& elm : error_rpe) {
                 rpe_dataset.at(elm.first).first.values.insert(rpe_dataset.at(elm.first).first.values.end(),elm.second.first.values.begin(),elm.second.first.values.end());
@@ -193,14 +193,14 @@ int main(int argc, char **argv) {
 
         // Print stats for this specific dataset
         std::string prefix = (ate_dataset_ori.mean > 10 || ate_dataset_pos.mean > 10)? RED : "";
-        printf("%s\tATE: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n" RESET,prefix.c_str(),ate_dataset_ori.mean,ate_dataset_pos.mean,(int)ate_dataset_ori.values.size());
-        printf("\tATE: std_ori  = %.5f | std_pos  = %.5f\n",ate_dataset_ori.std,ate_dataset_pos.std);
-        printf("\tATE 2D: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n",ate_2f_dataset_ori.mean,ate_2f_dataset_pos.mean,(int)ate_2f_dataset_ori.values.size());
-        printf("\tATE 2D: std_ori  = %.5f | std_pos  = %.5f\n",ate_2f_dataset_ori.std,ate_2f_dataset_pos.std);
+        printf("%s\tATE: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n" RESET,prefix.c_str(),double(ate_dataset_ori.mean),double(ate_dataset_pos.mean),(int)ate_dataset_ori.values.size());
+        printf("\tATE: std_ori  = %.5f | std_pos  = %.5f\n",double(ate_dataset_ori.std),double(ate_dataset_pos.std));
+        printf("\tATE 2D: mean_ori = %.3f | mean_pos = %.3f (%d runs)\n",double(ate_2f_dataset_ori.mean),double(ate_2f_dataset_pos.mean),(int)ate_2f_dataset_ori.values.size());
+        printf("\tATE 2D: std_ori  = %.5f | std_pos  = %.5f\n",double(ate_2f_dataset_ori.std),double(ate_2f_dataset_pos.std));
         for(auto &seg : rpe_dataset) {
             seg.second.first.calculate();
             seg.second.second.calculate();
-            printf("\tRPE: seg %d - mean_ori = %.3f | mean_pos = %.3f (%d samples)\n",(int)seg.first,seg.second.first.mean,seg.second.second.mean,(int)seg.second.second.values.size());
+            printf("\tRPE: seg %d - mean_ori = %.3f | mean_pos = %.3f (%d samples)\n",(int)seg.first,double(seg.second.first.mean),double(seg.second.second.mean),(int)seg.second.second.values.size());
             //printf("RPE: seg %d - std_ori  = %.3f | std_pos  = %.3f\n",(int)seg.first,seg.second.first.std,seg.second.second.std);
         }
 
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
         }
         rmse_ori.calculate();
         rmse_pos.calculate();
-        printf("\tRMSE: mean_ori = %.3f | mean_pos = %.3f\n",rmse_ori.mean,rmse_pos.mean);
+        printf("\tRMSE: mean_ori = %.3f | mean_pos = %.3f\n",double(rmse_ori.mean),double(rmse_pos.mean));
 
         // RMSE: Convert into the right format (only use times where all runs have an error)
         ov_eval::Statistics rmse_2f_ori, rmse_2f_pos;
@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
         }
         rmse_2f_ori.calculate();
         rmse_2f_pos.calculate();
-        printf("\tRMSE 2D: mean_ori = %.3f | mean_pos = %.3f\n",rmse_2f_ori.mean,rmse_2f_pos.mean);
+        printf("\tRMSE 2D: mean_ori = %.3f | mean_pos = %.3f\n",double(rmse_2f_ori.mean),double(rmse_2f_pos.mean));
 
         // NEES: Convert into the right format (only use times where all runs have an error)
         ov_eval::Statistics nees_ori, nees_pos;
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
         }
         nees_ori.calculate();
         nees_pos.calculate();
-        printf("\tNEES: mean_ori = %.3f | mean_pos = %.3f\n",nees_ori.mean,nees_pos.mean);
+        printf("\tNEES: mean_ori = %.3f | mean_pos = %.3f\n",double(nees_ori.mean),double(nees_pos.mean));
 
 
 #ifdef HAVE_PYTHONLIBS

@@ -25,8 +25,8 @@ using namespace ov_eval;
 
 
 
-void AlignTrajectory::align_trajectory(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                       Eigen::Matrix3f &R, Eigen::Vector3f &t, float &s, std::string method, int n_aligned) {
+void AlignTrajectory::align_trajectory(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                       Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t, f_ekf &s, std::string method, int n_aligned) {
 
     // Use the correct method
     if (method == "posyaw") {
@@ -57,25 +57,25 @@ void AlignTrajectory::align_trajectory(const std::vector<Eigen::Matrix<float,7,1
 }
 
 
-void AlignTrajectory::align_posyaw_single(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                          Eigen::Matrix3f &R, Eigen::Vector3f &t) {
+void AlignTrajectory::align_posyaw_single(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                          Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t) {
 
     // Get first ever poses
-    Eigen::Vector4f q_es_0 = traj_es.at(0).block(3,0,4,1);
-    Eigen::Vector3f p_es_0 = traj_es.at(0).block(0,0,3,1);
+    Eigen::Matrix<f_ekf,4,1> q_es_0 = traj_es.at(0).block(3,0,4,1);
+    Eigen::Matrix<f_ekf,3,1> p_es_0 = traj_es.at(0).block(0,0,3,1);
 
-    Eigen::Vector4f q_gt_0 = traj_gt.at(0).block(3,0,4,1);
-    Eigen::Vector3f p_gt_0 = traj_gt.at(0).block(0,0,3,1);
+    Eigen::Matrix<f_ekf,4,1> q_gt_0 = traj_gt.at(0).block(3,0,4,1);
+    Eigen::Matrix<f_ekf,3,1> p_gt_0 = traj_gt.at(0).block(0,0,3,1);
 
     // Get rotations from IMU frame to World (note JPL!)
-    Eigen::Matrix3f g_rot = Math::quat_2_Rot(q_gt_0).transpose();
-    Eigen::Matrix3f est_rot = Math::quat_2_Rot(q_es_0).transpose();
+    Eigen::Matrix<f_ekf,3,3> g_rot = Math::quat_2_Rot(q_gt_0).transpose();
+    Eigen::Matrix<f_ekf,3,3> est_rot = Math::quat_2_Rot(q_es_0).transpose();
 
     // Data matrix for the Frobenius problem
-    Eigen::Matrix3f C_R = est_rot*g_rot.transpose();
+    Eigen::Matrix<f_ekf,3,3> C_R = est_rot*g_rot.transpose();
 
     // Recover yaw
-    float theta = AlignUtils::get_best_yaw(C_R);
+    f_ekf theta = AlignUtils::get_best_yaw(C_R);
 
     // Compute rotation
     R = Math::rot_z(theta);
@@ -86,8 +86,8 @@ void AlignTrajectory::align_posyaw_single(const std::vector<Eigen::Matrix<float,
 }
 
 
-void AlignTrajectory::align_posyaw(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                   Eigen::Matrix3f &R, Eigen::Vector3f &t, int n_aligned) {
+void AlignTrajectory::align_posyaw(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                   Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t, int n_aligned) {
 
     // If we only have one, just use the single alignment
     if (n_aligned == 1) {
@@ -96,14 +96,14 @@ void AlignTrajectory::align_posyaw(const std::vector<Eigen::Matrix<float,7,1>> &
 
         // Get just position vectors
         assert(!traj_es.empty());
-        std::vector<Eigen::Vector3f> pos_est, pos_gt;
+        std::vector<Eigen::Matrix<f_ekf,3,1>> pos_est, pos_gt;
         for(size_t i=0; i<traj_es.size() && i<traj_gt.size(); i++) {
             pos_est.push_back(traj_es.at(i).block(0,0,3,1));
             pos_gt.push_back(traj_gt.at(i).block(0,0,3,1));
         }
 
         // Align using the method of Umeyama
-        float s;
+        f_ekf s;
         AlignUtils::align_umeyama(pos_est, pos_gt, R,t,s, true, true);
         assert(s == 1);
     }
@@ -112,19 +112,19 @@ void AlignTrajectory::align_posyaw(const std::vector<Eigen::Matrix<float,7,1>> &
 }
 
 
-void AlignTrajectory::align_se3_single(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                       Eigen::Matrix3f &R, Eigen::Vector3f &t) {
+void AlignTrajectory::align_se3_single(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                       Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t) {
 
     // Get first ever poses
-    Eigen::Vector4f q_es_0 = traj_es.at(0).block(3,0,4,1);
-    Eigen::Vector3f p_es_0 = traj_es.at(0).block(0,0,3,1);
+    Eigen::Matrix<f_ekf,4,1> q_es_0 = traj_es.at(0).block(3,0,4,1);
+    Eigen::Matrix<f_ekf,3,1> p_es_0 = traj_es.at(0).block(0,0,3,1);
 
-    Eigen::Vector4f q_gt_0 = traj_gt.at(0).block(3,0,4,1);
-    Eigen::Vector3f p_gt_0 = traj_gt.at(0).block(0,0,3,1);
+    Eigen::Matrix<f_ekf,4,1> q_gt_0 = traj_gt.at(0).block(3,0,4,1);
+    Eigen::Matrix<f_ekf,3,1> p_gt_0 = traj_gt.at(0).block(0,0,3,1);
 
     // Get rotations from IMU frame to World (note JPL!)
-    Eigen::Matrix3f g_rot = Math::quat_2_Rot(q_gt_0).transpose();
-    Eigen::Matrix3f est_rot = Math::quat_2_Rot(q_es_0).transpose();
+    Eigen::Matrix<f_ekf,3,3> g_rot = Math::quat_2_Rot(q_gt_0).transpose();
+    Eigen::Matrix<f_ekf,3,3> est_rot = Math::quat_2_Rot(q_es_0).transpose();
 
     R.noalias() = g_rot*est_rot.transpose();
     t.noalias() = p_gt_0 - R*p_es_0;
@@ -132,8 +132,8 @@ void AlignTrajectory::align_se3_single(const std::vector<Eigen::Matrix<float,7,1
 }
 
 
-void AlignTrajectory::align_se3(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                Eigen::Matrix3f &R, Eigen::Vector3f &t, int n_aligned) {
+void AlignTrajectory::align_se3(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t, int n_aligned) {
 
     // If we only have one, just use the single alignment
     if (n_aligned == 1) {
@@ -142,14 +142,14 @@ void AlignTrajectory::align_se3(const std::vector<Eigen::Matrix<float,7,1>> &tra
 
         // Get just position vectors
         assert(!traj_es.empty());
-        std::vector<Eigen::Vector3f> pos_est, pos_gt;
+        std::vector<Eigen::Matrix<f_ekf,3,1>> pos_est, pos_gt;
         for(size_t i=0; i<traj_es.size() && i<traj_gt.size(); i++) {
             pos_est.push_back(traj_es.at(i).block(0,0,3,1));
             pos_gt.push_back(traj_gt.at(i).block(0,0,3,1));
         }
 
         // Align using the method of Umeyama
-        float s;
+        f_ekf s;
         AlignUtils::align_umeyama(pos_est, pos_gt, R,t,s, true, false);
     }
 
@@ -159,15 +159,15 @@ void AlignTrajectory::align_se3(const std::vector<Eigen::Matrix<float,7,1>> &tra
 
 
 
-void AlignTrajectory::align_sim3(const std::vector<Eigen::Matrix<float,7,1>> &traj_es, const std::vector<Eigen::Matrix<float,7,1>> &traj_gt,
-                                 Eigen::Matrix3f &R, Eigen::Vector3f &t, float &s, int n_aligned) {
+void AlignTrajectory::align_sim3(const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_es, const std::vector<Eigen::Matrix<f_ekf,7,1>> &traj_gt,
+                                 Eigen::Matrix<f_ekf,3,3> &R, Eigen::Matrix<f_ekf,3,1> &t, f_ekf &s, int n_aligned) {
 
     // Need to have more than two to get
     assert(n_aligned >= 2 || n_aligned == -1);
 
     // Get just position vectors
     assert(!traj_es.empty());
-    std::vector<Eigen::Vector3f> pos_est, pos_gt;
+    std::vector<Eigen::Matrix<f_ekf,3,1>> pos_est, pos_gt;
     for(size_t i=0; i<traj_es.size() && i<traj_gt.size(); i++) {
         pos_est.push_back(traj_es.at(i).block(0,0,3,1));
         pos_gt.push_back(traj_gt.at(i).block(0,0,3,1));

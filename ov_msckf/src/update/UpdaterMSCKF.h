@@ -68,7 +68,7 @@ namespace ov_msckf {
         UpdaterMSCKF(UpdaterOptions &options, FeatureInitializerOptions &feat_init_options) : _options(options) {
 
             // Save our raw pixel noise squared
-            _options.sigma_pix_sq = std::pow(_options.sigma_pix,2);
+            _options.sigma_pix_sq = flx::pow(_options.sigma_pix,2);
 
             // Save our feature initializer
             initializer_feat = std::unique_ptr<FeatureInitializer>(new FeatureInitializer(feat_init_options));
@@ -103,7 +103,7 @@ namespace ov_msckf {
         std::unique_ptr<FeatureInitializer> initializer_feat;
 
         /// Chi squared 95th percentile table (lookup would be size of residual)
-        std::map<int, float> chi_squared_table;
+        std::map<int, f_ekf> chi_squared_table;
 
 
     };

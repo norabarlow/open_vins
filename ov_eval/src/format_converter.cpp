@@ -29,7 +29,7 @@
 
 #include "utils/Colors.h"
 
-
+#include "types.h"
 
 /**
  * Given a CSV file this will convert it to our text file format.
@@ -50,7 +50,7 @@ void process_csv(std::string infile) {
     }
 
     // Loop through each line of this file
-    std::vector<Eigen::VectorXf> traj_data;
+    std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> traj_data;
     std::string current_line;
     while(std::getline(file1, current_line)) {
 
@@ -62,7 +62,7 @@ void process_csv(std::string infile) {
         int i = 0;
         std::istringstream s(current_line);
         std::string field;
-        Eigen::Matrix<float,8,1> data;
+        Eigen::Matrix<f_ekf,8,1> data;
 
         // Loop through this line (timestamp(ns) tx ty tz qw qx qy qz)
         while(std::getline(s,field,',')) {

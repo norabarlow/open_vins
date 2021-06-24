@@ -59,13 +59,13 @@ namespace ov_core { }
  * class Type {
  * protected:
  *   // Current best estimate
- *   Eigen::MatrixXf _value;
+ *   Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> _value;
  *   // Location of error state in covariance
  *   int _id = -1;
  *   // Dimension of error state
  *   int _size = -1;
  *   // Update eq. taking vector to their rep.
- *   void update(const Eigen::VectorXf dx);
+ *   void update(const Eigen::Matrix<f_ekf,Eigen::Dynamic,1> dx);
  * };
  * @endcode
  *

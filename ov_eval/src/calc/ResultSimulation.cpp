@@ -67,17 +67,17 @@ void ResultSimulation::plot_state(bool doplotting, f_ts max_time) {
 
         // Calculate orientation error
         // NOTE: we define our error as e_R = -Log(R*Rhat^T)
-        Eigen::Matrix3f e_R = Math::quat_2_Rot(gt_state.at(i).block(1,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(1,0,4,1)).transpose();
-        Eigen::Vector3f ori_err = -180.0/M_PI*Math::log_so3(e_R);
+        Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(gt_state.at(i).block(1,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(1,0,4,1)).transpose();
+        Eigen::Matrix<f_ekf,3,1> ori_err = f_ekf(-180.0/M_PI)*Math::log_so3(e_R);
         for(int j=0; j<3; j++) {
             error_ori[j].timestamps.push_back(est_state.at(i)(0));
             error_ori[j].values.push_back(ori_err(j));
-            error_ori[j].values_bound.push_back(3*180.0/M_PI*state_cov.at(i)(1+j));
+            error_ori[j].values_bound.push_back(f_ekf(3*180.0)/f_ekf(M_PI)*state_cov.at(i)(1+j));
             error_ori[j].calculate();
         }
 
         // Calculate position error
-        Eigen::Vector3f pos_err = gt_state.at(i).block(5,0,3,1)-est_state.at(i).block(5,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> pos_err = gt_state.at(i).block(5,0,3,1)-est_state.at(i).block(5,0,3,1);
         for(int j=0; j<3; j++) {
             error_pos[j].timestamps.push_back(est_state.at(i)(0));
             error_pos[j].values.push_back(pos_err(j));
@@ -86,7 +86,7 @@ void ResultSimulation::plot_state(bool doplotting, f_ts max_time) {
         }
 
         // Calculate velocity error
-        Eigen::Vector3f vel_err = gt_state.at(i).block(8,0,3,1)-est_state.at(i).block(8,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> vel_err = gt_state.at(i).block(8,0,3,1)-est_state.at(i).block(8,0,3,1);
         for(int j=0; j<3; j++) {
             error_vel[j].timestamps.push_back(est_state.at(i)(0));
             error_vel[j].values.push_back(vel_err(j));
@@ -95,7 +95,7 @@ void ResultSimulation::plot_state(bool doplotting, f_ts max_time) {
         }
 
         // Calculate gyro bias error
-        Eigen::Vector3f bg_err = gt_state.at(i).block(11,0,3,1)-est_state.at(i).block(11,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> bg_err = gt_state.at(i).block(11,0,3,1)-est_state.at(i).block(11,0,3,1);
         for(int j=0; j<3; j++) {
             error_bg[j].timestamps.push_back(est_state.at(i)(0));
             error_bg[j].values.push_back(bg_err(j));
@@ -104,7 +104,7 @@ void ResultSimulation::plot_state(bool doplotting, f_ts max_time) {
         }
 
         // Calculate accel bias error
-        Eigen::Vector3f ba_err = gt_state.at(i).block(14,0,3,1)-est_state.at(i).block(14,0,3,1);
+        Eigen::Matrix<f_ekf,3,1> ba_err = gt_state.at(i).block(14,0,3,1)-est_state.at(i).block(14,0,3,1);
         for(int j=0; j<3; j++) {
             error_ba[j].timestamps.push_back(est_state.at(i)(0));
             error_ba[j].values.push_back(ba_err(j));
@@ -463,10 +463,10 @@ void ResultSimulation::plot_cam_extrinsics(bool doplotting, f_ts max_time) {
         // Loop through each camera and calculate error
         for(int n=0; n<(int)est_state.at(0)(18); n++) {
             // NOTE: we define our error as e_R = -Log(R*Rhat^T)
-            Eigen::Matrix3f e_R = Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose();
-            Eigen::Vector3f ori_err = -180.0/M_PI*Math::log_so3(e_R);
-            //Eigen::Matrix3f e_R = Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose() * Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1));
-            //Eigen::Vector3f ori_err = 180.0/M_PI*Math::log_so3(e_R);
+            Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1)) * Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose();
+            Eigen::Matrix<f_ekf,3,1> ori_err = f_ekf(-180.0/M_PI)*Math::log_so3(e_R);
+            //Eigen::Matrix<f_ekf,3,3> e_R = Math::quat_2_Rot(est_state.at(i).block(27+15*n,0,4,1)).transpose() * Math::quat_2_Rot(gt_state.at(i).block(27+15*n,0,4,1));
+            //Eigen::Matrix<f_ekf,3,1> ori_err = 180.0/M_PI*Math::log_so3(e_R);
             for(int j=0; j<3; j++) {
                 error_cam_ori.at(n).at(j).timestamps.push_back(est_state.at(i)(0));
                 error_cam_ori.at(n).at(j).values.push_back(ori_err(j));

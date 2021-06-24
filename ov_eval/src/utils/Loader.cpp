@@ -25,8 +25,8 @@ using namespace ov_eval;
 
 
 void Loader::load_data(std::string path_traj,
-                       std::vector<f_ts> &times, std::vector<Eigen::Matrix<float,7,1>> &poses,
-                       std::vector<Eigen::Matrix3f> &cov_ori, std::vector<Eigen::Matrix3f> &cov_pos) {
+                       std::vector<f_ts> &times, std::vector<Eigen::Matrix<f_ekf,7,1>> &poses,
+                       std::vector<Eigen::Matrix<f_ekf,3,3>> &cov_ori, std::vector<Eigen::Matrix<f_ekf,3,3>> &cov_pos) {
 
     // Try to open our trajectory file
     std::ifstream file(path_traj);
@@ -48,7 +48,7 @@ void Loader::load_data(std::string path_traj,
         int i = 0;
         std::istringstream s(current_line);
         std::string field;
-        Eigen::Matrix<float,20,1> data;
+        Eigen::Matrix<f_ekf,20,1> data;
         Eigen::Matrix<f_ts,20,1> ddata;
 
         // Loop through this line (timestamp(s) tx ty tz qx qy qz qw Pr11 Pr12 Pr13 Pr22 Pr23 Pr33 Pt11 Pt12 Pt13 Pt22 Pt23 Pt33)
@@ -68,15 +68,15 @@ void Loader::load_data(std::string path_traj,
             times.push_back(ddata(0));
             poses.push_back(data.block(1,0,7,1));
             // covariance values
-            Eigen::Matrix3f c_ori, c_pos;
+            Eigen::Matrix<f_ekf,3,3> c_ori, c_pos;
             c_ori << data(8),data(9),data(10),
                     data(9),data(11),data(12),
                     data(10),data(12),data(13);
             c_pos << data(14),data(15),data(16),
                     data(15),data(17),data(18),
                     data(16),data(18),data(19);
-            c_ori = 0.5*(c_ori+c_ori.transpose());
-            c_pos = 0.5*(c_pos+c_pos.transpose());
+            c_ori = f_ekf(0.5)*(c_ori+c_ori.transpose());
+            c_pos = f_ekf(0.5)*(c_pos+c_pos.transpose());
             cov_ori.push_back(c_ori);
             cov_pos.push_back(c_pos);
         } else if(i >= 8) {
@@ -118,7 +118,7 @@ void Loader::load_data(std::string path_traj,
 
 
 
-void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXf> &values) {
+void Loader::load_simulation(std::string path, std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> &values) {
 
     // Try to open our trajectory file
     std::ifstream file(path);
@@ -139,7 +139,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXf> &val
         // Loop variables
         std::istringstream s(current_line);
         std::string field;
-        std::vector<float> vec;
+        std::vector<f_ekf> vec;
 
         // Loop through this line (timestamp(s) values....)
         while(std::getline(s,field,' ')) {
@@ -151,7 +151,7 @@ void Loader::load_simulation(std::string path, std::vector<Eigen::VectorXf> &val
         }
 
         // Create eigen vector
-        Eigen::VectorXf temp(vec.size());
+        Eigen::Matrix<f_ekf,Eigen::Dynamic,1> temp(int(vec.size()));
         for(size_t i=0; i<vec.size(); i++) {
             temp(i) = vec.at(i);
         }
@@ -233,7 +233,7 @@ void Loader::load_timing_flamegraph(std::string path, std::vector<std::string> &
         }
 
         // Create eigen vector
-        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(vec.size()-1);
+        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(int(vec.size()-1));
         for(size_t i=1; i<vec.size(); i++) {
             temp(i-1) = vec.at(i);
         }
@@ -299,7 +299,7 @@ void Loader::load_timing_percent(std::string path, std::vector<f_ts> &times,
         }
 
         // Create eigen vector
-        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(vec.size());
+        Eigen::Matrix<f_ts, Eigen::Dynamic, 1> temp(int(vec.size()));
         for(size_t i=0; i<vec.size(); i++) {
             temp(i) = vec.at(i);
         }
@@ -337,10 +337,10 @@ void Loader::load_timing_percent(std::string path, std::vector<f_ts> &times,
 
 
 
-float Loader::get_total_length(const std::vector<Eigen::Matrix<float,7,1>> &poses) {
+f_ekf Loader::get_total_length(const std::vector<Eigen::Matrix<f_ekf,7,1>> &poses) {
 
     // Loop through every pose and append its segment
-    float distance = 0.0;
+    f_ekf distance = 0.0;
     for (size_t i=1; i<poses.size(); i++) {
         distance += (poses[i].block(0,0,3,1) - poses[i-1].block(0,0,3,1)).norm();
     }

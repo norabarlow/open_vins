@@ -38,10 +38,10 @@ namespace ov_core {
         f_ts timestamp;
 
         /// Gyroscope reading, angular velocity (rad/s)
-        Eigen::Matrix<float, 3, 1> wm;
+        Eigen::Matrix<f_ekf, 3, 1> wm;
 
         /// Accelerometer reading, linear acceleration (m/s^2)
-        Eigen::Matrix<float, 3, 1> am;
+        Eigen::Matrix<f_ekf, 3, 1> am;
 
         /// Sort function to allow for using of STL containers
         bool operator<(const ImuData& other) const {

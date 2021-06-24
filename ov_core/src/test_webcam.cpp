@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     int grid_x = 5;
     int grid_y = 3;
     int min_px_dist = 10;
-    float knn_ratio = 0.85;
+    f_ekf knn_ratio = 0.85;
     bool do_downsizing = false;
 
     // Parameters for our extractor
@@ -91,12 +91,12 @@ int main(int argc, char** argv)
     printf("downsize aruco image: %d\n", do_downsizing);
 
     // Fake camera info (we don't need this, as we are not using the normalized coordinates for anything)
-    Eigen::Matrix<float,8,1> cam0_calib;
+    Eigen::Matrix<f_ekf,8,1> cam0_calib;
     cam0_calib << 1,1,0,0,0,0,0,0;
 
     // Create our n-camera vectors
     std::map<size_t,bool> camera_fisheye;
-    std::map<size_t,Eigen::VectorXf> camera_calibration;
+    std::map<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> camera_calibration;
     camera_fisheye.insert({0,false});
     camera_calibration.insert({0,cam0_calib});
     camera_fisheye.insert({1,false});

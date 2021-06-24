@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
         // Now print the statistic for this run
         for(size_t i=0; i<names_temp.size(); i++) {
             stats.at(i).calculate();
-            printf("mean_time = %.4f | std = %.4f | 99th = %.4f  | max = %.4f (%s)\n",stats.at(i).mean,stats.at(i).std,stats.at(i).ninetynine,stats.at(i).max,names_temp.at(i).c_str());
+            printf("mean_time = %.4f | std = %.4f | 99th = %.4f  | max = %.4f (%s)\n",double(stats.at(i).mean),double(stats.at(i).std),double(stats.at(i).ninetynine),double(stats.at(i).max),names_temp.at(i).c_str());
         }
 
         // Append the total stats to the big vector

@@ -43,41 +43,41 @@ namespace ov_eval {
     public:
 
         /// Root mean squared for the given values
-        float rmse = 0.0;
+        f_ekf rmse = 0.0;
 
         /// Mean of the given values
-        float mean = 0.0;
+        f_ekf mean = 0.0;
 
         /// Median of the given values
-        float median = 0.0;
+        f_ekf median = 0.0;
 
         /// Standard deviation of given values
-        float std = 0.0;
+        f_ekf std = 0.0;
 
         /// Max of the given values
-        float max = 0.0;
+        f_ekf max = 0.0;
 
         /// Min of the given values
-        float min = 0.0;
+        f_ekf min = 0.0;
 
         /// 99th percentile
-        float ninetynine = 0.0;
+        f_ekf ninetynine = 0.0;
 
         /// Timestamp when these values occured at
         std::vector<f_ts> timestamps;
 
         /// Values (e.g. error or nees at a given time)
-        std::vector<float> values;
+        std::vector<f_ekf> values;
 
         /// Bound of these values (e.g. our expected covariance bound)
-        std::vector<float> values_bound;
+        std::vector<f_ekf> values_bound;
 
 
         /// Will calculate all values from our vectors of information
         void calculate() {
 
             // Sort the data for easy finding of values
-            std::vector<float> values_sorted = values;
+            std::vector<f_ekf> values_sorted = values;
             std::sort(values_sorted.begin(), values_sorted.end());
 
             // If we don't have any data, just return :(
@@ -104,19 +104,19 @@ namespace ov_eval {
             // Compute mean and rmse
             mean = 0;
             for (size_t i = 0; i < values_sorted.size(); i++) {
-                assert(!std::isnan(values_sorted.at(i)));
+                assert(!flx::isnan(values_sorted.at(i)));
                 mean += values_sorted.at(i);
                 rmse += values_sorted.at(i) * values_sorted.at(i);
             }
             mean /= values_sorted.size();
-            rmse = std::sqrt(rmse / values_sorted.size());
+            rmse = flx::sqrt(rmse / values_sorted.size());
 
             // Using mean, compute standard deviation
             std = 0;
             for (size_t i = 0; i < values_sorted.size(); i++) {
-                std += std::pow(values_sorted.at(i) - mean, 2);
+                std += flx::pow(values_sorted.at(i) - mean, f_ekf(2));
             }
-            std = std::sqrt(std / (values_sorted.size() - 1));
+            std = flx::sqrt(std / (values_sorted.size() - 1));
 
             // 99th percentile
             // TODO: is this correct?

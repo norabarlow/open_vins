@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
         printf("[COMP]: processing %s algorithm\n", path_algorithms.at(i).stem().c_str());
 
         // our total summed values
-        std::vector<float> total_times;
+        std::vector<f_ekf> total_times;
         std::vector<Eigen::Matrix<f_ts, Eigen::Dynamic, 1>> total_summed_values;
 
         // Loop through each sub-directory in this folder
@@ -124,9 +124,9 @@ int main(int argc, char **argv) {
         algo_timings.at(algo).at(0).calculate();
         algo_timings.at(algo).at(1).calculate();
         algo_timings.at(algo).at(2).calculate();
-        printf("\tPREC: mean_cpu = %.3f +- %.3f\n",algo_timings.at(algo).at(0).mean,algo_timings.at(algo).at(0).std);
-        printf("\tPREC: mean_mem = %.3f +- %.3f\n",algo_timings.at(algo).at(1).mean,algo_timings.at(algo).at(1).std);
-        printf("\tTHR: mean_threads = %.3f +- %.3f\n",algo_timings.at(algo).at(2).mean,algo_timings.at(algo).at(2).std);
+        printf("\tPREC: mean_cpu = %.3f +- %.3f\n",double(algo_timings.at(algo).at(0).mean),double(algo_timings.at(algo).at(0).std));
+        printf("\tPREC: mean_mem = %.3f +- %.3f\n",double(algo_timings.at(algo).at(1).mean),double(algo_timings.at(algo).at(1).std));
+        printf("\tTHR: mean_threads = %.3f +- %.3f\n",double(algo_timings.at(algo).at(2).mean),double(algo_timings.at(algo).at(2).std));
         printf("======================================\n");
 
     }
@@ -155,11 +155,11 @@ int main(int argc, char **argv) {
     matplotlibcpp::figure_size(1500, 400);
 
     // Plot each RPE next to each other
-    float width = 0.1/(algo_timings.size()+1);
-    std::vector<float> yticks;
+    f_ekf width = 0.1/(algo_timings.size()+1);
+    std::vector<f_ekf> yticks;
     std::vector<std::string> labels;
     int ct_algo = 0;
-    float ct_pos = 0;
+    f_ekf ct_pos = 0;
     for(auto &algo : algo_timings) {
         // Start based on what algorithm we are doing
         ct_pos = 1+1.5*ct_algo*width;
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<float> vec_empty;
+        std::vector<f_ekf> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
         params_empty.insert({"label", algo.first});
         params_empty.insert({"linestyle", linestyle.at(ct_algo/colors.size())});
         params_empty.insert({"color", colors.at(ct_algo%colors.size())});
-        std::vector<float> vec_empty;
+        std::vector<f_ekf> vec_empty;
         matplotlibcpp::plot(vec_empty, vec_empty, params_empty);
         ct_algo++;
     }

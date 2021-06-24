@@ -44,13 +44,13 @@ bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<
     feat->anchor_clone_timestamp = feat->timestamps.at(feat->anchor_cam_id).back();
 
     // Our linear system matrices
-    Eigen::Matrix3f A = Eigen::Matrix3f::Zero();
-    Eigen::Vector3f b = Eigen::Vector3f::Zero();
+    Eigen::Matrix<f_ekf,3,3> A = Eigen::Matrix<f_ekf,3,3>::Zero();
+    Eigen::Matrix<f_ekf,3,1> b = Eigen::Matrix<f_ekf,3,1>::Zero();
 
     // Get the position of the anchor pose
     ClonePose anchorclone = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp);
-    const Eigen::Matrix<float,3,3> &R_GtoA = anchorclone.Rot();
-    const Eigen::Matrix<float,3,1> &p_AinG = anchorclone.pos();
+    const Eigen::Matrix<f_ekf,3,3> &R_GtoA = anchorclone.Rot();
+    const Eigen::Matrix<f_ekf,3,1> &p_AinG = anchorclone.pos();
 
     // Loop through each camera for this feature
     for (auto const& pair : feat->timestamps) {
@@ -59,24 +59,24 @@ bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<
         for (size_t m = 0; m < feat->timestamps.at(pair.first).size(); m++) {
 
             // Get the position of this clone in the global
-            const Eigen::Matrix<float, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
-            const Eigen::Matrix<float, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
+            const Eigen::Matrix<f_ekf, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
+            const Eigen::Matrix<f_ekf, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
 
             // Convert current position relative to anchor
-            Eigen::Matrix<float,3,3> R_AtoCi;
+            Eigen::Matrix<f_ekf,3,3> R_AtoCi;
             R_AtoCi.noalias() = R_GtoCi*R_GtoA.transpose();
-            Eigen::Matrix<float,3,1> p_CiinA;
+            Eigen::Matrix<f_ekf,3,1> p_CiinA;
             p_CiinA.noalias() = R_GtoA*(p_CiinG-p_AinG);
 
             // Get the UV coordinate normal
-            Eigen::Matrix<float, 3, 1> b_i;
+            Eigen::Matrix<f_ekf, 3, 1> b_i;
             b_i << feat->uvs_norm.at(pair.first).at(m)(0), feat->uvs_norm.at(pair.first).at(m)(1), 1;
             b_i = R_AtoCi.transpose() * b_i;
             b_i = b_i / b_i.norm();
-            Eigen::Matrix3f Bperp = skew_x(b_i);
+            Eigen::Matrix<f_ekf,3,3> Bperp = skew_x(b_i);
 
             // Append to our linear system
-            Eigen::Matrix3f Ai = Bperp.transpose() * Bperp;
+            Eigen::Matrix<f_ekf,3,3> Ai = Bperp.transpose() * Bperp;
             A += Ai;
             b += Ai * p_CiinA;
 
@@ -84,18 +84,18 @@ bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<
     }
 
     // Solve the linear system
-    Eigen::MatrixXf p_f = A.colPivHouseholderQr().solve(b);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> p_f = A.colPivHouseholderQr().solve(b);
 
     // Check A and p_f
-    Eigen::JacobiSVD<Eigen::MatrixXf> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXf singularValues;
+    Eigen::JacobiSVD<Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> singularValues;
     singularValues.resize(svd.singularValues().rows(), 1);
     singularValues = svd.singularValues();
-    float condA = singularValues(0, 0) / singularValues(singularValues.rows() - 1, 0);
+    f_ekf condA = singularValues(0, 0) / singularValues(singularValues.rows() - 1, 0);
 
     // If we have a bad condition number, or it is too close
     // Then set the flag for bad (i.e. set z-axis to nan)
-    if (std::abs(condA) > _options.max_cond_number || p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || std::isnan(p_f.norm())) {
+    if (flx::abs(condA) > _options.max_cond_number || p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || flx::isnan(p_f.norm())) {
         return false;
     }
 
@@ -127,16 +127,16 @@ bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_m
     size_t idx_anchor_bearing = feat->timestamps.at(feat->anchor_cam_id).size()-1;
 
     // Our linear system matrices
-    float A = 0.0;
-    float b = 0.0;
+    f_ekf A = 0.0;
+    f_ekf b = 0.0;
 
     // Get the position of the anchor pose
     ClonePose anchorclone = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp);
-    const Eigen::Matrix<float,3,3> &R_GtoA = anchorclone.Rot();
-    const Eigen::Matrix<float,3,1> &p_AinG = anchorclone.pos();
+    const Eigen::Matrix<f_ekf,3,3> &R_GtoA = anchorclone.Rot();
+    const Eigen::Matrix<f_ekf,3,1> &p_AinG = anchorclone.pos();
 
     // Get bearing in anchor frame
-    Eigen::Matrix<float, 3, 1> bearing_inA;
+    Eigen::Matrix<f_ekf, 3, 1> bearing_inA;
     bearing_inA << feat->uvs_norm.at(feat->anchor_cam_id).at(idx_anchor_bearing)(0),
                    feat->uvs_norm.at(feat->anchor_cam_id).at(idx_anchor_bearing)(1), 1;
     bearing_inA = bearing_inA / bearing_inA.norm();
@@ -152,24 +152,24 @@ bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_m
                 continue;
 
             // Get the position of this clone in the global
-            const Eigen::Matrix<float, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
-            const Eigen::Matrix<float, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
+            const Eigen::Matrix<f_ekf, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
+            const Eigen::Matrix<f_ekf, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
 
             // Convert current position relative to anchor
-            Eigen::Matrix<float,3,3> R_AtoCi;
+            Eigen::Matrix<f_ekf,3,3> R_AtoCi;
             R_AtoCi.noalias() = R_GtoCi*R_GtoA.transpose();
-            Eigen::Matrix<float,3,1> p_CiinA;
+            Eigen::Matrix<f_ekf,3,1> p_CiinA;
             p_CiinA.noalias() = R_GtoA*(p_CiinG-p_AinG);
 
             // Get the UV coordinate normal
-            Eigen::Matrix<float, 3, 1> b_i;
+            Eigen::Matrix<f_ekf, 3, 1> b_i;
             b_i << feat->uvs_norm.at(pair.first).at(m)(0), feat->uvs_norm.at(pair.first).at(m)(1), 1;
             b_i = R_AtoCi.transpose() * b_i;
             b_i = b_i / b_i.norm();
-            Eigen::Matrix3f Bperp = skew_x(b_i);
+            Eigen::Matrix<f_ekf,3,3> Bperp = skew_x(b_i);
 
             // Append to our linear system
-            Eigen::Vector3f BperpBanchor = Bperp * bearing_inA;
+            Eigen::Matrix<f_ekf,3,1> BperpBanchor = Bperp * bearing_inA;
             A += BperpBanchor.dot(BperpBanchor);
             b += BperpBanchor.dot(Bperp * p_CiinA);
 
@@ -177,11 +177,11 @@ bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_m
     }
 
     // Solve the linear system
-    float depth = b / A;
-    Eigen::MatrixXf p_f = depth * bearing_inA;
+    f_ekf depth = b / A;
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> p_f = depth * bearing_inA;
 
     // Then set the flag for bad (i.e. set z-axis to nan)
-    if (p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || std::isnan(p_f.norm())) {
+    if (p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || flx::isnan(p_f.norm())) {
         return false;
     }
 
@@ -198,26 +198,26 @@ bool FeatureInitializer::single_triangulation_1d(Feature* feat, std::unordered_m
 bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM) {
 
     //Get into inverse depth
-    float rho = 1/feat->p_FinA(2);
-    float alpha = feat->p_FinA(0)/feat->p_FinA(2);
-    float beta = feat->p_FinA(1)/feat->p_FinA(2);
+    f_ekf rho = 1/feat->p_FinA(2);
+    f_ekf alpha = feat->p_FinA(0)/feat->p_FinA(2);
+    f_ekf beta = feat->p_FinA(1)/feat->p_FinA(2);
 
     // Optimization parameters
-    float lam = _options.init_lamda;
-    float eps = 10000;
+    f_ekf lam = _options.init_lamda;
+    f_ekf eps = 10000;
     int runs = 0;
 
     // Variables used in the optimization
     bool recompute = true;
-    Eigen::Matrix<float,3,3> Hess = Eigen::Matrix<float,3,3>::Zero();
-    Eigen::Matrix<float,3,1> grad = Eigen::Matrix<float,3,1>::Zero();
+    Eigen::Matrix<f_ekf,3,3> Hess = Eigen::Matrix<f_ekf,3,3>::Zero();
+    Eigen::Matrix<f_ekf,3,1> grad = Eigen::Matrix<f_ekf,3,1>::Zero();
 
     // Cost at the last iteration
-    float cost_old = compute_error(clonesCAM,feat,alpha,beta,rho);
+    f_ekf cost_old = compute_error(clonesCAM,feat,alpha,beta,rho);
 
     // Get the position of the anchor pose
-    const Eigen::Matrix<float,3,3> &R_GtoA = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).Rot();
-    const Eigen::Matrix<float,3,1> &p_AinG = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).pos();
+    const Eigen::Matrix<f_ekf,3,3> &R_GtoA = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).Rot();
+    const Eigen::Matrix<f_ekf,3,1> &p_AinG = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).pos();
 
     // Loop till we have either
     // 1. Reached our max iteration count
@@ -231,7 +231,7 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
             Hess.setZero();
             grad.setZero();
 
-            float err = 0;
+            f_ekf err = 0;
 
             // Loop through each camera for this feature
             for (auto const& pair : feat->timestamps) {
@@ -243,43 +243,43 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
                     //=====================================================================================
 
                     // Get the position of this clone in the global
-                    const Eigen::Matrix<float, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps[pair.first].at(m)).Rot();
-                    const Eigen::Matrix<float, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps[pair.first].at(m)).pos();
+                    const Eigen::Matrix<f_ekf, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps[pair.first].at(m)).Rot();
+                    const Eigen::Matrix<f_ekf, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps[pair.first].at(m)).pos();
                     // Convert current position relative to anchor
-                    Eigen::Matrix<float,3,3> R_AtoCi;
+                    Eigen::Matrix<f_ekf,3,3> R_AtoCi;
                     R_AtoCi.noalias() = R_GtoCi*R_GtoA.transpose();
-                    Eigen::Matrix<float,3,1> p_CiinA;
+                    Eigen::Matrix<f_ekf,3,1> p_CiinA;
                     p_CiinA.noalias() = R_GtoA*(p_CiinG-p_AinG);
-                    Eigen::Matrix<float,3,1> p_AinCi;
+                    Eigen::Matrix<f_ekf,3,1> p_AinCi;
                     p_AinCi.noalias() = -R_AtoCi*p_CiinA;
 
                     //=====================================================================================
                     //=====================================================================================
 
                     // Middle variables of the system
-                    float hi1 = R_AtoCi(0, 0) * alpha + R_AtoCi(0, 1) * beta + R_AtoCi(0, 2) + rho * p_AinCi(0, 0);
-                    float hi2 = R_AtoCi(1, 0) * alpha + R_AtoCi(1, 1) * beta + R_AtoCi(1, 2) + rho * p_AinCi(1, 0);
-                    float hi3 = R_AtoCi(2, 0) * alpha + R_AtoCi(2, 1) * beta + R_AtoCi(2, 2) + rho * p_AinCi(2, 0);
+                    f_ekf hi1 = R_AtoCi(0, 0) * alpha + R_AtoCi(0, 1) * beta + R_AtoCi(0, 2) + rho * p_AinCi(0, 0);
+                    f_ekf hi2 = R_AtoCi(1, 0) * alpha + R_AtoCi(1, 1) * beta + R_AtoCi(1, 2) + rho * p_AinCi(1, 0);
+                    f_ekf hi3 = R_AtoCi(2, 0) * alpha + R_AtoCi(2, 1) * beta + R_AtoCi(2, 2) + rho * p_AinCi(2, 0);
                     // Calculate jacobian
-                    float d_z1_d_alpha = (R_AtoCi(0, 0) * hi3 - hi1 * R_AtoCi(2, 0)) / (pow(hi3, 2));
-                    float d_z1_d_beta = (R_AtoCi(0, 1) * hi3 - hi1 * R_AtoCi(2, 1)) / (pow(hi3, 2));
-                    float d_z1_d_rho = (p_AinCi(0, 0) * hi3 - hi1 * p_AinCi(2, 0)) / (pow(hi3, 2));
-                    float d_z2_d_alpha = (R_AtoCi(1, 0) * hi3 - hi2 * R_AtoCi(2, 0)) / (pow(hi3, 2));
-                    float d_z2_d_beta = (R_AtoCi(1, 1) * hi3 - hi2 * R_AtoCi(2, 1)) / (pow(hi3, 2));
-                    float d_z2_d_rho = (p_AinCi(1, 0) * hi3 - hi2 * p_AinCi(2, 0)) / (pow(hi3, 2));
-                    Eigen::Matrix<float, 2, 3> H;
+                    f_ekf d_z1_d_alpha = (R_AtoCi(0, 0) * hi3 - hi1 * R_AtoCi(2, 0)) / (pow(hi3, 2));
+                    f_ekf d_z1_d_beta = (R_AtoCi(0, 1) * hi3 - hi1 * R_AtoCi(2, 1)) / (pow(hi3, 2));
+                    f_ekf d_z1_d_rho = (p_AinCi(0, 0) * hi3 - hi1 * p_AinCi(2, 0)) / (pow(hi3, 2));
+                    f_ekf d_z2_d_alpha = (R_AtoCi(1, 0) * hi3 - hi2 * R_AtoCi(2, 0)) / (pow(hi3, 2));
+                    f_ekf d_z2_d_beta = (R_AtoCi(1, 1) * hi3 - hi2 * R_AtoCi(2, 1)) / (pow(hi3, 2));
+                    f_ekf d_z2_d_rho = (p_AinCi(1, 0) * hi3 - hi2 * p_AinCi(2, 0)) / (pow(hi3, 2));
+                    Eigen::Matrix<f_ekf, 2, 3> H;
                     H << d_z1_d_alpha, d_z1_d_beta, d_z1_d_rho, d_z2_d_alpha, d_z2_d_beta, d_z2_d_rho;
                     // Calculate residual
-                    Eigen::Matrix<float, 2, 1> z;
+                    Eigen::Matrix<f_ekf, 2, 1> z;
                     z << hi1 / hi3, hi2 / hi3;
-                    Eigen::Matrix<float, 2, 1> res = feat->uvs_norm.at(pair.first).at(m) - z;
+                    Eigen::Matrix<f_ekf, 2, 1> res = feat->uvs_norm.at(pair.first).at(m) - z;
 
                     //=====================================================================================
                     //=====================================================================================
 
                     // Append to our summation variables
-                    err += std::pow(res.norm(), 2);
-                    grad.noalias() += H.transpose() * res.cast<float>();
+                    err += flx::pow(res.norm(), f_ekf(2));
+                    grad.noalias() += H.transpose() * res.cast<f_ekf>();
                     Hess.noalias() += H.transpose() * H;
                 }
 
@@ -288,16 +288,16 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
         }
 
         // Solve Levenberg iteration
-        Eigen::Matrix<float,3,3> Hess_l = Hess;
+        Eigen::Matrix<f_ekf,3,3> Hess_l = Hess;
         for (size_t r=0; r < (size_t)Hess.rows(); r++) {
             Hess_l(r,r) *= (1.0+lam);
         }
 
-        Eigen::Matrix<float,3,1> dx = Hess_l.colPivHouseholderQr().solve(grad);
-        //Eigen::Matrix<float,3,1> dx = (Hess+lam*Eigen::MatrixXf::Identity(Hess.rows(), Hess.rows())).colPivHouseholderQr().solve(grad);
+        Eigen::Matrix<f_ekf,3,1> dx = Hess_l.colPivHouseholderQr().solve(grad);
+        //Eigen::Matrix<f_ekf,3,1> dx = (Hess+lam*Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>::Identity(Hess.rows(), Hess.rows())).colPivHouseholderQr().solve(grad);
 
         // Check if error has gone down
-        float cost = compute_error(clonesCAM,feat,alpha+dx(0,0),beta+dx(1,0),rho+dx(2,0));
+        f_ekf cost = compute_error(clonesCAM,feat,alpha+dx(0,0),beta+dx(1,0),rho+dx(2,0));
 
         // Debug print
         //cout << "run = " << runs << " | cost = " << dx.norm() << " | lamda = " << lam << " | depth = " << 1/rho << endl;
@@ -332,14 +332,14 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
     // Revert to standard, and set to all
     feat->p_FinA(0) = alpha/rho;
     feat->p_FinA(1) = beta/rho;
-    feat->p_FinA(2) = 1/rho;
+    feat->p_FinA(2) = f_ekf(1)/rho;
 
     // Get tangent plane to x_hat
-    Eigen::HouseholderQR<Eigen::MatrixXf> qr(feat->p_FinA);
-    Eigen::MatrixXf Q = qr.householderQ();
+    Eigen::HouseholderQR<Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic>> qr(feat->p_FinA);
+    Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> Q = qr.householderQ();
 
     // Max baseline we have between poses
-    float base_line_max = 0.0;
+    f_ekf base_line_max = 0.0;
 
     // Check maximum baseline
     // Loop through each camera for this feature
@@ -347,11 +347,11 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
         // Loop through the other clones to see what the max baseline is
         for (size_t m = 0; m < feat->timestamps.at(pair.first).size(); m++) {
             // Get the position of this clone in the global
-            const Eigen::Matrix<float,3,1> &p_CiinG  = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
+            const Eigen::Matrix<f_ekf,3,1> &p_CiinG  = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
             // Convert current position relative to anchor
-            Eigen::Matrix<float,3,1> p_CiinA = R_GtoA*(p_CiinG-p_AinG);
+            Eigen::Matrix<f_ekf,3,1> p_CiinA = R_GtoA*(p_CiinG-p_AinG);
             // Dot product camera pose and nullspace
-            float base_line = ((Q.block(0,1,3,2)).transpose() * p_CiinA).norm();
+            f_ekf base_line = ((Q.block(0,1,3,2)).transpose() * p_CiinA).norm();
             if (base_line > base_line_max) base_line_max = base_line;
         }
     }
@@ -363,7 +363,7 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
     if(feat->p_FinA(2) < _options.min_dist
         || feat->p_FinA(2) > _options.max_dist
         || (feat->p_FinA.norm() / base_line_max) > _options.max_baseline
-        || std::isnan(feat->p_FinA.norm())) {
+        || flx::isnan(feat->p_FinA.norm())) {
         return false;
     }
 
@@ -374,15 +374,15 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
 }
 
 
-float FeatureInitializer::compute_error(std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM,
-                                         Feature* feat, float alpha, float beta, float rho) {
+f_ekf FeatureInitializer::compute_error(std::unordered_map<size_t,std::unordered_map<f_ts,ClonePose>> &clonesCAM,
+                                         Feature* feat, f_ekf alpha, f_ekf beta, f_ekf rho) {
 
     // Total error
-    float err = 0;
+    f_ekf err = 0;
 
     // Get the position of the anchor pose
-    const Eigen::Matrix<float,3,3> &R_GtoA = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).Rot();
-    const Eigen::Matrix<float,3,1> &p_AinG = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).pos();
+    const Eigen::Matrix<f_ekf,3,3> &R_GtoA = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).Rot();
+    const Eigen::Matrix<f_ekf,3,1> &p_AinG = clonesCAM.at(feat->anchor_cam_id).at(feat->anchor_clone_timestamp).pos();
 
     // Loop through each camera for this feature
     for (auto const& pair : feat->timestamps) {
@@ -393,27 +393,27 @@ float FeatureInitializer::compute_error(std::unordered_map<size_t,std::unordered
             //=====================================================================================
 
             // Get the position of this clone in the global
-            const Eigen::Matrix<float, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
-            const Eigen::Matrix<float, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
+            const Eigen::Matrix<f_ekf, 3, 3> &R_GtoCi = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).Rot();
+            const Eigen::Matrix<f_ekf, 3, 1> &p_CiinG = clonesCAM.at(pair.first).at(feat->timestamps.at(pair.first).at(m)).pos();
             // Convert current position relative to anchor
-            Eigen::Matrix<float,3,3> R_AtoCi;
+            Eigen::Matrix<f_ekf,3,3> R_AtoCi;
             R_AtoCi.noalias() = R_GtoCi*R_GtoA.transpose();
-            Eigen::Matrix<float,3,1> p_CiinA;
+            Eigen::Matrix<f_ekf,3,1> p_CiinA;
             p_CiinA.noalias() = R_GtoA*(p_CiinG-p_AinG);
-            Eigen::Matrix<float,3,1> p_AinCi;
+            Eigen::Matrix<f_ekf,3,1> p_AinCi;
             p_AinCi.noalias() = -R_AtoCi*p_CiinA;
 
             //=====================================================================================
             //=====================================================================================
 
             // Middle variables of the system
-            float hi1 = R_AtoCi(0, 0) * alpha + R_AtoCi(0, 1) * beta + R_AtoCi(0, 2) + rho * p_AinCi(0, 0);
-            float hi2 = R_AtoCi(1, 0) * alpha + R_AtoCi(1, 1) * beta + R_AtoCi(1, 2) + rho * p_AinCi(1, 0);
-            float hi3 = R_AtoCi(2, 0) * alpha + R_AtoCi(2, 1) * beta + R_AtoCi(2, 2) + rho * p_AinCi(2, 0);
+            f_ekf hi1 = R_AtoCi(0, 0) * alpha + R_AtoCi(0, 1) * beta + R_AtoCi(0, 2) + rho * p_AinCi(0, 0);
+            f_ekf hi2 = R_AtoCi(1, 0) * alpha + R_AtoCi(1, 1) * beta + R_AtoCi(1, 2) + rho * p_AinCi(1, 0);
+            f_ekf hi3 = R_AtoCi(2, 0) * alpha + R_AtoCi(2, 1) * beta + R_AtoCi(2, 2) + rho * p_AinCi(2, 0);
             // Calculate residual
-            Eigen::Matrix<float, 2, 1> z;
+            Eigen::Matrix<f_ekf, 2, 1> z;
             z << hi1 / hi3, hi2 / hi3;
-            Eigen::Matrix<float, 2, 1> res = feat->uvs_norm.at(pair.first).at(m) - z;
+            Eigen::Matrix<f_ekf, 2, 1> res = feat->uvs_norm.at(pair.first).at(m) - z;
             // Append to our summation variables
             err += pow(res.norm(), 2);
         }

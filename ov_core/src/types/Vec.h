@@ -40,8 +40,8 @@ namespace ov_type {
          * @param dim Size of the vector (will be same as error state)
          */
         Vec(int dim) : Type(dim) {
-            _value = Eigen::VectorXf::Zero(dim);
-            _fej = Eigen::VectorXf::Zero(dim);
+            _value = Eigen::Matrix<f_ekf,Eigen::Dynamic,1>::Zero(dim);
+            _fej = Eigen::Matrix<f_ekf,Eigen::Dynamic,1>::Zero(dim);
         }
 
         ~Vec() {}
@@ -50,7 +50,7 @@ namespace ov_type {
          * @brief Implements the update operation through standard vector addition
          * @param dx Additive error state correction
          */
-        void update(const Eigen::VectorXf& dx) override {
+        void update(const Eigen::Matrix<f_ekf,Eigen::Dynamic,1>& dx) override {
             assert(dx.rows() == _size);
             set_value(_value + dx);
         }

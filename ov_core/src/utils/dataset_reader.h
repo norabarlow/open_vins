@@ -118,7 +118,7 @@ namespace ov_core {
          * @param gt_states Should be loaded with groundtruth states, see load_gt_file() for details
          * @return true if we found the state, false otherwise
          */
-        static bool get_gt_state(f_ts timestep, Eigen::Matrix<float,17,1> &imustate, std::map<f_ts, Eigen::Matrix<f_ts,17,1>>& gt_states) {
+        static bool get_gt_state(f_ts timestep, Eigen::Matrix<f_ekf,17,1> &imustate, std::map<f_ts, Eigen::Matrix<f_ts,17,1>>& gt_states) {
 
             // Check that we even have groundtruth loaded
             if (gt_states.empty()) {
@@ -138,7 +138,7 @@ namespace ov_core {
 
             // If close to this timestamp, then use it
             if(flx::abs(closest_time-timestep) < 0.10) {
-                //printf("init DT = %.4f\n", std::abs(closest_time-timestep));
+                //printf("init DT = %.4f\n", flx::abs(closest_time-timestep));
                 //printf("timestamp = %.15f\n", closest_time);
                 timestep = closest_time;
             }

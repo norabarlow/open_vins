@@ -120,7 +120,7 @@ namespace ov_core {
          *
          * @param traj_points Trajectory poses that we will convert into control points (timestamp(s), q_GtoI, p_IinG)
          */
-        void feed_trajectory(std::vector<Eigen::VectorXf> traj_points);
+        void feed_trajectory(std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> traj_points);
 
 
         /**
@@ -130,7 +130,7 @@ namespace ov_core {
          * @param p_IinG Position of the pose in the global
          * @return False if we can't find it
          */
-        bool get_pose(f_ts timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG);
+        bool get_pose(f_ts timestamp, Eigen::Matrix<f_ekf,3,3> &R_GtoI, Eigen::Matrix<f_ekf,3,1> &p_IinG);
 
 
         /**
@@ -142,7 +142,7 @@ namespace ov_core {
          * @param v_IinG Linear velocity in the global frame
          * @return False if we can't find it
          */
-        bool get_velocity(f_ts timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG, Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG);
+        bool get_velocity(f_ts timestamp, Eigen::Matrix<f_ekf,3,3> &R_GtoI, Eigen::Matrix<f_ekf,3,1> &p_IinG, Eigen::Matrix<f_ekf,3,1> &w_IinI, Eigen::Matrix<f_ekf,3,1> &v_IinG);
 
 
         /**
@@ -156,9 +156,9 @@ namespace ov_core {
          * @param a_IinG Linear acceleration in the global frame
          * @return False if we can't find it
          */
-        bool get_acceleration(f_ts timestamp, Eigen::Matrix3f &R_GtoI, Eigen::Vector3f &p_IinG,
-                                Eigen::Vector3f &w_IinI, Eigen::Vector3f &v_IinG,
-                                Eigen::Vector3f &alpha_IinI, Eigen::Vector3f &a_IinG);
+        bool get_acceleration(f_ts timestamp, Eigen::Matrix<f_ekf,3,3> &R_GtoI, Eigen::Matrix<f_ekf,3,1> &p_IinG,
+                                Eigen::Matrix<f_ekf,3,1> &w_IinI, Eigen::Matrix<f_ekf,3,1> &v_IinG,
+                                Eigen::Matrix<f_ekf,3,1> &alpha_IinI, Eigen::Matrix<f_ekf,3,1> &a_IinG);
 
 
         /// Returns the simulation start time that we should start simulating from
@@ -176,8 +176,8 @@ namespace ov_core {
         f_ts timestamp_start;
 
         /// Type defintion of our aligned eigen4f matrix: https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
-        typedef std::map<f_ts, Eigen::Matrix4f, std::less<f_ts>,
-                Eigen::aligned_allocator<std::pair<const f_ts, Eigen::Matrix4f>>> AlignedEigenMat4f;
+        typedef std::map<f_ts, Eigen::Matrix<f_ekf,4,4>, std::less<f_ts>,
+                Eigen::aligned_allocator<std::pair<const f_ts, Eigen::Matrix<f_ekf,4,4>>>> AlignedEigenMat4f;
 
         /// Our control SE3 control poses (R_ItoG, p_IinG)
         AlignedEigenMat4f control_points;
@@ -198,7 +198,7 @@ namespace ov_core {
          * @return False if we are unable to find bounding poses
          */
         static bool find_bounding_poses(const f_ts timestamp, const AlignedEigenMat4f &poses,
-                                        f_ts &t0, Eigen::Matrix4f &pose0, f_ts &t1, Eigen::Matrix4f &pose1);
+                                        f_ts &t0, Eigen::Matrix<f_ekf,4,4> &pose0, f_ts &t1, Eigen::Matrix<f_ekf,4,4> &pose1);
 
 
         /**
@@ -217,8 +217,8 @@ namespace ov_core {
          * @return False if we are unable to find bounding poses
          */
         static bool find_bounding_control_points(const f_ts timestamp, const AlignedEigenMat4f &poses,
-                                                 f_ts &t0, Eigen::Matrix4f &pose0, f_ts &t1, Eigen::Matrix4f &pose1,
-                                                 f_ts &t2, Eigen::Matrix4f &pose2, f_ts &t3, Eigen::Matrix4f &pose3);
+                                                 f_ts &t0, Eigen::Matrix<f_ekf,4,4> &pose0, f_ts &t1, Eigen::Matrix<f_ekf,4,4> &pose1,
+                                                 f_ts &t2, Eigen::Matrix<f_ekf,4,4> &pose2, f_ts &t3, Eigen::Matrix<f_ekf,4,4> &pose3);
 
     };
 

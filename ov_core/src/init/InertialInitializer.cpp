@@ -41,8 +41,8 @@ void InertialInitializer::feed_imu(const ImuData &message) {
 
 
 
-bool InertialInitializer::initialize_with_imu(f_ts &time0, Eigen::Matrix<float,4,1> &q_GtoI0, Eigen::Matrix<float,3,1> &b_w0,
-                                              Eigen::Matrix<float,3,1> &v_I0inG, Eigen::Matrix<float,3,1> &b_a0, Eigen::Matrix<float,3,1> &p_I0inG, bool wait_for_jerk) {
+bool InertialInitializer::initialize_with_imu(f_ts &time0, Eigen::Matrix<f_ekf,4,1> &q_GtoI0, Eigen::Matrix<f_ekf,3,1> &b_w0,
+                                              Eigen::Matrix<f_ekf,3,1> &v_I0inG, Eigen::Matrix<f_ekf,3,1> &b_a0, Eigen::Matrix<f_ekf,3,1> &p_I0inG, bool wait_for_jerk) {
 
     // Return if we don't have any measurements
     if(imu_data.empty()) {
@@ -70,20 +70,20 @@ bool InertialInitializer::initialize_with_imu(f_ts &time0, Eigen::Matrix<float,4
     }
 
     // Calculate the sample variance for the newest one
-    Eigen::Matrix<float,3,1> a_avg = Eigen::Matrix<float,3,1>::Zero();
+    Eigen::Matrix<f_ekf,3,1> a_avg = Eigen::Matrix<f_ekf,3,1>::Zero();
     for(const ImuData& data : window_newest) {
         a_avg += data.am;
     }
     a_avg /= (int)window_newest.size();
-    float a_var = 0;
+    f_ekf a_var = 0;
     for(const ImuData& data : window_newest) {
         a_var += (data.am-a_avg).dot(data.am-a_avg);
     }
-    a_var = std::sqrt(a_var/((int)window_newest.size()-1));
+    a_var = flx::sqrt(a_var/((int)window_newest.size()-1));
 
     // If it is below the threshold and we want to wait till we detect a jerk
     if(a_var < _imu_excite_threshold && wait_for_jerk) {
-        printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
+        printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,float(a_var),float(_imu_excite_threshold));
         return false;
     }
 
@@ -93,66 +93,66 @@ bool InertialInitializer::initialize_with_imu(f_ts &time0, Eigen::Matrix<float,4
     //}
 
     // Sum up our current accelerations and velocities
-    Eigen::Vector3f linsum = Eigen::Vector3f::Zero();
-    Eigen::Vector3f angsum = Eigen::Vector3f::Zero();
+    Eigen::Matrix<f_ekf,3,1> linsum = Eigen::Matrix<f_ekf,3,1>::Zero();
+    Eigen::Matrix<f_ekf,3,1> angsum = Eigen::Matrix<f_ekf,3,1>::Zero();
     for(size_t i=0; i<window_secondnew.size(); i++) {
         linsum += window_secondnew.at(i).am;
         angsum += window_secondnew.at(i).wm;
     }
 
     // Calculate the mean of the linear acceleration and angular velocity
-    Eigen::Vector3f linavg = Eigen::Vector3f::Zero();
-    Eigen::Vector3f angavg = Eigen::Vector3f::Zero();
-    linavg = linsum/window_secondnew.size();
-    angavg = angsum/window_secondnew.size();
+    Eigen::Matrix<f_ekf,3,1> linavg = Eigen::Matrix<f_ekf,3,1>::Zero();
+    Eigen::Matrix<f_ekf,3,1> angavg = Eigen::Matrix<f_ekf,3,1>::Zero();
+    linavg = linsum/f_ekf(window_secondnew.size());
+    angavg = angsum/f_ekf(window_secondnew.size());
 
     // Calculate variance of the
-    float a_var2 = 0;
+    f_ekf a_var2 = 0;
     for(const ImuData& data : window_secondnew) {
         a_var2 += (data.am-linavg).dot(data.am-linavg);
     }
-    a_var2 = std::sqrt(a_var2/((int)window_secondnew.size()-1));
+    a_var2 = flx::sqrt(a_var2/((int)window_secondnew.size()-1));
 
     // If it is above the threshold and we are not waiting for a jerk
     // Then we are not stationary (i.e. moving) so we should wait till we are
     if((a_var > _imu_excite_threshold || a_var2 > _imu_excite_threshold) && !wait_for_jerk) {
-        printf(YELLOW "InertialInitializer::initialize_with_imu(): to much IMU excitation, above threshold %.4f,%.4f > %.4f\n" RESET,a_var,a_var2,_imu_excite_threshold);
+        printf(YELLOW "InertialInitializer::initialize_with_imu(): to much IMU excitation, above threshold %.4f,%.4f > %.4f\n" RESET,float(a_var),float(a_var2),float(_imu_excite_threshold));
         return false;
     }
 
     // Get z axis, which alines with -g (z_in_G=0,0,1)
-    Eigen::Vector3f z_axis = linavg/linavg.norm();
+    Eigen::Matrix<f_ekf,3,1> z_axis = linavg/linavg.norm();
 
     // Create an x_axis
-    Eigen::Vector3f e_1(1,0,0);
+    Eigen::Matrix<f_ekf,3,1> e_1(1,0,0);
 
     // Make x_axis perpendicular to z
-    Eigen::Vector3f x_axis = e_1-z_axis*z_axis.transpose()*e_1;
+    Eigen::Matrix<f_ekf,3,1> x_axis = e_1-z_axis*z_axis.transpose()*e_1;
     x_axis= x_axis/x_axis.norm();
 
     // Get z from the cross product of these two
-    Eigen::Matrix<float,3,1> y_axis = skew_x(z_axis)*x_axis;
+    Eigen::Matrix<f_ekf,3,1> y_axis = skew_x(z_axis)*x_axis;
 
     // From these axes get rotation
-    Eigen::Matrix<float,3,3> Ro;
+    Eigen::Matrix<f_ekf,3,3> Ro;
     Ro.block(0,0,3,1) = x_axis;
     Ro.block(0,1,3,1) = y_axis;
     Ro.block(0,2,3,1) = z_axis;
 
     // Create our state variables
-    Eigen::Matrix<float,4,1> q_GtoI = rot_2_quat(Ro);
+    Eigen::Matrix<f_ekf,4,1> q_GtoI = rot_2_quat(Ro);
 
     // Set our biases equal to our noise (subtract our gravity from accelerometer bias)
-    Eigen::Matrix<float,3,1> bg = angavg;
-    Eigen::Matrix<float,3,1> ba = linavg - quat_2_Rot(q_GtoI)*_gravity;
+    Eigen::Matrix<f_ekf,3,1> bg = angavg;
+    Eigen::Matrix<f_ekf,3,1> ba = linavg - quat_2_Rot(q_GtoI)*_gravity;
 
     // Set our state variables
     time0 = window_secondnew.at(window_secondnew.size()-1).timestamp;
     q_GtoI0 = q_GtoI;
     b_w0 = bg;
-    v_I0inG = Eigen::Matrix<float,3,1>::Zero();
+    v_I0inG = Eigen::Matrix<f_ekf,3,1>::Zero();
     b_a0 = ba;
-    p_I0inG = Eigen::Matrix<float,3,1>::Zero();
+    p_I0inG = Eigen::Matrix<f_ekf,3,1>::Zero();
 
     // Done!!!
     return true;

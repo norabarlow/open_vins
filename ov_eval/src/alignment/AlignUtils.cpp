@@ -23,45 +23,45 @@
 using namespace ov_eval;
 
 
-void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &data,
-                               const std::vector<Eigen::Matrix<float, 3, 1>> &model,
-                               Eigen::Matrix<float, 3, 3> &R, Eigen::Matrix<float, 3, 1> &t,
-                               float &s, bool known_scale, bool yaw_only) {
+void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<f_ekf, 3, 1>> &data,
+                               const std::vector<Eigen::Matrix<f_ekf, 3, 1>> &model,
+                               Eigen::Matrix<f_ekf, 3, 3> &R, Eigen::Matrix<f_ekf, 3, 1> &t,
+                               f_ekf &s, bool known_scale, bool yaw_only) {
 
     assert(model.size() == data.size());
 
     // Substract mean of each trajectory
-    Eigen::Matrix<float, 3, 1> mu_M = get_mean(model);
-    Eigen::Matrix<float, 3, 1> mu_D = get_mean(data);
-    std::vector<Eigen::Matrix<float, 3, 1>> model_zerocentered, data_zerocentered;
+    Eigen::Matrix<f_ekf, 3, 1> mu_M = get_mean(model);
+    Eigen::Matrix<f_ekf, 3, 1> mu_D = get_mean(data);
+    std::vector<Eigen::Matrix<f_ekf, 3, 1>> model_zerocentered, data_zerocentered;
     for (size_t i = 0; i < model.size(); i++) {
         model_zerocentered.push_back(model[i] - mu_M);
         data_zerocentered.push_back(data[i] - mu_D);
     }
 
     // Get correlation matrix
-    float n = model.size();
-    Eigen::Matrix<float, 3, 3> C = Eigen::Matrix<float, 3, 3>::Zero();
+    f_ekf n = f_ekf(model.size());
+    Eigen::Matrix<f_ekf, 3, 3> C = Eigen::Matrix<f_ekf, 3, 3>::Zero();
     for (size_t i = 0; i < model_zerocentered.size(); i++) {
         C.noalias() += model_zerocentered[i] * data_zerocentered[i].transpose();
     }
     C *= 1.0 / n;
 
     // Get data sigma
-    float sigma2 = 0;
+    f_ekf sigma2 = 0;
     for (size_t i = 0; i < data_zerocentered.size(); i++) {
         sigma2 += data_zerocentered[i].dot(data_zerocentered[i]);
     }
     sigma2 *= 1.0 / n;
 
     // SVD decomposition
-    Eigen::JacobiSVD<Eigen::Matrix<float, 3, 3>> svd(C, Eigen::ComputeFullV | Eigen::ComputeFullU);
+    Eigen::JacobiSVD<Eigen::Matrix<f_ekf, 3, 3>> svd(C, Eigen::ComputeFullV | Eigen::ComputeFullU);
 
-    Eigen::Matrix<float, 3, 3> U_svd = svd.matrixU();
-    Eigen::Matrix<float, 3, 1> D_svd = svd.singularValues();
-    Eigen::Matrix<float, 3, 3> V_svd = svd.matrixV();
+    Eigen::Matrix<f_ekf, 3, 3> U_svd = svd.matrixU();
+    Eigen::Matrix<f_ekf, 3, 1> D_svd = svd.singularValues();
+    Eigen::Matrix<f_ekf, 3, 3> V_svd = svd.matrixV();
 
-    Eigen::Matrix<float, 3, 3> S = Eigen::Matrix<float, 3, 3>::Identity();
+    Eigen::Matrix<f_ekf, 3, 3> S = Eigen::Matrix<f_ekf, 3, 3>::Identity();
     if (U_svd.determinant() * V_svd.determinant() < 0) {
         S(2, 2) = -1;
     }
@@ -69,8 +69,8 @@ void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &da
     // If only yaw, use that specific solver (optimizes over yaw angle)
     // Else get best full 3 dof rotation
     if (yaw_only) {
-        Eigen::Matrix<float, 3, 3> rot_C = n * C.transpose();
-        float theta = AlignUtils::get_best_yaw(rot_C);
+        Eigen::Matrix<f_ekf, 3, 3> rot_C = n * C.transpose();
+        f_ekf theta = AlignUtils::get_best_yaw(rot_C);
         R = Math::rot_z(theta);
     } else {
         R.noalias() = U_svd * S * V_svd.transpose();
@@ -78,10 +78,10 @@ void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &da
 
     //If known scale, fix it
     if (known_scale) {
-        s = 1;
+        s = f_ekf(1);
     } else {
         //Get best scale
-        s = 1.0 / sigma2 * (D_svd.asDiagonal() * S).trace();
+        s = f_ekf(1.0) / sigma2 * (D_svd.asDiagonal() * S).trace();
     }
 
     // Get best translation
@@ -94,24 +94,24 @@ void AlignUtils::align_umeyama(const std::vector<Eigen::Matrix<float, 3, 1>> &da
 }
 
 
-void AlignUtils::perform_association(float offset, float max_difference,
+void AlignUtils::perform_association(f_ekf offset, f_ekf max_difference,
                                      std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
-                                     std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses) {
-    std::vector<Eigen::Matrix3f> est_covori, est_covpos, gt_covori, gt_covpos;
+                                     std::vector<Eigen::Matrix<f_ekf,7,1>> &est_poses, std::vector<Eigen::Matrix<f_ekf,7,1>> &gt_poses) {
+    std::vector<Eigen::Matrix<f_ekf,3,3>> est_covori, est_covpos, gt_covori, gt_covpos;
     AlignUtils::perform_association(offset, max_difference, est_times, gt_times, est_poses, gt_poses, est_covori, est_covpos, gt_covori, gt_covpos);
 }
 
 
-void AlignUtils::perform_association(float offset, float max_difference,
+void AlignUtils::perform_association(f_ekf offset, f_ekf max_difference,
                                     std::vector<f_ts> &est_times, std::vector<f_ts> &gt_times,
-                                    std::vector<Eigen::Matrix<float,7,1>> &est_poses, std::vector<Eigen::Matrix<float,7,1>> &gt_poses,
-                                    std::vector<Eigen::Matrix3f> &est_covori, std::vector<Eigen::Matrix3f> &est_covpos,
-                                    std::vector<Eigen::Matrix3f> &gt_covori, std::vector<Eigen::Matrix3f> &gt_covpos) {
+                                    std::vector<Eigen::Matrix<f_ekf,7,1>> &est_poses, std::vector<Eigen::Matrix<f_ekf,7,1>> &gt_poses,
+                                    std::vector<Eigen::Matrix<f_ekf,3,3>> &est_covori, std::vector<Eigen::Matrix<f_ekf,3,3>> &est_covpos,
+                                    std::vector<Eigen::Matrix<f_ekf,3,3>> &gt_covori, std::vector<Eigen::Matrix<f_ekf,3,3>> &gt_covpos) {
 
     // Temp results which keeps only the matches
     std::vector<f_ts> est_times_temp, gt_times_temp;
-    std::vector<Eigen::Matrix<float,7,1>> est_poses_temp, gt_poses_temp;
-    std::vector<Eigen::Matrix3f> est_covori_temp, est_covpos_temp, gt_covori_temp, gt_covpos_temp;
+    std::vector<Eigen::Matrix<f_ekf,7,1>> est_poses_temp, gt_poses_temp;
+    std::vector<Eigen::Matrix<f_ekf,3,3>> est_covori_temp, est_covpos_temp, gt_covori_temp, gt_covpos_temp;
 
     // Iterator over gt (only ever increases to enforce injectivity of matches)
     size_t gt_pointer = 0;
@@ -120,7 +120,7 @@ void AlignUtils::perform_association(float offset, float max_difference,
     for (size_t i = 0 ; i < est_times.size(); i++) {
 
         // Default params
-        float best_diff = max_difference;
+        f_ekf best_diff = max_difference;
         int best_gt_idx = -1;
 
         // Increment while too small and is not within our difference threshold
@@ -158,8 +158,8 @@ void AlignUtils::perform_association(float offset, float max_difference,
                 est_covori_temp.push_back(est_covori.at(i));
                 est_covpos_temp.push_back(est_covpos.at(i));
                 if(gt_covori.empty()) {
-                    gt_covori_temp.push_back(Eigen::Matrix3f::Zero());
-                    gt_covpos_temp.push_back(Eigen::Matrix3f::Zero());
+                    gt_covori_temp.push_back(Eigen::Matrix<f_ekf,3,3>::Zero());
+                    gt_covpos_temp.push_back(Eigen::Matrix<f_ekf,3,3>::Zero());
                 } else {
                     assert(gt_covori.size()==gt_covpos.size());
                     gt_covori_temp.push_back(gt_covori.at(best_gt_idx));

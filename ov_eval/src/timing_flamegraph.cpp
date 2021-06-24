@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     // Now print the statistic for this run
     for(size_t i=0; i<names.size(); i++) {
         stats.at(i).calculate();
-        printf("mean_time = %.4f | std = %.4f | 99th = %.4f  | max = %.4f (%s)\n",stats.at(i).mean,stats.at(i).std,stats.at(i).ninetynine,stats.at(i).max,names.at(i).c_str());
+        printf("mean_time = %.4f | std = %.4f | 99th = %.4f  | max = %.4f (%s)\n",double(stats.at(i).mean),double(stats.at(i).std),double(stats.at(i).ninetynine),double(stats.at(i).max),names.at(i).c_str());
     }
 
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     matplotlibcpp::ylabel("execution time (s)");
     matplotlibcpp::xlim(f_ts(0.0),endtime1-starttime1);
     //matplotlibcpp::ylim(0.0,stats.at(stats.size()-1).ninetynine);
-    matplotlibcpp::ylim(0.0f,stats.at(stats.size()-1).max);
+    matplotlibcpp::ylim(f_ekf(0.0),stats.at(stats.size()-1).max);
     matplotlibcpp::xlabel("dataset time (s)");
     matplotlibcpp::legend();
     matplotlibcpp::tight_layout();

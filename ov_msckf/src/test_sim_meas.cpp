@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 
         // IMU: get the next simulated IMU measurement if we have it
         f_ts time_imu;
-        Eigen::Vector3f wm, am;
+        Eigen::Matrix<f_ekf,3,1> wm, am;
         bool hasimu = sim.get_next_imu(time_imu, wm, am);
         if(hasimu) {
             cout << "new imu measurement = " << std::setprecision(15) << time_imu << std::setprecision(3) << " | w = " << wm.norm() << " | a = " << am.norm() << endl;
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
         // CAM: get the next simulated camera uv measurements if we have them
         f_ts time_cam;
         std::vector<int> camids;
-        std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
+        std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> feats;
         bool hascam = sim.get_next_cam(time_cam, camids, feats);
         if(hascam) {
             cout << "new cam measurement = " << std::setprecision(15) << time_cam;

@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 
 
     // Latest collection of image information
-    std::map<size_t, std::pair<float,cv::Mat>> image_buffer;
+    std::map<size_t, std::pair<f_ekf,cv::Mat>> image_buffer;
 
     // Step through the rosbag
     for (const rosbag::MessageInstance& m : view) {
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
                 continue;
             }
             // process once we have initialized with the GT
-            Eigen::Matrix<float, 17, 1> imustate;
+            Eigen::Matrix<f_ekf, 17, 1> imustate;
             if(!gt_states.empty() && !sys->initialized() && DatasetReader::get_gt_state(it0->second.first, imustate, gt_states)) {
                 //biases are pretty bad normally, so zero them
                 //imustate.block(11,0,6,1).setZero();
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
             if(image_buffer.find(stereo.first) == image_buffer.end() || image_buffer.find(stereo.second) == image_buffer.end())
                 continue;
             // process once we have initialized with the GT
-            Eigen::Matrix<float, 17, 1> imustate;
+            Eigen::Matrix<f_ekf, 17, 1> imustate;
             if(!gt_states.empty() && !sys->initialized() && DatasetReader::get_gt_state(image_buffer.at(stereo.first).first, imustate, gt_states)) {
                 //biases are pretty bad normally, so zero them
                 //imustate.block(11,0,6,1).setZero();

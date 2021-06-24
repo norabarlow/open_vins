@@ -55,10 +55,10 @@ namespace ov_core {
     private:
 
         // Extended covariance used to handle the sampling model
-        Eigen::Matrix<float, 21, 21> P_big = Eigen::Matrix<float, 21, 21>::Zero();
+        Eigen::Matrix<f_ekf, 21, 21> P_big = Eigen::Matrix<f_ekf, 21, 21>::Zero();
 
         // Our large compounded state transition Jacobian matrix
-        Eigen::Matrix<float, 21, 21> Discrete_J_b = Eigen::Matrix<float, 21, 21>::Identity();
+        Eigen::Matrix<f_ekf, 21, 21> Discrete_J_b = Eigen::Matrix<f_ekf, 21, 21>::Identity();
 
 
     public:
@@ -74,8 +74,8 @@ namespace ov_core {
 
 
         // Alpha and beta Jacobians wrt linearization orientation
-        Eigen::Matrix<float, 3, 3> O_a = Eigen::Matrix<float, 3, 3>::Zero();
-        Eigen::Matrix<float, 3, 3> O_b = Eigen::Matrix<float, 3, 3>::Zero();
+        Eigen::Matrix<f_ekf, 3, 3> O_a = Eigen::Matrix<f_ekf, 3, 3>::Zero();
+        Eigen::Matrix<f_ekf, 3, 3> O_b = Eigen::Matrix<f_ekf, 3, 3>::Zero();
 
 
         /**
@@ -86,7 +86,7 @@ namespace ov_core {
          * @param sigma_ab accelerometer random walk (m/s^3/sqrt(hz))
          * @param imu_avg_ if we want to average the imu measurements (IJRR paper did not do this)
          */
-        CpiV2(float sigma_w, float sigma_wb, float sigma_a, float sigma_ab, bool imu_avg_ = false) :
+        CpiV2(f_ekf sigma_w, f_ekf sigma_wb, f_ekf sigma_a, f_ekf sigma_ab, bool imu_avg_ = false) :
                 CpiBase(sigma_w, sigma_wb, sigma_a, sigma_ab, imu_avg_) {}
 
 
@@ -103,9 +103,9 @@ namespace ov_core {
          * We can numerically or analytically integrate our bias jacobians.
          * Then we perform numerical integration for our measurement covariance.
          */
-        void feed_IMU(f_ts t_0, f_ts  t_1, Eigen::Matrix<float, 3, 1> w_m_0, Eigen::Matrix<float, 3, 1> a_m_0,
-                      Eigen::Matrix<float, 3, 1> w_m_1 = Eigen::Matrix<float, 3, 1>::Zero(),
-                      Eigen::Matrix<float, 3, 1> a_m_1 = Eigen::Matrix<float, 3, 1>::Zero()) {
+        void feed_IMU(f_ts t_0, f_ts  t_1, Eigen::Matrix<f_ekf, 3, 1> w_m_0, Eigen::Matrix<f_ekf, 3, 1> a_m_0,
+                      Eigen::Matrix<f_ekf, 3, 1> w_m_1 = Eigen::Matrix<f_ekf, 3, 1>::Zero(),
+                      Eigen::Matrix<f_ekf, 3, 1> a_m_1 = Eigen::Matrix<f_ekf, 3, 1>::Zero()) {
 
             //Get time difference
             f_ts delta_t = t_1 - t_0;
@@ -117,8 +117,8 @@ namespace ov_core {
             }
 
             // Get estimated imu readings
-            Eigen::Matrix<float, 3, 1> w_hat = w_m_0 - b_w_lin;
-            Eigen::Matrix<float, 3, 1> a_hat = a_m_0 - b_a_lin - R_k2tau * quat_2_Rot(q_k_lin) * grav;
+            Eigen::Matrix<f_ekf, 3, 1> w_hat = w_m_0 - b_w_lin;
+            Eigen::Matrix<f_ekf, 3, 1> a_hat = a_m_0 - b_a_lin - R_k2tau * quat_2_Rot(q_k_lin) * grav;
 
             // If averaging, average
             // Note: we will average the LOCAL acceleration after getting the relative rotation
@@ -128,28 +128,28 @@ namespace ov_core {
             }
 
             // Get angle change w*dt
-            Eigen::Matrix<float, 3, 1> w_hatdt = w_hat * delta_t;
+            Eigen::Matrix<f_ekf, 3, 1> w_hatdt = w_hat * delta_t;
 
             // Get entries of w_hat
-            float w_1 = w_hat(0, 0);
-            float w_2 = w_hat(1, 0);
-            float w_3 = w_hat(2, 0);
+            f_ekf w_1 = w_hat(0, 0);
+            f_ekf w_2 = w_hat(1, 0);
+            f_ekf w_3 = w_hat(2, 0);
 
             //Get magnitude of w and wdt
-            float mag_w = w_hat.norm();
-            float w_dt = mag_w * delta_t;
+            f_ekf mag_w = w_hat.norm();
+            f_ekf w_dt = mag_w * delta_t;
 
             //Threshold to determine if equations will be unstable
             bool small_w = (mag_w < 0.008726646);
 
             //Get some of the variables used in the preintegration equations
             f_ts dt_2 = pow(delta_t, 2);
-            float cos_wt = cos(w_dt);
-            float sin_wt = sin(w_dt);
+            f_ekf cos_wt = cos(w_dt);
+            f_ekf sin_wt = sin(w_dt);
 
-            Eigen::Matrix<float, 3, 3> w_x = skew_x(w_hat);
-            Eigen::Matrix<float, 3, 3> w_tx = skew_x(w_hatdt);
-            Eigen::Matrix<float, 3, 3> w_x_2 = w_x * w_x;
+            Eigen::Matrix<f_ekf, 3, 3> w_x = skew_x(w_hat);
+            Eigen::Matrix<f_ekf, 3, 3> w_tx = skew_x(w_hatdt);
+            Eigen::Matrix<f_ekf, 3, 3> w_x_2 = w_x * w_x;
 
 
             //==========================================================================
@@ -157,25 +157,25 @@ namespace ov_core {
             //==========================================================================
 
             // Get relative rotation
-            Eigen::Matrix<float, 3, 3> R_tau2tau1 = small_w ? eye3 - delta_t * w_x + (pow(delta_t, 2) / 2) * w_x_2 :
+            Eigen::Matrix<f_ekf, 3, 3> R_tau2tau1 = small_w ? eye3 - delta_t * w_x + (pow(delta_t, 2) / 2) * w_x_2 :
                                                      eye3 - (sin_wt / mag_w) * w_x + ((1.0 - cos_wt) / (pow(mag_w, 2.0))) * w_x_2;
 
             // Updated roation and its transpose
-            Eigen::Matrix<float, 3, 3> R_k2tau1 = R_tau2tau1 * R_k2tau;
-            Eigen::Matrix<float, 3, 3> R_tau12k = R_k2tau1.transpose();
+            Eigen::Matrix<f_ekf, 3, 3> R_k2tau1 = R_tau2tau1 * R_k2tau;
+            Eigen::Matrix<f_ekf, 3, 3> R_tau12k = R_k2tau1.transpose();
 
             // If averaging, average the LOCAL acceleration
             if (imu_avg) {
                 a_hat += a_m_1 - b_a_lin - R_k2tau1 * quat_2_Rot(q_k_lin) * grav;
                 a_hat = 0.5 * a_hat;
             }
-            Eigen::Matrix<float, 3, 3> a_x = skew_x(a_hat);
+            Eigen::Matrix<f_ekf, 3, 3> a_x = skew_x(a_hat);
 
             // Intermediate variables for evaluating the measurement/bias Jacobian update
-            float f_1;
-            float f_2;
-            float f_3;
-            float f_4;
+            f_ekf f_1;
+            f_ekf f_2;
+            f_ekf f_3;
+            f_ekf f_4;
 
             if (small_w) {
                 f_1 = -(pow(delta_t, 3) / 3);
@@ -190,12 +190,12 @@ namespace ov_core {
             }
 
             // Compute the main part of our analytical means
-            Eigen::Matrix<float, 3, 3> alpha_arg = ((dt_2 / 2.0) * eye3 + f_1 * w_x + f_2 * w_x_2);
-            Eigen::Matrix<float, 3, 3> Beta_arg = (delta_t * eye3 + f_3 * w_x + f_4 * w_x_2);
+            Eigen::Matrix<f_ekf, 3, 3> alpha_arg = ((dt_2 / 2.0) * eye3 + f_1 * w_x + f_2 * w_x_2);
+            Eigen::Matrix<f_ekf, 3, 3> Beta_arg = (delta_t * eye3 + f_3 * w_x + f_4 * w_x_2);
 
             // Matrices that will multiply the a_hat in the update expressions
-            Eigen::Matrix<float, 3, 3> H_al = R_tau12k * alpha_arg;
-            Eigen::Matrix<float, 3, 3> H_be = R_tau12k * Beta_arg;
+            Eigen::Matrix<f_ekf, 3, 3> H_al = R_tau12k * alpha_arg;
+            Eigen::Matrix<f_ekf, 3, 3> H_be = R_tau12k * Beta_arg;
 
             // Update the measurements
             alpha_tau += beta_tau * delta_t + H_al * a_hat;
@@ -207,12 +207,12 @@ namespace ov_core {
             //==========================================================================
 
             //Get right Jacobian
-            Eigen::Matrix<float, 3, 3> J_r_tau1 = small_w ? eye3 - .5 * w_tx + (1.0 / 6.0) * w_tx * w_tx :
+            Eigen::Matrix<f_ekf, 3, 3> J_r_tau1 = small_w ? eye3 - .5 * w_tx + (1.0 / 6.0) * w_tx * w_tx :
                                                    eye3 - ((1 - cos_wt) / (pow((w_dt), 2.0))) * w_tx +
                                                    ((w_dt - sin_wt) / (pow(w_dt, 3.0))) * w_tx * w_tx;
 
             // Update orientation in respect to gyro bias Jacobians
-            Eigen::Matrix<float, 3, 3> J_save = J_q;
+            Eigen::Matrix<f_ekf, 3, 3> J_save = J_q;
             J_q = R_tau2tau1 * J_q + J_r_tau1 * delta_t;
 
             // Update alpha and beta in respect to accel bias Jacobian
@@ -221,81 +221,81 @@ namespace ov_core {
             H_b -= H_be;
 
             // Update alpha and beta in respect to q_GtoLIN Jacobian
-            Eigen::Matrix<float, 3, 1> g_k = quat_2_Rot(q_k_lin) * grav;
+            Eigen::Matrix<f_ekf, 3, 1> g_k = quat_2_Rot(q_k_lin) * grav;
             O_a += delta_t * O_b;
             O_a += -H_al * R_k2tau * skew_x(g_k);
             O_b += -H_be * R_k2tau * skew_x(g_k);
 
             // Derivatives of R_tau12k wrt bias_w entries
-            Eigen::MatrixXf d_R_bw_1 = -R_tau12k * skew_x(J_q * e_1);
-            Eigen::MatrixXf d_R_bw_2 = -R_tau12k * skew_x(J_q * e_2);
-            Eigen::MatrixXf d_R_bw_3 = -R_tau12k * skew_x(J_q * e_3);
+            Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> d_R_bw_1 = -R_tau12k * skew_x(J_q * e_1);
+            Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> d_R_bw_2 = -R_tau12k * skew_x(J_q * e_2);
+            Eigen::Matrix<f_ekf,Eigen::Dynamic,Eigen::Dynamic> d_R_bw_3 = -R_tau12k * skew_x(J_q * e_3);
 
 
             // Now compute the gyro bias Jacobian terms
-            float df_1_dbw_1;
-            float df_1_dbw_2;
-            float df_1_dbw_3;
+            f_ekf df_1_dbw_1;
+            f_ekf df_1_dbw_2;
+            f_ekf df_1_dbw_3;
 
-            float df_2_dbw_1;
-            float df_2_dbw_2;
-            float df_2_dbw_3;
+            f_ekf df_2_dbw_1;
+            f_ekf df_2_dbw_2;
+            f_ekf df_2_dbw_3;
 
-            float df_3_dbw_1;
-            float df_3_dbw_2;
-            float df_3_dbw_3;
+            f_ekf df_3_dbw_1;
+            f_ekf df_3_dbw_2;
+            f_ekf df_3_dbw_3;
 
-            float df_4_dbw_1;
-            float df_4_dbw_2;
-            float df_4_dbw_3;
+            f_ekf df_4_dbw_1;
+            f_ekf df_4_dbw_2;
+            f_ekf df_4_dbw_3;
 
 
             if (small_w) {
-                float df_1_dw_mag = -(pow(delta_t, 5) / 15);
+                f_ekf df_1_dw_mag = -(pow(delta_t, 5) / 15);
                 df_1_dbw_1 = w_1 * df_1_dw_mag;
                 df_1_dbw_2 = w_2 * df_1_dw_mag;
                 df_1_dbw_3 = w_3 * df_1_dw_mag;
 
-                float df_2_dw_mag = (pow(delta_t, 6) / 72);
+                f_ekf df_2_dw_mag = (pow(delta_t, 6) / 72);
                 df_2_dbw_1 = w_1 * df_2_dw_mag;
                 df_2_dbw_2 = w_2 * df_2_dw_mag;
                 df_2_dbw_3 = w_3 * df_2_dw_mag;
 
-                float df_3_dw_mag = -(pow(delta_t, 4) / 12);
+                f_ekf df_3_dw_mag = -(pow(delta_t, 4) / 12);
                 df_3_dbw_1 = w_1 * df_3_dw_mag;
                 df_3_dbw_2 = w_2 * df_3_dw_mag;
                 df_3_dbw_3 = w_3 * df_3_dw_mag;
 
-                float df_4_dw_mag = (pow(delta_t, 5) / 60);
+                f_ekf df_4_dw_mag = (pow(delta_t, 5) / 60);
                 df_4_dbw_1 = w_1 * df_4_dw_mag;
                 df_4_dbw_2 = w_2 * df_4_dw_mag;
                 df_4_dbw_3 = w_3 * df_4_dw_mag;
             } else {
-                float df_1_dw_mag = (pow(w_dt, 2) * sin_wt - 3 * sin_wt + 3 * w_dt * cos_wt) / pow(mag_w, 5);
+                f_ekf df_1_dw_mag = (pow(w_dt, 2) * sin_wt - 3 * sin_wt + 3 * w_dt * cos_wt) / pow(mag_w, 5);
                 df_1_dbw_1 = w_1 * df_1_dw_mag;
                 df_1_dbw_2 = w_2 * df_1_dw_mag;
                 df_1_dbw_3 = w_3 * df_1_dw_mag;
 
 
-                float df_2_dw_mag =
+                f_ekf df_2_dw_mag =
                         (pow(w_dt, 2) - 4 * cos_wt - 4 * w_dt * sin_wt + pow(w_dt, 2) * cos_wt + 4) / (pow(mag_w, 6));
                 df_2_dbw_1 = w_1 * df_2_dw_mag;
                 df_2_dbw_2 = w_2 * df_2_dw_mag;
                 df_2_dbw_3 = w_3 * df_2_dw_mag;
 
-                float df_3_dw_mag = (2 * (cos_wt - 1) + w_dt * sin_wt) / (pow(mag_w, 4));
+                f_ekf df_3_dw_mag = (2 * (cos_wt - 1) + w_dt * sin_wt) / (pow(mag_w, 4));
                 df_3_dbw_1 = w_1 * df_3_dw_mag;
                 df_3_dbw_2 = w_2 * df_3_dw_mag;
                 df_3_dbw_3 = w_3 * df_3_dw_mag;
 
-                float df_4_dw_mag = (2 * w_dt + w_dt * cos_wt - 3 * sin_wt) / (pow(mag_w, 5));
+                f_ekf df_4_dw_mag = (2 * w_dt + w_dt * cos_wt - 3 * sin_wt) / (pow(mag_w, 5));
                 df_4_dbw_1 = w_1 * df_4_dw_mag;
                 df_4_dbw_2 = w_2 * df_4_dw_mag;
                 df_4_dbw_3 = w_3 * df_4_dw_mag;
             }
 
             // Gravity rotated into the "tau'th" frame (i.e. start of the measurement interval)
-            Eigen::Matrix<float, 3, 1> g_tau = R_k2tau * quat_2_Rot(q_k_lin) * grav;
+            Eigen::Matrix<f_ekf, 3, 1> g_tau = R_k2tau * quat_2_Rot(q_k_lin) * grav;
 
 
             // Update gyro bias Jacobians
@@ -333,10 +333,10 @@ namespace ov_core {
             //==========================================================================
 
             // Going to need orientation at intermediate time i.e. at .5*dt;
-            Eigen::Matrix<float, 3, 3> R_G_to_k = quat_2_Rot(q_k_lin);
+            Eigen::Matrix<f_ekf, 3, 3> R_G_to_k = quat_2_Rot(q_k_lin);
             f_ts dt_mid = delta_t / 2.0;
-            float w_dt_mid = mag_w * dt_mid;
-            Eigen::Matrix<float, 3, 3> R_mid;
+            f_ekf w_dt_mid = mag_w * dt_mid;
+            Eigen::Matrix<f_ekf, 3, 3> R_mid;
 
             // The middle of this interval (i.e., rotation from k to mid)
             R_mid = small_w ? eye3 - dt_mid * w_x + (pow(dt_mid, 2) / 2) * w_x_2 :
@@ -348,7 +348,7 @@ namespace ov_core {
             //k1-------------------------------------------------------------------------------------------------
 
             // Build state Jacobian
-            Eigen::Matrix<float, 21, 21> F_k1 = Eigen::Matrix<float, 21, 21>::Zero();
+            Eigen::Matrix<f_ekf, 21, 21> F_k1 = Eigen::Matrix<f_ekf, 21, 21>::Zero();
             F_k1.block(0, 0, 3, 3) = -w_x;
             F_k1.block(0, 3, 3, 3) = -eye3;
             F_k1.block(6, 0, 3, 3) = -R_k2tau.transpose() * a_x;
@@ -358,21 +358,21 @@ namespace ov_core {
             F_k1.block(12, 6, 3, 3) = eye3;
 
             // Build noise Jacobian
-            Eigen::Matrix<float, 21, 12> G_k1 = Eigen::Matrix<float, 21, 12>::Zero();
+            Eigen::Matrix<f_ekf, 21, 12> G_k1 = Eigen::Matrix<f_ekf, 21, 12>::Zero();
             G_k1.block(0, 0, 3, 3) = -eye3;
             G_k1.block(3, 3, 3, 3) = eye3;
             G_k1.block(6, 6, 3, 3) = -R_k2tau.transpose();
             G_k1.block(9, 9, 3, 3) = eye3;
 
             // Get state transition and covariance derivative
-            Eigen::Matrix<float, 21, 21> Phi_dot_k1 = F_k1;
-            Eigen::Matrix<float, 21, 21> P_dot_k1 = F_k1 * P_big + P_big * F_k1.transpose() + G_k1 * Q_c * G_k1.transpose();
+            Eigen::Matrix<f_ekf, 21, 21> Phi_dot_k1 = F_k1;
+            Eigen::Matrix<f_ekf, 21, 21> P_dot_k1 = F_k1 * P_big + P_big * F_k1.transpose() + G_k1 * Q_c * G_k1.transpose();
 
 
             //k2-------------------------------------------------------------------------------------------------
 
             // Build state Jacobian
-            Eigen::Matrix<float, 21, 21> F_k2 = Eigen::Matrix<float, 21, 21>::Zero();
+            Eigen::Matrix<f_ekf, 21, 21> F_k2 = Eigen::Matrix<f_ekf, 21, 21>::Zero();
             F_k2.block(0, 0, 3, 3) = -w_x;
             F_k2.block(0, 3, 3, 3) = -eye3;
             F_k2.block(6, 0, 3, 3) = -R_mid.transpose() * a_x;
@@ -382,37 +382,37 @@ namespace ov_core {
             F_k2.block(12, 6, 3, 3) = eye3;
 
             // Build noise Jacobian
-            Eigen::Matrix<float, 21, 12> G_k2 = Eigen::Matrix<float, 21, 12>::Zero();
+            Eigen::Matrix<f_ekf, 21, 12> G_k2 = Eigen::Matrix<f_ekf, 21, 12>::Zero();
             G_k2.block(0, 0, 3, 3) = -eye3;
             G_k2.block(3, 3, 3, 3) = eye3;
             G_k2.block(6, 6, 3, 3) = -R_mid.transpose();
             G_k2.block(9, 9, 3, 3) = eye3;
 
             // Get state transition and covariance derivative
-            Eigen::Matrix<float, 21, 21> Phi_k2 = Eigen::Matrix<float, 21, 21>::Identity() + Phi_dot_k1 * dt_mid;
-            Eigen::Matrix<float, 21, 21> P_k2 = P_big + P_dot_k1 * dt_mid;
-            Eigen::Matrix<float, 21, 21> Phi_dot_k2 = F_k2 * Phi_k2;
-            Eigen::Matrix<float, 21, 21> P_dot_k2 = F_k2 * P_k2 + P_k2 * F_k2.transpose() + G_k2 * Q_c * G_k2.transpose();
+            Eigen::Matrix<f_ekf, 21, 21> Phi_k2 = Eigen::Matrix<f_ekf, 21, 21>::Identity() + Phi_dot_k1 * dt_mid;
+            Eigen::Matrix<f_ekf, 21, 21> P_k2 = P_big + P_dot_k1 * dt_mid;
+            Eigen::Matrix<f_ekf, 21, 21> Phi_dot_k2 = F_k2 * Phi_k2;
+            Eigen::Matrix<f_ekf, 21, 21> P_dot_k2 = F_k2 * P_k2 + P_k2 * F_k2.transpose() + G_k2 * Q_c * G_k2.transpose();
 
 
             //k3-------------------------------------------------------------------------------------------------
 
             // Our state and noise Jacobians are the same as k2
             // Since k2 and k3 correspond to the same estimates for the midpoint
-            Eigen::Matrix<float, 21, 21> F_k3 = F_k2;
-            Eigen::Matrix<float, 21, 12> G_k3 = G_k2;
+            Eigen::Matrix<f_ekf, 21, 21> F_k3 = F_k2;
+            Eigen::Matrix<f_ekf, 21, 12> G_k3 = G_k2;
 
             // Get state transition and covariance derivative
-            Eigen::Matrix<float, 21, 21> Phi_k3 = Eigen::Matrix<float, 21, 21>::Identity() + Phi_dot_k2 * dt_mid;
-            Eigen::Matrix<float, 21, 21> P_k3 = P_big + P_dot_k2 * dt_mid;
-            Eigen::Matrix<float, 21, 21> Phi_dot_k3 = F_k3 * Phi_k3;
-            Eigen::Matrix<float, 21, 21> P_dot_k3 = F_k3 * P_k3 + P_k3 * F_k3.transpose() + G_k3 * Q_c * G_k3.transpose();
+            Eigen::Matrix<f_ekf, 21, 21> Phi_k3 = Eigen::Matrix<f_ekf, 21, 21>::Identity() + Phi_dot_k2 * dt_mid;
+            Eigen::Matrix<f_ekf, 21, 21> P_k3 = P_big + P_dot_k2 * dt_mid;
+            Eigen::Matrix<f_ekf, 21, 21> Phi_dot_k3 = F_k3 * Phi_k3;
+            Eigen::Matrix<f_ekf, 21, 21> P_dot_k3 = F_k3 * P_k3 + P_k3 * F_k3.transpose() + G_k3 * Q_c * G_k3.transpose();
 
 
             //k4-------------------------------------------------------------------------------------------------
 
             // Build state Jacobian
-            Eigen::Matrix<float, 21, 21> F_k4 = Eigen::Matrix<float, 21, 21>::Zero();
+            Eigen::Matrix<f_ekf, 21, 21> F_k4 = Eigen::Matrix<f_ekf, 21, 21>::Zero();
             F_k4.block(0, 0, 3, 3) = -w_x;
             F_k4.block(0, 3, 3, 3) = -eye3;
             F_k4.block(6, 0, 3, 3) = -R_k2tau1.transpose() * a_x;
@@ -422,17 +422,17 @@ namespace ov_core {
             F_k4.block(12, 6, 3, 3) = eye3;
 
             // Build noise Jacobian
-            Eigen::Matrix<float, 21, 12> G_k4 = Eigen::Matrix<float, 21, 12>::Zero();
+            Eigen::Matrix<f_ekf, 21, 12> G_k4 = Eigen::Matrix<f_ekf, 21, 12>::Zero();
             G_k4.block(0, 0, 3, 3) = -eye3;
             G_k4.block(3, 3, 3, 3) = eye3;
             G_k4.block(6, 6, 3, 3) = -R_k2tau1.transpose();
             G_k4.block(9, 9, 3, 3) = eye3;
 
             // Get state transition and covariance derivative
-            Eigen::Matrix<float, 21, 21> Phi_k4 = Eigen::Matrix<float, 21, 21>::Identity() + Phi_dot_k3 * delta_t;
-            Eigen::Matrix<float, 21, 21> P_k4 = P_big + P_dot_k3 * delta_t;
-            Eigen::Matrix<float, 21, 21> Phi_dot_k4 = F_k4 * Phi_k4;
-            Eigen::Matrix<float, 21, 21> P_dot_k4 = F_k4 * P_k4 + P_k4 * F_k4.transpose() + G_k4 * Q_c * G_k4.transpose();
+            Eigen::Matrix<f_ekf, 21, 21> Phi_k4 = Eigen::Matrix<f_ekf, 21, 21>::Identity() + Phi_dot_k3 * delta_t;
+            Eigen::Matrix<f_ekf, 21, 21> P_k4 = P_big + P_dot_k3 * delta_t;
+            Eigen::Matrix<f_ekf, 21, 21> Phi_dot_k4 = F_k4 * Phi_k4;
+            Eigen::Matrix<f_ekf, 21, 21> P_dot_k4 = F_k4 * P_k4 + P_k4 * F_k4.transpose() + G_k4 * Q_c * G_k4.transpose();
 
 
             //done-------------------------------------------------------------------------------------------------
@@ -443,7 +443,7 @@ namespace ov_core {
             P_big = 0.5 * (P_big + P_big.transpose());
 
             // Calculate the state transition from time k to tau
-            Eigen::Matrix<float, 21, 21> Phi = Eigen::Matrix<float, 21, 21>::Identity()
+            Eigen::Matrix<f_ekf, 21, 21> Phi = Eigen::Matrix<f_ekf, 21, 21>::Identity()
                                                 + (delta_t / 6.0) * (Phi_dot_k1 + 2.0 * Phi_dot_k2 + 2.0 * Phi_dot_k3 + Phi_dot_k4);
 
 
@@ -454,9 +454,9 @@ namespace ov_core {
             //==========================================================================
 
             // Matrix that performs the clone and mariginalization
-            Eigen::Matrix<float, 21, 21> B_k = Eigen::Matrix<float, 21, 21>::Identity();
+            Eigen::Matrix<f_ekf, 21, 21> B_k = Eigen::Matrix<f_ekf, 21, 21>::Identity();
             B_k.block(15, 15, 3, 3).setZero();
-            B_k.block(15, 0, 3, 3) = Eigen::Matrix<float, 3, 3>::Identity();
+            B_k.block(15, 0, 3, 3) = Eigen::Matrix<f_ekf, 3, 3>::Identity();
 
             // Change our measurement covariance and state transition
             P_big = B_k * P_big * B_k.transpose();

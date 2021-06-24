@@ -49,10 +49,10 @@ namespace ov_core {
         bool to_delete;
 
         /// UV coordinates that this feature has been seen from (mapped by camera ID)
-        std::unordered_map<size_t, std::vector<Eigen::VectorXf>> uvs;
+        std::unordered_map<size_t, std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>> uvs;
 
         /// UV normalized coordinates that this feature has been seen from (mapped by camera ID)
-        std::unordered_map<size_t, std::vector<Eigen::VectorXf>> uvs_norm;
+        std::unordered_map<size_t, std::vector<Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>> uvs_norm;
 
         /// Timestamps of each UV measurement (mapped by camera ID)
         std::unordered_map<size_t, std::vector<f_ts>> timestamps;
@@ -64,10 +64,10 @@ namespace ov_core {
         f_ts anchor_clone_timestamp;
 
         /// Triangulated position of this feature, in the anchor frame
-        Eigen::Vector3f p_FinA;
+        Eigen::Matrix<f_ekf,3,1> p_FinA;
 
         /// Triangulated position of this feature, in the global frame
-        Eigen::Vector3f p_FinG;
+        Eigen::Matrix<f_ekf,3,1> p_FinG;
 
 
         /**

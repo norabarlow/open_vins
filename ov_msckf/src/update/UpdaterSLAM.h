@@ -70,8 +70,8 @@ namespace ov_msckf {
                     : _options_slam(options_slam), _options_aruco(options_aruco) {
 
             // Save our raw pixel noise squared
-            _options_slam.sigma_pix_sq = std::pow(_options_slam.sigma_pix,2);
-            _options_aruco.sigma_pix_sq = std::pow(_options_aruco.sigma_pix,2);
+            _options_slam.sigma_pix_sq = flx::pow(_options_slam.sigma_pix,2);
+            _options_aruco.sigma_pix_sq = flx::pow(_options_aruco.sigma_pix,2);
 
             // Save our feature initializer
             initializer_feat = std::unique_ptr<FeatureInitializer>(new FeatureInitializer(feat_init_options));
@@ -137,7 +137,7 @@ namespace ov_msckf {
         std::unique_ptr<FeatureInitializer> initializer_feat;
 
         /// Chi squared 95th percentile table (lookup would be size of residual)
-        std::map<int, float> chi_squared_table;
+        std::map<int, f_ekf> chi_squared_table;
 
 
 

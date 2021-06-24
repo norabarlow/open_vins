@@ -65,16 +65,16 @@ namespace ov_msckf {
         f_ts init_window_time = 1.0;
 
         ///  Variance threshold on our acceleration to be classified as moving
-        float init_imu_thresh = 1.0;
+        f_ekf init_imu_thresh = 1.0;
 
         /// If we should try to use zero velocity update
         bool try_zupt = false;
 
         /// Max velocity we will consider to try to do a zupt (i.e. if above this, don't do zupt)
-        float zupt_max_velocity = 1.0;
+        f_ekf zupt_max_velocity = 1.0;
 
         /// Multiplier of our zupt measurement IMU noise matrix (default should be 1.0)
-        float zupt_noise_multiplier = 1.0;
+        f_ekf zupt_noise_multiplier = 1.0;
 
         /// If we should record the timing performance to file
         bool record_timing_information = false;
@@ -91,10 +91,10 @@ namespace ov_msckf {
             state_options.print();
             printf("\t- dt_slam_delay: %.1f\n", double(dt_slam_delay));
             printf("\t- init_window_time: %.2f\n", double(init_window_time));
-            printf("\t- init_imu_thresh: %.2f\n", init_imu_thresh);
+            printf("\t- init_imu_thresh: %.2f\n", double(init_imu_thresh));
             printf("\t- zero_velocity_update: %d\n", try_zupt);
-            printf("\t- zupt_max_velocity: %.2f\n", zupt_max_velocity);
-            printf("\t- zupt_noise_multiplier: %.2f\n", zupt_noise_multiplier);
+            printf("\t- zupt_max_velocity: %.2f\n", double(zupt_max_velocity));
+            printf("\t- zupt_noise_multiplier: %.2f\n", double(zupt_noise_multiplier));
             printf("\t- record timing?: %d\n", (int)record_timing_information);
             printf("\t- record timing filepath: %s\n", record_timing_filepath.c_str());
         }
@@ -136,7 +136,7 @@ namespace ov_msckf {
         // STATE DEFAULTS ==========================
 
         /// Gravity in the global frame (i.e. should be [0, 0, 9.81] typically)
-        Eigen::Vector3f gravity = {0.0, 0.0, 9.81};
+        Eigen::Matrix<f_ekf,3,1> gravity = {0.0, 0.0, 9.81};
 
         /// Time offset between camera and IMU.
         f_ts calib_camimu_dt = 0.0;
@@ -145,10 +145,10 @@ namespace ov_msckf {
         std::map<size_t,bool> camera_fisheye;
 
         /// Map between camid and intrinsics. Values depends on the model but each should be a 4x1 vector normally.
-        std::map<size_t,Eigen::VectorXf> camera_intrinsics;
+        std::map<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> camera_intrinsics;
 
         /// Map between camid and camera extrinsics (q_ItoC, p_IinC).
-        std::map<size_t,Eigen::VectorXf> camera_extrinsics;
+        std::map<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>> camera_extrinsics;
 
         /// Map between camid and the dimensions of incoming images (width/cols, height/rows). This is normally only used during simulation.
         std::map<size_t,std::pair<int,int>> camera_wh;
@@ -159,7 +159,7 @@ namespace ov_msckf {
          */
         void print_state() {
             printf("STATE PARAMETERS:\n");
-            printf("\t- gravity: %.3f, %.3f, %.3f\n", gravity(0), gravity(1), gravity(2));
+            printf("\t- gravity: %.3f, %.3f, %.3f\n", double(gravity(0)), double(gravity(1)), double(gravity(2)));
             printf("\t- calib_camimu_dt: %.4f\n", double(calib_camimu_dt));
             assert(state_options.num_cameras==(int)camera_fisheye.size());
             for(int n=0; n<state_options.num_cameras; n++) {
@@ -169,7 +169,7 @@ namespace ov_msckf {
                 std::cout << "cam_" << n << "_intrinsic(4:7):" << endl << camera_intrinsics.at(n).block(4,0,4,1).transpose() << std::endl;
                 std::cout << "cam_" << n << "_extrinsic(0:3):" << endl << camera_extrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
                 std::cout << "cam_" << n << "_extrinsic(4:6):" << endl << camera_extrinsics.at(n).block(4,0,3,1).transpose() << std::endl;
-                Eigen::Matrix4f T_CtoI = Eigen::Matrix4f::Identity();
+                Eigen::Matrix<f_ekf,4,4> T_CtoI = Eigen::Matrix<f_ekf,4,4>::Identity();
                 T_CtoI.block(0,0,3,3) = quat_2_Rot(camera_extrinsics.at(n).block(0,0,4,1)).transpose();
                 T_CtoI.block(0,3,3,1) = -T_CtoI.block(0,0,3,3)*camera_extrinsics.at(n).block(4,0,3,1);
                 std::cout << "T_C" << n << "toI:" << endl << T_CtoI << std::endl << std::endl;
@@ -215,7 +215,7 @@ namespace ov_msckf {
         int min_px_dist = 10;
 
         /// KNN ration between top two descriptor matcher which is required to be a good match
-        float knn_ratio = 0.85;
+        f_ekf knn_ratio = 0.85;
 
         /// Parameters used by our feature initialize / triangulator
         FeatureInitializerOptions featinit_options;
@@ -244,13 +244,13 @@ namespace ov_msckf {
         string sim_traj_path = "../ov_data/sim/udel_gore.txt";
 
         /// We will start simulating after we have moved this much along the b-spline. This prevents static starts as we init from groundtruth in simulation.
-        float sim_distance_threshold = 1.0;
+        f_ekf sim_distance_threshold = 1.0;
 
         /// Frequency (Hz) that we will simulate our cameras
-        float sim_freq_cam = 10.0;
+        f_ekf sim_freq_cam = 10.0;
 
         /// Frequency (Hz) that we will simulate our inertial measurement unit
-        float sim_freq_imu = 400.0;
+        f_ekf sim_freq_imu = 400.0;
 
         /// Seed for initial states (i.e. random feature 3f positions in the generated map)
         int sim_seed_state_init = 0;
@@ -274,9 +274,9 @@ namespace ov_msckf {
             printf(BOLDRED "\t- perturb seed: %d \n" RESET, sim_seed_preturb);
             printf(BOLDRED "\t- measurement seed: %d \n" RESET, sim_seed_measurements);
             printf("\t- traj path: %s\n", sim_traj_path.c_str());
-            printf("\t- dist thresh: %.2f\n", sim_distance_threshold);
-            printf("\t- cam feq: %.2f\n", sim_freq_cam);
-            printf("\t- imu feq: %.2f\n", sim_freq_imu);
+            printf("\t- dist thresh: %.2f\n", double(sim_distance_threshold));
+            printf("\t- cam feq: %.2f\n", double(sim_freq_cam));
+            printf("\t- imu feq: %.2f\n", double(sim_freq_imu));
         }
 
 

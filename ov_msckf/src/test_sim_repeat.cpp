@@ -72,16 +72,16 @@ int main(int argc, char** argv)
     // Vector of stored measurements
     std::vector<f_ts> vec_imutime;
     std::vector<f_ts> vec_camtime;
-    std::vector<Eigen::Vector3f> vec_am;
-    std::vector<Eigen::Vector3f> vec_wm;
-    std::vector<std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>>> vec_feats;
+    std::vector<Eigen::Matrix<f_ekf,3,1>> vec_am;
+    std::vector<Eigen::Matrix<f_ekf,3,1>> vec_wm;
+    std::vector<std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>>> vec_feats;
 
     // Continue to simulate until we have processed all the measurements
     while(sim1.ok()) {
 
         // IMU: get the next simulated IMU measurement if we have it
         f_ts time_imu;
-        Eigen::Vector3f wm, am;
+        Eigen::Matrix<f_ekf,3,1> wm, am;
         bool hasimu = sim1.get_next_imu(time_imu, wm, am);
         if(hasimu) {
             vec_imutime.push_back(time_imu);
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
         // CAM: get the next simulated camera uv measurements if we have them
         f_ts time_cam;
         std::vector<int> camids;
-        std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
+        std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> feats;
         bool hascam = sim1.get_next_cam(time_cam, camids, feats);
         if(hascam) {
             vec_camtime.push_back(time_cam);
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 
         // IMU: get the next simulated IMU measurement if we have it
         f_ts time_imu;
-        Eigen::Vector3f wm, am;
+        Eigen::Matrix<f_ekf,3,1> wm, am;
         bool hasimu = sim2.get_next_imu(time_imu, wm, am);
         if(hasimu) {
             assert(time_imu==vec_imutime.at(ct_imu));
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
         // CAM: get the next simulated camera uv measurements if we have them
         f_ts time_cam;
         std::vector<int> camids;
-        std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> feats;
+        std::vector<std::vector<std::pair<size_t,Eigen::Matrix<f_ekf,Eigen::Dynamic,1>>>> feats;
         bool hascam = sim2.get_next_cam(time_cam, camids, feats);
         if(hascam) {
             assert(time_cam==vec_camtime.at(ct_cam));
