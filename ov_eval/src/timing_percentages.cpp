@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
     }
 
     // Display to the user
-    matplotlibcpp::ylim(1.0f-1*width, ct_pos+1*width);
+    matplotlibcpp::ylim(f_ekf(1.0)-1*width, ct_pos+1*width);
     matplotlibcpp::yticks(yticks,labels);
     matplotlibcpp::xlabel("CPU Percent Usage");
     matplotlibcpp::tight_layout();
@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
     }
 
     // Display to the user
-    matplotlibcpp::ylim(1.0f-1*width, ct_pos+1*width);
+    matplotlibcpp::ylim(f_ekf(1.0)-1*width, ct_pos+1*width);
     matplotlibcpp::yticks(yticks,labels);
     matplotlibcpp::xlabel("Memory Percent Usage");
     matplotlibcpp::tight_layout();

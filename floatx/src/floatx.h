@@ -183,8 +183,8 @@ public:
 //        this->initialize();
 //    }
 
-    template <int E, int M>
-    FLOATX_ATTRIBUTES floatx(const floatx<E,M>& other) noexcept
+    template <int E, int M, typename BE>
+    FLOATX_ATTRIBUTES floatx(const floatx<E,M,BE>& other) noexcept
         : detail::floatx_base<floatx>(backend_float(other))
     {
         this->initialize();
